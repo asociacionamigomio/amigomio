@@ -188,3 +188,78 @@ export async function autorizarPagoEnPersona(clienteId, valor) {
   if (error) return { ok: false, mensaje: "No hemos podido cambiarlo." };
   return { ok: true, mensaje: valor ? "Puede pagar en persona." : "Ya no puede pagar en persona." };
 }
+
+/* ------------------------------------------------------------
+   Tarifas, festivos, extras y ajustes.
+
+   Las tres funciones del motor —presupuesto, hay_sitio y
+   precio_noche— viven en la base de datos y se llaman con rpc().
+   Esa es la misma puerta por la que entrará Zapatilla: el
+   asistente no calcula precios, los pregunta. Si se inventa uno,
+   el motor le dice que no igual que a todo el mundo.
+   ------------------------------------------------------------ */
+export async function presupuesto({ entrada, salida, tipo = "normal", perros = 1,
+                                    conCuras = 0, extras = [] }) {
+  const { data, error } = await supabase.rpc("presupuesto", {
+    la_entrada: entrada, la_salida: salida, el_tipo: tipo,
+    los_perros: perros, con_curas: conCuras, los_extras: extras,
+  });
+  if (error) return { ok: false, mensaje: error.message };
+  return { ok: true, ...data };
+}
+
+export async function haySitio({ entrada, salida, tipo = "normal", perros = 1 }) {
+  const { data, error } = await supabase.rpc("hay_sitio", {
+    la_entrada: entrada, la_salida: salida, el_tipo: tipo, los_perros: perros,
+  });
+  if (error) return { hay: false, motivo: "No hemos podido comprobarlo." };
+  return data;
+}
+
+export async function tarifas() {
+  const { data } = await supabase.from("tarifa").select("*").order("id");
+  return data || [];
+}
+
+export async function guardarTarifa(id, importe) {
+  const { error } = await supabase.from("tarifa").update({ importe }).eq("id", id);
+  return { ok: !error, mensaje: error ? "No hemos podido guardarlo." : "Guardado." };
+}
+
+export async function festivos(anio) {
+  const { data } = await supabase.from("festivo").select("*")
+    .gte("fecha", `${anio}-01-01`).lte("fecha", `${anio}-12-31`).order("fecha");
+  return data || [];
+}
+
+export async function anadirFestivo({ fecha, nombre, ambito = "local" }) {
+  const { error } = await supabase.from("festivo").insert({ fecha, nombre, ambito });
+  if (error) return { ok: false, mensaje: /duplicate/i.test(error.message)
+    ? "Ese día ya estaba puesto." : "No hemos podido añadirlo." };
+  return { ok: true, mensaje: "Añadido." };
+}
+
+export async function quitarFestivo(fecha) {
+  const { error } = await supabase.from("festivo").delete().eq("fecha", fecha);
+  return { ok: !error };
+}
+
+export async function extras() {
+  const { data } = await supabase.from("extra").select("*").order("lo_cobra").order("nombre");
+  return data || [];
+}
+
+export async function guardarExtra(id, cambios) {
+  const { error } = await supabase.from("extra").update(cambios).eq("id", id);
+  return { ok: !error, mensaje: error ? "No hemos podido guardarlo." : "Guardado." };
+}
+
+export async function ajustes() {
+  const { data } = await supabase.from("ajuste").select("*").order("clave");
+  return data || [];
+}
+
+export async function guardarAjuste(clave, valor) {
+  const { error } = await supabase.from("ajuste").update({ valor }).eq("clave", clave);
+  return { ok: !error, mensaje: error ? "No hemos podido guardarlo." : "Guardado." };
+}

@@ -11,6 +11,7 @@ import { render as renderPerros }  from "./vistas/perros.js";
 import { render as renderMiFicha } from "./vistas/mi-ficha.js";
 import { render as renderSolicitudes } from "./vistas/admin-solicitudes.js";
 import { render as renderAdminClientes } from "./vistas/admin-clientes.js";
+import { render as renderTarifas } from "./vistas/admin-tarifas.js";
 
 const app = document.getElementById("app");
 let ficha = null;
@@ -27,6 +28,7 @@ const SECCIONES = [
   { id: "ficha",       texto: "Mi ficha",     render: renderMiFicha },
   { id: "solicitudes", texto: "Solicitudes",  render: renderSolicitudes,   admin: true },
   { id: "clientes",    texto: "Clientes",     render: renderAdminClientes, admin: true },
+  { id: "tarifas",     texto: "Tarifas",      render: renderTarifas,       admin: true },
 ];
 
 const visibles = () => SECCIONES.filter(s => !s.admin || ficha?.es_admin);

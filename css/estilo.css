@@ -237,3 +237,30 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 .etiqueta.roja { background: var(--rojo); color: #fff; }
 
 #buscar { margin-bottom: 1rem; }
+
+/* ------------------------------------------------------------
+   Tarifas y ajustes
+   ------------------------------------------------------------ */
+.subpestanas { display: flex; gap: .3rem; margin-bottom: 1rem; flex-wrap: wrap; }
+
+.tabla-tarifas { display: grid; gap: .1rem; }
+.fila-tarifa {
+  display: flex; gap: 1rem; align-items: center; justify-content: space-between;
+  padding: .7rem 0; border-bottom: 1px solid var(--borde); flex-wrap: wrap;
+}
+.fila-tarifa:last-child { border-bottom: 0; }
+.fila-tarifa p { margin: .1rem 0 0; font-size: .84rem; }
+.importe { display: flex; align-items: center; gap: .4rem; }
+.importe input { width: 100px; text-align: right; font-variant-numeric: tabular-nums; }
+.importe span { color: var(--texto-flojo); font-size: .9rem; white-space: nowrap; }
+
+.lista-festivos { display: grid; gap: .1rem; margin: .75rem 0; }
+.fila-festivo {
+  display: flex; gap: 1rem; align-items: center; justify-content: space-between;
+  padding: .6rem 0; border-bottom: 1px solid var(--borde);
+}
+.fila-festivo p { margin: 0; font-size: .84rem; }
+.fila-festivo strong { text-transform: capitalize; }
+
+.anadir-festivo { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+.anadir-festivo input, .anadir-festivo select { width: auto; flex: 1 1 140px; }
