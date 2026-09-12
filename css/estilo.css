@@ -1032,3 +1032,28 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
   background: #F3F8FB;
 }
 .sonido.elegido strong::after { content: " ✓"; color: var(--azul, #4E80A5); }
+
+/* ============================================================
+   Bloquear fechas.
+   ============================================================ */
+.boxes {
+  display: grid; gap: .3rem; margin-top: .6rem;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  max-height: 15rem; overflow-y: auto;
+  padding: .6rem; border: 1px solid var(--borde); border-radius: 10px;
+}
+/* Con «Todos» marcado, la lista sigue viéndose pero apagada: así
+   se entiende que no hace falta tocarla, en vez de desaparecer y
+   dejar dudando. */
+.boxes.apagados { opacity: .45; }
+.box-elegir { display: flex; align-items: center; gap: .4rem; font-size: .85rem; }
+.box-elegir em { color: var(--texto-flojo); font-style: normal; }
+
+.lista-bloqueos { margin-top: .6rem; }
+.bloqueo {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: .8rem; padding: .6rem 0; border-top: 1px solid var(--borde);
+}
+.bloqueo:first-child { border-top: none; }
+.bloqueo p { margin: .15rem 0 0; font-size: .82rem; }
+.bloqueo .quitar { color: var(--rojo, #b4453a); white-space: nowrap; font-size: .82rem; }

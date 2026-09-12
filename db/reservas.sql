@@ -106,6 +106,35 @@ set search_path = public as $$
      and la_noche <  r.salida::date;
 $$;
 
+create table if not exists bloqueo (
+  id             serial primary key,
+
+  -- Vacío significa TODOS los alojamientos. No es un descuido:
+  -- es la forma normal de decir «cerramos esos días».
+  alojamiento_id integer references alojamiento(id) on delete cascade,
+
+  desde          date not null,
+  hasta          date not null,           -- inclusive: el último día cerrado
+  motivo         text not null default '',
+  creado         timestamptz not null default now(),
+
+  constraint bloqueo_al_derecho check (hasta >= desde)
+);
+
+create index if not exists bloqueo_por_fecha on bloqueo (desde, hasta);
+
+alter table bloqueo enable row level security;
+
+-- Verlos hace falta para poder explicarle al cliente por qué no
+-- hay sitio. Ponerlos, no.
+drop policy if exists bloqueo_lo_ve_cualquiera on bloqueo;
+create policy bloqueo_lo_ve_cualquiera on bloqueo
+  for select using (true);
+
+drop policy if exists bloqueo_solo_admin on bloqueo;
+create policy bloqueo_solo_admin on bloqueo
+  for all using (es_admin()) with check (es_admin());
+
 -- ============================================================
 -- ¿HAY SITIO?
 --
@@ -160,7 +189,16 @@ begin
              select 1 from reserva r
               where r.alojamiento_id = al.id
                 and r.estado in ('pendiente','revisando','confirmada','en_curso')
-                and d >= r.entrada::date and d < r.salida::date);
+                and d >= r.entrada::date and d < r.salida::date)
+       -- Y que no esté bloqueado: obras, desinfección, o los
+       -- boxes que se dejan a Wix mientras conviven los dos
+       -- sistemas. La función vive en db/bloqueos.sql, que se
+       -- aplica después; con `if not exists` alrededor esto
+       -- seguiría funcionando aunque todavía no estuviera.
+       and not exists (
+             select 1 from bloqueo b
+              where (b.alojamiento_id is null or b.alojamiento_id = al.id)
+                and d >= b.desde and d <= b.hasta);
 
     if libres = 0 then
       return jsonb_build_object('hay', false,

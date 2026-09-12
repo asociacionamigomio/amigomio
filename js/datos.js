@@ -628,3 +628,45 @@ export async function ingresosPorMes(anio = null) {
   if (error) return { ok: false, mensaje: error.message, meses: [] };
   return { ok: true, meses: data || [] };
 }
+
+/* ------------------------------------------------------------
+   Bloquear fechas.
+
+   Sirve para obras, desinfección o vacaciones, y para algo más
+   inmediato: dejarle a Wix los boxes que siga vendiendo él,
+   para que los dos sistemas no vendan la misma noche.
+   ------------------------------------------------------------ */
+export async function alojamientos() {
+  const { data } = await supabase.from("alojamiento")
+    .select("id, nombre, tipo, capacidad, activo")
+    .eq("activo", true).order("id");
+  return data || [];
+}
+
+export async function bloqueos() {
+  const { data } = await supabase.from("bloqueo")
+    .select("*, alojamiento(nombre)").order("desde", { ascending: false });
+  return data || [];
+}
+
+/** `alojamientos` vacío = todos. */
+export async function bloquearFechas(alojamientos, desde, hasta, motivo = "") {
+  if (!desde || !hasta) return { ok: false, mensaje: "Faltan las fechas." };
+  if (hasta < desde) return { ok: false, mensaje: "La fecha de fin va después de la de inicio." };
+
+  const { data, error } = await supabase.rpc("bloquear_fechas", {
+    los_alojamientos: alojamientos?.length ? alojamientos : null,
+    el_desde: desde, el_hasta: hasta, el_motivo: motivo,
+  });
+  /* El mensaje de la base viene con el nombre del alojamiento y
+     la fecha del choque: se le enseña tal cual, que es mucho más
+     útil que un «no se puede». */
+  if (error) return { ok: false, mensaje: error.message };
+  return { ok: true, mensaje: data?.puestos === 1
+    ? "Bloqueado." : `${data?.puestos} alojamientos bloqueados.` };
+}
+
+export async function quitarBloqueo(id) {
+  const { error } = await supabase.from("bloqueo").delete().eq("id", id);
+  return { ok: !error, mensaje: error ? "No hemos podido quitarlo." : "Quitado." };
+}

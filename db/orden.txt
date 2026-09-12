@@ -4,6 +4,7 @@ storage.sql
 documentos.sql
 tarifas.sql
 reservas.sql
+bloqueos.sql
 peligrosidad.sql
 crear-reserva.sql
 reloj.sql
