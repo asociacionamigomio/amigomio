@@ -273,8 +273,15 @@ export function caducidadDe(idRequisito, registro) {
   return sumarMeses(registro.fecha, r.vigenciaMeses);
 }
 
-/** Cuántos días antes quiere avisarse de esto. */
-function diasDeAviso(idRequisito, registro) {
+/**
+ * Cuántos días antes quiere avisarse de esto.
+ *
+ * Lo usa el motor de avisos Y el formulario, y por eso está
+ * exportada: mientras la pantalla hacía esta cuenta por su
+ * cuenta, le salía `false` en vez de 7 y el campo aparecía
+ * vacío. Una cuenta, un sitio.
+ */
+export function diasDeAvisoDe(idRequisito, registro) {
   if (Number.isFinite(registro?.avisoDias)) return registro.avisoDias;
   if (idRequisito === "antiparasitario_externo") {
     /* Lo pone el que más dura, que es el que marca la caducidad:
@@ -325,7 +332,7 @@ export function avisosDelPerro(perro, hoy = new Date().toISOString().slice(0, 10
     if (!caduca) continue;
 
     const dias = Math.round((aFecha(caduca) - aFecha(hoy)) / DIA);
-    if (dias > diasDeAviso(r.id, registro)) continue;
+    if (dias > diasDeAvisoDe(r.id, registro)) continue;
 
     const quien = perro?.nombre ? `${perro.nombre}: ` : "";
     const mensaje = dias < 0

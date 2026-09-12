@@ -8,7 +8,7 @@ import { PASOS, validarPaso } from "../formularios.js";
 import { misPerros, guardarPerro, unPerro, borrarPerro, pedirCambio, misSolicitudes,
          documentosDe, subirDocumento, borrarDocumento, verDocumento } from "../datos.js";
 import { tiposPara, tipoDocumento } from "../documentos.js";
-import { camposSanidad, PRODUCTOS_EXTERNOS, AVISO_POR_DEFECTO,
+import { camposSanidad, PRODUCTOS_EXTERNOS, diasDeAvisoDe,
          avisosDelPerro, caducidadDe, enCristiano } from "../sanidad.js";
 import { chipValido } from "../perro.js";
 
@@ -520,7 +520,7 @@ function antiparasitarios(c) {
       <label class="mini">y dura
         <input type="number" min="1" max="24" class="dias"
                data-sanidad="antiparasitario_externo:puestos:${i}:duracionMeses"
-               value="${esc(x.duracionMeses)}" placeholder="meses">
+               value="${esc(x.duracionMeses)}">
         meses</label>
 
       <label class="mini">o caduca el
@@ -566,7 +566,7 @@ function cuerpoPaso1(d) {
       <label class="mini">Avísame
         <input type="number" min="1" max="365" class="dias"
                data-sanidad="${c.id}:avisoDias"
-               value="${extra.avisoDias ?? (esExterno && PRODUCTOS_EXTERNOS[extra.producto]?.aviso) ?? AVISO_POR_DEFECTO}">
+               value="${diasDeAvisoDe(c.id, extra)}">
         días antes</label>
     </div>`;
   };

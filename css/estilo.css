@@ -198,11 +198,17 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 
 .requisitos { display: grid; gap: .9rem; margin-top: .75rem; }
 .requisito {
-  display: grid; gap: .3rem;
+  display: grid; gap: .3rem; min-width: 0;
   padding: .75rem; border: 1px solid var(--borde); border-radius: 10px; background: #FBFDFE;
 }
 .requisito.recomendado { background: #fff; border-style: dashed; }
-.nombre-req { font-weight: 600; font-size: .9rem; }
+
+/* «Polivalente (moquillo, parvovirosis, hepatitis y parainfluenza)»
+   no cabe en una línea de móvil: que se parta donde haga falta. */
+.nombre-req {
+  font-weight: 600; font-size: .9rem;
+  overflow-wrap: anywhere; hyphens: auto;
+}
 .nombre-req em { font-weight: 400; color: var(--texto-flojo); font-style: normal; }
 
 #luego { display: block; margin: .8rem auto 0; }
@@ -430,12 +436,34 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 }
 .aviso-linea.vencido .cuando { color: var(--rojo); font-weight: 600; }
 
-.requisito .mini {
-  display: flex; align-items: center; gap: .4rem; flex-wrap: wrap;
+.requisito .mini, .antiparasitario .mini {
+  display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; min-width: 0;
   margin: .4rem 0 0; font-size: .82rem; font-weight: 400; color: var(--texto-flojo);
 }
-.requisito .dias { width: 68px; text-align: center; padding: .3rem .4rem; }
-.requisito select { margin-top: .15rem; }
+
+/* OJO CON LA ESPECIFICIDAD. La regla general de los campos es
+   `input:not([type=checkbox]):not([type=radio]):not([type=file])`,
+   y cada `:not` pesa como el selector de atributo que lleva
+   dentro: son TRES pesos de clase más la etiqueta. Para ganarle
+   hacen falta tres clases y la etiqueta, e ir después. Con
+   menos, el campito de los días ocupa el ancho entero y quedan
+   «Avísame» arriba y «días antes» abajo, en tres renglones.
+
+   Esto no se ve leyendo el fichero. Se ve abriéndolo. */
+.requisito .mini input.dias,
+.antiparasitario .mini input.dias {
+  width: 4.5rem; flex: 0 0 auto;
+  text-align: center; padding: .35rem .4rem;
+}
+
+/* Las fechas dentro de una línea de texto: que encojan en vez de
+   empujar. Un input sin `min-width: 0` no encoge por debajo de
+   su ancho natural, y el de tipo `date` lo tiene grande. */
+.requisito .mini input[type="date"],
+.antiparasitario .mini input[type="date"] {
+  flex: 1 1 9rem; width: auto; min-width: 0;
+}
+.requisito select { margin-top: .15rem; max-width: 100%; }
 
 /* Cada antiparasitario que lleva puesto, en su cajita, para que
    no parezcan todos el mismo. */
@@ -691,6 +719,9 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
   padding: .55rem 0; border-bottom: 1px solid var(--borde); font-size: .9rem;
 }
 .fila-sanidad:last-child { border-bottom: 0; }
+/* Sin esto el nombre no encoge —los hijos de flex llevan
+   `min-width: auto`— y se lleva la fecha fuera de la tarjeta. */
+.fila-sanidad > span { min-width: 0; overflow-wrap: anywhere; }
 .fila-sanidad strong { font-weight: 600; color: var(--texto-flojo); white-space: nowrap; }
 .fila-sanidad.pronto  strong { color: #9A7B05; }
 .fila-sanidad.vencida strong { color: var(--rojo); }
@@ -800,3 +831,22 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 /* El <input type=file> es feo e imposible de estilar: se esconde
    y el que se ve es la etiqueta. */
 .papel .subir { cursor: pointer; white-space: nowrap; }
+
+/* ============================================================
+   Móvil estrecho.
+
+   «Polivalente (moquillo, parvovirosis, hepatitis y
+   parainfluenza)» y «hasta el 1 de septiembre de 2026» no caben
+   en la misma línea en ningún teléfono. Se apilan.
+   ============================================================ */
+@media (max-width: 430px) {
+  .fila-sanidad {
+    flex-direction: column; align-items: flex-start; gap: .1rem;
+  }
+  .fila-sanidad strong { white-space: normal; }
+
+  /* Y en el formulario, que la fecha ocupe su línea entera en
+     vez de pelearse con el texto de al lado. */
+  .antiparasitario .mini { flex-wrap: wrap; }
+  .antiparasitario .mini input[type="date"] { flex: 1 0 100%; }
+}
