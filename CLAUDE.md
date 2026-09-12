@@ -94,6 +94,15 @@ Lee `2026-09-12-amigomio-reservas-design.md` (el diseño), `2026-09-12-plan-fase
 
 ## Mañas que ya han costado una tarde
 
+- **EL NAVEGADOR SE DESPLIEGA ANTES QUE LA BASE. SIEMPRE.** Uno va con `git push` y GitHub Pages
+  lo publica en segundos; la otra, cuando una persona pega el SQL en Supabase. El 12/09/2026
+  esto dejó a todo el mundo sin poder reservar: la pantalla empezó a pedir
+  `presupuesto(..., el_cliente)` y la base todavía no tenía ese parámetro —
+  «Could not find the function public.presupuesto(...) in the schema cache».
+  **Todo lo nuevo del navegador tiene que funcionar contra la base vieja**: `PGRST202` es «no
+  existe esa función», `PGRST204` es «no existe esa columna». Se reintenta sin lo nuevo y el
+  cliente, como mucho, no ve una mejora hasta que se aplique el SQL.
+
 - **Nunca llames a una variable de plpgsql como una columna.** Un trigger declaraba `correo` y
   `admin_autorizado` tiene una columna `correo`: Postgres respondía «ambiguous» y la ficha del
   cliente no se creaba nunca. Hay prueba que lo caza.

@@ -44,7 +44,24 @@ export async function guardarMiFicha(datos) {
      mejor ni intentarlo. */
   const { es_admin, paga_en_persona, descuento_pct, descuento_nota,
           id, creado, ...resto } = datos;
-  const { error } = await supabase.from("cliente").update(resto).eq("id", user.id);
+
+  let { error } = await supabase.from("cliente").update(resto).eq("id", user.id);
+
+  /* La base va por detrás del navegador: siempre. PGRST204 es
+     «esa columna no existe». Pasó con `quiere_correos`, que
+     llega con el SQL de los avisos: mientras no se aplique, el
+     cliente no podía guardar NADA de su ficha, ni el teléfono.
+
+     Se quitan las columnas que todavía no existen y se vuelve a
+     intentar. Lo que se pierde es la casilla nueva; lo que se
+     salva es la ficha entera. */
+  if (error?.code === "PGRST204") {
+    const todavia_no = ["quiere_correos"];
+    const seguro = Object.fromEntries(
+      Object.entries(resto).filter(([campo]) => !todavia_no.includes(campo)));
+    ({ error } = await supabase.from("cliente").update(seguro).eq("id", user.id));
+  }
+
   if (error) return { ok: false, mensaje: "No hemos podido guardar tus datos." };
   return { ok: true, mensaje: "Guardado." };
 }
@@ -297,11 +314,27 @@ export async function presupuesto({ entrada, salida, tipo = "normal", perros = 1
      pasa a mano, que reserva a nombre de otros. */
   const quien = cliente ?? (await supabase.auth.getUser()).data?.user?.id ?? null;
 
-  const { data, error } = await supabase.rpc("presupuesto", {
+  const comunes = {
     la_entrada: entrada, la_salida: salida, el_tipo: tipo,
     los_perros: perros, con_curas: conCuras, los_extras: extras,
-    el_cliente: quien,
-  });
+  };
+
+  let { data, error } = await supabase.rpc("presupuesto", { ...comunes, el_cliente: quien });
+
+  /* EL NAVEGADOR SE DESPLIEGA ANTES QUE LA BASE. Siempre: uno
+     va con `git push` y la otra cuando alguien pega el SQL en
+     Supabase. El 12/09/2026 esto dejó a todo el mundo sin poder
+     reservar con un «Could not find the function
+     public.presupuesto(...)».
+
+     PGRST202 es «no existe esa función con esa firma». Si sale,
+     se pregunta otra vez sin el parámetro nuevo: el cliente se
+     queda sin ver su descuento hasta que se aplique el SQL, que
+     es infinitamente mejor que no poder reservar. */
+  if (error?.code === "PGRST202") {
+    ({ data, error } = await supabase.rpc("presupuesto", comunes));
+  }
+
   if (error) return { ok: false, mensaje: error.message };
   return { ok: true, ...data };
 }
