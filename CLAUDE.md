@@ -115,6 +115,18 @@ Lee `2026-09-12-amigomio-reservas-design.md` (el diseño), `2026-09-12-plan-fase
   Con `auth.uid()` nulo, un visitante sin identificar pasaría las comprobaciones de «¿es tuyo?».
   Hay que distinguir al servidor (`current_user in ('postgres','supabase_admin')`) de internet.
 
+## Los correos
+
+Los avisos **no se mandan desde el navegador**: se encolan en la tabla `aviso` y los entrega la
+Edge Function `avisos`. Desde la pantalla se perderían al cerrar la pestaña, se mandarían dos
+veces al recargar, y haría falta la clave del proveedor en el navegador, que es como publicarla.
+
+Cada aviso lleva una **marca única**. Es lo que impide mandar dos veces lo mismo, y es el fallo
+que convierte un servicio útil en correo basura. `preparar_avisos()` se puede ejecutar todas las
+veces que haga falta.
+
+Hacen falta dos secretos en **Edge Functions → Secrets**: `RESEND_API_KEY` y `CRON_SECRET`.
+
 ## Zapatilla
 
 El asistente vive en `supabase/functions/zapatilla/`. Dos cosas que no se tocan:
@@ -135,7 +147,8 @@ en el repositorio ni en una conversación.
 
 Los ficheros de base de datos, y **en este orden**: `db/schema.sql`, `db/storage.sql`,
 `db/documentos.sql`, `db/tarifas.sql`, `db/reservas.sql`, `db/peligrosidad.sql`,
-`db/crear-reserva.sql`, `db/reloj.sql`, `db/administracion.sql`, `db/libros.sql`.
+`db/crear-reserva.sql`, `db/reloj.sql`, `db/avisos.sql`,
+`db/administracion.sql`, `db/libros.sql`.
 
 `db/documentos.sql`, `db/tarifas.sql`, `db/reservas.sql`, `db/peligrosidad.sql`,
 `db/crear-reserva.sql` y `db/reloj.sql` **llevan sus propias pruebas dentro**, en bloques `do $$ ... assert ... end $$`. Aplicarlos en Supabase ES

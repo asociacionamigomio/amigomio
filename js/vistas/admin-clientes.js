@@ -2,7 +2,8 @@
    Clientes: buscar, ver sus perros y autorizar el pago en
    persona.
    ============================================================ */
-import { clientes, perrosDe, autorizarPagoEnPersona, ponerDescuento } from "../datos.js";
+import { clientes, perrosDe, autorizarPagoEnPersona, ponerDescuento,
+         guardarCliente, escribirACliente } from "../datos.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -45,7 +46,7 @@ export async function render(contenedor) {
 
     hueco.querySelectorAll("[data-abrir]").forEach(el =>
       el.addEventListener("click", async e => {
-        if (e.target.closest("[data-pago], .descuento-cliente")) return;
+        if (e.target.closest("[data-pago], .descuento-cliente, .ficha-admin, .aviso-cliente")) return;
         abierto = abierto === el.dataset.abrir ? null : el.dataset.abrir;
         await listar();
         if (abierto) await pintarPerros(abierto);
@@ -69,6 +70,31 @@ export async function render(contenedor) {
           id,
           contenedor.querySelector(`#dto-${id}`).value,
           contenedor.querySelector(`#nota-${id}`).value.trim());
+        await pintar(r.mensaje);
+      }));
+
+    hueco.querySelectorAll("[data-guardar]").forEach(b =>
+      b.addEventListener("click", async e => {
+        e.stopPropagation();
+        const id = b.dataset.guardar;
+        const datos = {};
+        contenedor.querySelectorAll(`[id$="-${id}"][data-campo-cliente]`).forEach(i =>
+          datos[i.dataset.campoCliente] = i.value.trim());
+        b.disabled = true;
+        const r = await guardarCliente(id, datos);
+        await pintar(r.mensaje);
+      }));
+
+    hueco.querySelectorAll("[data-escribir]").forEach(b =>
+      b.addEventListener("click", async e => {
+        e.stopPropagation();
+        const id = b.dataset.escribir;
+        b.disabled = true;
+        const r = await escribirACliente(
+          id,
+          contenedor.querySelector(`#asunto-${id}`).value,
+          contenedor.querySelector(`#cuerpo-${id}`).value);
+        if (!r.ok) b.disabled = false;
         await pintar(r.mensaje);
       }));
 
@@ -96,6 +122,35 @@ export async function render(contenedor) {
             c.descuento_nota ? ` · ${esc(c.descuento_nota)}` : ""}</p>` : ""}
 
         ${abiertoAhora ? `
+          <div class="ficha-admin">
+            <p class="rotulo">Sus datos</p>
+            <p class="flojo">Para corregir un teléfono mal apuntado sin tener que
+               llamarle. El correo con el que entra no se cambia desde aquí.</p>
+            <div class="rejilla-datos">
+              ${[["nombre","Nombre"],["apellidos","Apellidos"],["dni","DNI"],
+                 ["telefono","Teléfono"],["domicilio","Domicilio"],
+                 ["recoge_nombre","Quién más puede recoger"],
+                 ["recoge_dni","DNI de esa persona"]].map(([campo, rotulo]) => `
+                <label>${esc(rotulo)}
+                  <input id="c-${campo}-${c.id}" data-campo-cliente="${campo}"
+                         value="${esc(c[campo])}"></label>`).join("")}
+            </div>
+            <button class="boton pequeno" data-guardar="${c.id}">Guardar datos</button>
+          </div>
+
+          <div class="aviso-cliente">
+            <p class="rotulo">Escribirle</p>
+            ${c.quiere_correos === false ? `
+              <p class="flojo">Ha pedido que no le escribamos. No se le puede mandar
+                 nada por correo; háblale por teléfono o WhatsApp.</p>` : `
+              <p class="flojo">Le llega por correo. Se manda desde el servidor, así
+                 que puedes cerrar esto en cuanto le des a mandar.</p>
+              <input id="asunto-${c.id}" placeholder="Asunto">
+              <textarea id="cuerpo-${c.id}" rows="4"
+                placeholder="Hola: te escribimos porque…"></textarea>
+              <button class="boton pequeno" data-escribir="${c.id}">Mandar el aviso</button>`}
+          </div>
+
           <div class="descuento-cliente">
             <p class="rotulo">Descuento de cliente fijo</p>
             <p class="flojo">Se le aplica solo en cada reserva. No se suma a las

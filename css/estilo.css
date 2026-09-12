@@ -971,3 +971,18 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 .mes-barra .trozo.comprometido { background: var(--azul, #4E80A5); }
 .mes-cifra { display: flex; justify-content: space-between; gap: .8rem;
              font-size: .85rem; flex-wrap: wrap; }
+
+/* ============================================================
+   La ficha del cliente vista por administración.
+   ============================================================ */
+.ficha-admin, .aviso-cliente {
+  margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--borde);
+}
+.rejilla-datos {
+  display: grid; gap: .6rem; margin: .6rem 0 .8rem;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+.rejilla-datos label { display: grid; gap: .2rem; font-size: .82rem;
+                       color: var(--texto-flojo); }
+.aviso-cliente textarea { margin-top: .5rem; }
+.aviso-cliente .boton { margin-top: .5rem; }

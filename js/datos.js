@@ -240,6 +240,39 @@ export async function borrarPromocion(id) {
   return { ok: !error, mensaje: error ? "No hemos podido quitarla." : "Quitada." };
 }
 
+/**
+ * Corregir los datos de un cliente desde el panel.
+ *
+ * NO se manda `es_admin`: se es administrador por estar en la
+ * lista de correos, no porque alguien le dé a un botón. Si se
+ * pudiera desde la pantalla, el día que alguien se siente en una
+ * sesión abierta se hace administrador en dos clics. Tampoco el
+ * correo: es la identidad con la que entra.
+ */
+export async function guardarCliente(clienteId, datos) {
+  const fila = {
+    nombre: datos.nombre ?? "", apellidos: datos.apellidos ?? "",
+    dni: datos.dni ?? "", domicilio: datos.domicilio ?? "",
+    telefono: datos.telefono ?? "",
+    recoge_nombre: datos.recoge_nombre ?? "", recoge_dni: datos.recoge_dni ?? "",
+  };
+  const { error } = await supabase.from("cliente").update(fila).eq("id", clienteId);
+  if (error) return { ok: false, mensaje: "No hemos podido guardar los datos." };
+  return { ok: true, mensaje: "Datos guardados." };
+}
+
+/** Escribirle a un cliente. Lo encola la base; lo manda el servidor. */
+export async function escribirACliente(clienteId, asunto, cuerpo) {
+  if (!asunto?.trim()) return { ok: false, mensaje: "Falta el asunto." };
+  if (!cuerpo?.trim()) return { ok: false, mensaje: "Falta el texto del aviso." };
+
+  const { data, error } = await supabase.rpc("escribir_a_cliente", {
+    el_cliente: clienteId, el_asunto: asunto.trim(), el_cuerpo: cuerpo.trim(),
+  });
+  if (error) return { ok: false, mensaje: error.message };
+  return { ok: true, mensaje: data?.mensaje || "Va de camino." };
+}
+
 export async function autorizarPagoEnPersona(clienteId, valor) {
   const { error } = await supabase.from("cliente")
     .update({ paga_en_persona: valor }).eq("id", clienteId);

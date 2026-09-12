@@ -61,6 +61,16 @@ export async function render(contenedor) {
         </label>
         ${error("consiente_datos")}
 
+        <label class="casilla">
+          <input type="checkbox" data-campo="quiere_correos"
+                 ${datos.quiere_correos !== false ? "checked" : ""}>
+          <span>Avisadme por correo de lo importante: si a mi perro le caduca algo de
+            la cartilla, si falta el justificante de una reserva, o el recordatorio
+            de la víspera.
+            <br><span class="flojo">Si lo quitas dejamos de escribirte. Nada más:
+              las reservas siguen igual.</span></span>
+        </label>
+
         <button class="boton" id="guardar">Guardar</button>
       </div>`;
 
