@@ -12,6 +12,9 @@ import { render as renderMiFicha } from "./vistas/mi-ficha.js";
 import { render as renderSolicitudes } from "./vistas/admin-solicitudes.js";
 import { render as renderAdminClientes } from "./vistas/admin-clientes.js";
 import { render as renderTarifas } from "./vistas/admin-tarifas.js";
+import { render as renderReservar } from "./vistas/reservar.js";
+import { render as renderMisReservas } from "./vistas/mis-reservas.js";
+import { render as renderClicker } from "./vistas/clicker.js";
 
 const app = document.getElementById("app");
 let ficha = null;
@@ -24,7 +27,10 @@ const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
    base de datos le rechaza la operación. */
 const SECCIONES = [
   { id: "inicio",      texto: "Inicio",       render: renderInicio },
+  { id: "reservar",    texto: "Reservar",     render: renderReservar },
+  { id: "reservas",    texto: "Mis reservas", render: renderMisReservas },
   { id: "perros",      texto: "Mis perros",   render: renderPerros },
+  { id: "clicker",     texto: "Clicker",      render: renderClicker },
   { id: "ficha",       texto: "Mi ficha",     render: renderMiFicha },
   { id: "solicitudes", texto: "Solicitudes",  render: renderSolicitudes,   admin: true },
   { id: "clientes",    texto: "Clientes",     render: renderAdminClientes, admin: true },
@@ -95,6 +101,9 @@ function pintarMarco(seccionId, sesion) {
 
   app.querySelector("#salir").addEventListener("click", async () => { await salir(); arrancar(); });
 
+  /* Para que una vista pueda mandar a otra sin conocerla. */
+  window.irA = id => pintarMarco(id, sesion);
+
   seccion.render(app.querySelector("#hueco"), { sesion, ficha });
 }
 
@@ -124,3 +133,39 @@ function renderInicio(contenedor, { sesion }) {
 arrancar();
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+
+/* ------------------------------------------------------------
+   Instalar en el móvil.
+
+   El navegador avisa cuando la app cumple los requisitos, pero
+   NO enseña nada por su cuenta en móvil: hay que ofrecerlo.
+   Si nadie guarda este aviso, la opción no aparece jamás.
+   ------------------------------------------------------------ */
+let pedirInstalar = null;
+
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  pedirInstalar = e;
+  mostrarBotonInstalar();
+});
+
+window.addEventListener("appinstalled", () => {
+  pedirInstalar = null;
+  document.getElementById("instalar")?.remove();
+});
+
+function mostrarBotonInstalar() {
+  if (document.getElementById("instalar")) return;
+  const b = document.createElement("button");
+  b.id = "instalar";
+  b.className = "boton instalar";
+  b.textContent = "Instalar en el móvil";
+  b.addEventListener("click", async () => {
+    if (!pedirInstalar) return;
+    pedirInstalar.prompt();
+    await pedirInstalar.userChoice;
+    pedirInstalar = null;
+    b.remove();
+  });
+  document.body.appendChild(b);
+}

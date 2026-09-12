@@ -263,3 +263,38 @@ export async function guardarAjuste(clave, valor) {
   const { error } = await supabase.from("ajuste").update({ valor }).eq("clave", clave);
   return { ok: !error, mensaje: error ? "No hemos podido guardarlo." : "Guardado." };
 }
+
+/* ------------------------------------------------------------
+   Reservas
+   ------------------------------------------------------------ */
+export async function crearReserva({ perros, entrada, salida, extras = [], quien = "cliente" }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase.rpc("crear_reserva", {
+    el_cliente: user.id, los_perros: perros,
+    la_entrada: entrada, la_salida: salida,
+    los_extras: extras, quien,
+  });
+  /* El motor rechaza con mensajes escritos para el cliente:
+     se le enseñan tal cual, no se adornan. */
+  if (error) return { ok: false, mensaje: error.message };
+  return { ok: true, ...data };
+}
+
+export async function misReservas() {
+  const { data, error } = await supabase.from("reserva")
+    .select("*, alojamiento(nombre, tipo), reserva_perro(perro(nombre))")
+    .order("entrada", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function reservasAbiertas() {
+  const { data } = await supabase.rpc("ajuste_publico", { la_clave: "reservas_abiertas" });
+  return data === "si";
+}
+
+export async function cancelarReserva(id) {
+  const { error } = await supabase.from("reserva")
+    .update({ estado: "cancelada" }).eq("id", id);
+  return { ok: !error, mensaje: error ? "No hemos podido cancelarla." : "Cancelada." };
+}
