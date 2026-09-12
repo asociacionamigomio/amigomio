@@ -438,7 +438,35 @@ existen.
 2. **Enseña el desglose y espera un sí explícito** antes de crear nada
 3. **Toda reserva queda marcada con quién la creó** — cliente, administración o Zapatilla
 
-### 9.3 Quién es Zapatilla
+### 9.3 Cómo aparece y qué puede hacer
+
+Decidido el 12/09/2026.
+
+**Un botón flotante en todas las pantallas**, con su cara, abajo a la derecha. No es una sección
+a la que se entra: es alguien que está ahí siempre. Se pulsa y la conversación se abre encima de
+lo que el cliente estuviera haciendo.
+
+**Puede hacer las tres cosas:**
+
+1. **Informar** — precios, horarios, disponibilidad, políticas. Lee del motor, no inventa.
+2. **Dar de alta perros conversando** — «¿cómo se llama?, ¿el chip?, ¿cómo come?» y rellena la
+   ficha por el cliente, que es justo el formulario que más se abandona.
+3. **Crear la reserva** — enseña el desglose, espera un sí explícito, y la crea. Con el motor
+   rechazando cualquier cosa imposible.
+
+### 9.4 Lo que Zapatilla necesita y no existe todavía
+
+**Un sitio donde vivir que no sea el navegador.** La clave de la IA no puede ir dentro de la
+página: cualquiera la leería. Hace falta una función en Supabase que reciba lo que dice el
+cliente, hable con el modelo y devuelva la respuesta. Es la **primera pieza del proyecto con
+factura mensual**: unos céntimos por conversación. Todo lo demás va a 0 €.
+
+**Una operación `crear_reserva` en la base de datos.** Hoy existen `presupuesto` y `hay_sitio`,
+pero nada que cree la reserva. Esa operación es la misma que usará la pantalla de reservar de la
+fase 2 y el panel de administración: **una máquina, tres puertas**. Hasta que exista, Zapatilla
+puede informar y dar de alta perros, pero no reservar.
+
+### 9.5 Quién es Zapatilla
 
 Labrador chocolate de AmigoMío, **perro de asistencia y terapia**, con chaleco azul. No es un
 chatbot con nombre de perro: es uno de los perros de la casa. Habla tranquilo, paciente, sin
