@@ -21,6 +21,20 @@ const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio",
                "agosto","septiembre","octubre","noviembre","diciembre"];
 
 const aFecha = s => new Date(s + "T00:00:00");
+
+/* Lo guardado NO tiene por qué ser una fecha.
+ *
+ * En `sanidad` hay fichas de hace tiempo y campos que alguien
+ * dejó a medias: un espacio, «2026-», un texto. El 12/09/2026
+ * salió en la pantalla de inicio, en producción: «Antiparasitario
+ * externo vence el NaN de undefined de NaN · quedan NaN días».
+ *
+ * Así que antes de contar nada se comprueba que la fecha existe
+ * de verdad. Lo que no lo sea, no avisa: preferimos no avisar a
+ * avisar con un galimatías. */
+const esFecha = iso =>
+  typeof iso === "string" && /^\d{4}-\d{2}-\d{2}$/.test(iso.trim())
+  && !Number.isNaN(aFecha(iso.trim()).getTime());
 const aTexto = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 
 /** "2026-08-09" -> "9 de agosto de 2026", para poder enseñarlo tal cual. */
@@ -30,6 +44,7 @@ export function enCristiano(iso) {
 }
 
 function sumarMeses(iso, meses) {
+  if (!esFecha(iso)) return null;
   const d = aFecha(iso);
   const dia = d.getDate();
   d.setMonth(d.getMonth() + meses);
@@ -233,8 +248,8 @@ function comoLista(registro) {
 /** Hasta cuándo vale UN antiparasitario suelto. */
 function caducidadDeUno(puesto) {
   if (!puesto) return null;
-  if (puesto.validoHasta) return puesto.validoHasta;   // la fecha a mano manda
-  if (!puesto.fecha) return null;
+  if (esFecha(puesto.validoHasta)) return puesto.validoHasta;  // la fecha a mano manda
+  if (!esFecha(puesto.fecha)) return null;
   if (Number.isFinite(puesto.duracionMeses))
     return sumarMeses(puesto.fecha, puesto.duracionMeses);
   const p = PRODUCTOS_EXTERNOS[puesto.producto] || PRODUCTOS_EXTERNOS.pipeta;
@@ -258,8 +273,8 @@ export function caducidadDe(idRequisito, registro) {
   if (idRequisito === "antiparasitario_externo")
     return elQueMasDura(registro)?.caduca || null;
 
-  if (!registro?.fecha) return null;
-  if (registro.validoHasta) return registro.validoHasta;
+  if (!esFecha(registro?.fecha)) return null;
+  if (esFecha(registro.validoHasta)) return registro.validoHasta;
 
   const r = REQUISITOS.find(x => x.id === idRequisito);
   if (!r) return null;
@@ -329,7 +344,7 @@ export function avisosDelPerro(perro, hoy = new Date().toISOString().slice(0, 10
     if (!registro?.fecha && !comoLista(registro).length) continue;
 
     const caduca = caducidadDe(r.id, registro);
-    if (!caduca) continue;
+    if (!esFecha(caduca)) continue;
 
     const dias = Math.round((aFecha(caduca) - aFecha(hoy)) / DIA);
     if (dias > diasDeAvisoDe(r.id, registro)) continue;
@@ -353,7 +368,7 @@ export function avisosDelPerro(perro, hoy = new Date().toISOString().slice(0, 10
   /* Y los papeles, que caducan igual aunque no impidan entrar. */
   for (const doc of DOCUMENTOS) {
     const caduca = perro?.[doc.campo];
-    if (!caduca) continue;
+    if (!esFecha(caduca)) continue;
 
     const dias = Math.round((aFecha(caduca) - aFecha(hoy)) / DIA);
     if (dias > doc.aviso) continue;

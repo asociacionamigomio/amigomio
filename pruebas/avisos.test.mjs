@@ -243,3 +243,39 @@ test("avisa por el que caduca antes de los que quedan", () => {
   const a = avisosDelPerro(perro, "2026-08-10").find(x => x.id === "antiparasitario_externo");
   assert.ok(a, "quedan 6 días: tiene que avisar");
 });
+
+/* ---------- Fechas que no son fechas ---------- */
+test("una fecha ilegible no saca un aviso con NaN", () => {
+  /* Visto en producción el 12/09/2026, en la pantalla de
+     inicio: «Antiparasitario externo vence el NaN de undefined
+     de NaN · quedan NaN días».
+
+     En la base hay fichas de perro guardadas hace tiempo, y en
+     `sanidad` puede haber cualquier cosa: un espacio, una fecha
+     a medio escribir, un texto. El motor NO puede fiarse de que
+     lo guardado sea una fecha. */
+  for (const malo of [" ", "sin fecha", "2026-13-45", "0000-00-00", "2026-"]) {
+    const perro = { nombre: "Kira", sanidad: { rabia: { fecha: malo } } };
+    const avisos = avisosDelPerro(perro, "2026-08-10");
+    for (const a of avisos) {
+      assert.doesNotMatch(a.mensaje, /NaN|undefined/,
+        `con fecha «${malo}» sale un aviso ilegible: ${a.mensaje}`);
+      assert.ok(Number.isFinite(a.dias), `con «${malo}» los días son ${a.dias}`);
+    }
+  }
+});
+
+test("tampoco por el antiparasitario, que es donde se vio", () => {
+  const perro = { nombre: "Luna", sanidad: { antiparasitario_externo: { puestos: [
+    { producto: "otro", fecha: " " },
+    { producto: "pipeta", fecha: "mal" },
+  ]}}};
+  for (const a of avisosDelPerro(perro, "2026-08-10"))
+    assert.doesNotMatch(a.mensaje, /NaN|undefined/, a.mensaje);
+});
+
+test("y caducidadDe no devuelve una fecha inventada", () => {
+  assert.equal(caducidadDe("rabia", { fecha: "no es una fecha" }), null);
+  assert.equal(caducidadDe("antiparasitario_externo",
+    { puestos: [{ producto: "pipeta", fecha: " " }] }), null);
+});
