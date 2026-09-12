@@ -14,11 +14,17 @@
   --amarillo:   #F6EC4D;
   --rojo:       #C32927;
 
-  --texto:       #223039;
-  --texto-flojo: #5C6B76;
-  --fondo:       #F7FAFC;
+  /* Neutros CÁLIDOS, no grises azulados. Ese era el problema de
+     fondo: #F7FAFC es el gris de un panel de control, y esto es
+     un sitio donde dejas a tu perro. */
+  --texto:       #2B2116;
+  --texto-flojo: #8A7E6E;
+  --fondo:       #FBF7F0;
   --tarjeta:     #FFFFFF;
-  --borde:       #DCE6ED;
+  --borde:       #EFE6D8;
+
+  /* El azul de la marca sigue mandando en lo importante. */
+  --azul-hondo:  #3D6A8C;
 
   --radio: 14px;
   --sombra: 0 1px 3px rgba(34, 48, 57, .08), 0 6px 18px rgba(34, 48, 57, .06);
@@ -40,7 +46,7 @@ h1, h2, h3 { font-weight: 600; line-height: 1.25; margin: 0 0 .5rem; }
 .tarjeta {
   background: var(--tarjeta);
   border: 1px solid var(--borde);
-  border-radius: var(--radio);
+  border-radius: 18px;
   box-shadow: var(--sombra);
   padding: 1.25rem;
 }
@@ -58,7 +64,7 @@ h1, h2, h3 { font-weight: 600; line-height: 1.25; margin: 0 0 .5rem; }
 .boton:hover { background: var(--azul-medio); }
 .boton[disabled] { opacity: .5; cursor: not-allowed; }
 
-.aviso { border-left: 4px solid var(--amarillo); padding: .75rem 1rem; background: #FFFDF0; }
+.aviso { border-left: 4px solid var(--amarillo); padding: .75rem 1rem; background: #FFFBE8; }
 .error { border-left: 4px solid var(--rojo);     padding: .75rem 1rem; background: #FDF2F2; }
 
 /* El móvil manda: casi todo el uso será desde el teléfono. */
@@ -121,7 +127,7 @@ input:focus, select:focus, textarea:focus {
   border: 0; background: transparent; color: var(--texto-flojo);
   padding: .45rem .85rem; border-radius: 999px; cursor: pointer;
 }
-.pestana:hover { background: #EDF3F8; }
+.pestana:hover { background: #F3EDE2; }
 .pestana.activa { background: var(--azul); color: #fff; }
 
 .enlace {
@@ -147,7 +153,7 @@ input:focus, select:focus, textarea:focus {
 
 .avatar {
   width: 56px; height: 56px; flex: none; border-radius: 50%;
-  background: #EDF3F8; display: grid; place-items: center;
+  background: #F3EDE2; display: grid; place-items: center;
   font-size: 1.6rem; overflow: hidden;
 }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -177,7 +183,7 @@ input:focus, select:focus, textarea:focus {
 .botonera { display: flex; gap: .6rem; }
 .botonera .boton { flex: 1; }
 .boton.fantasma { background: transparent; color: var(--azul); box-shadow: inset 0 0 0 2px var(--azul); }
-.boton.fantasma:hover { background: #EDF3F8; }
+.boton.fantasma:hover { background: #F3EDE2; }
 
 .error-campo { color: var(--rojo); font-size: .85rem; margin: .3rem 0 0; }
 
@@ -430,3 +436,102 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 }
 .requisito .dias { width: 68px; text-align: center; padding: .3rem .4rem; }
 .requisito select { margin-top: .15rem; }
+
+/* ============================================================
+   DIRECCIÓN A — la elegida el 12/09/2026.
+
+   Fondo cálido, la próxima estancia de protagonista y barra de
+   navegación abajo. Lo contrario de un panel de control.
+   ============================================================ */
+
+/* ---------- La tarjeta grande de la próxima estancia ---------- */
+.estancia-proxima {
+  background: linear-gradient(158deg, var(--azul) 0%, var(--azul-hondo) 100%);
+  border-radius: 24px; padding: 1.5rem; color: #fff;
+  position: relative; overflow: hidden; border: 0;
+}
+.estancia-proxima::before, .estancia-proxima::after {
+  content: ""; position: absolute; border-radius: 50%;
+}
+.estancia-proxima::before {
+  right: -28px; top: -28px; width: 130px; height: 130px;
+  background: rgba(121,186,228,.22);
+}
+.estancia-proxima::after {
+  right: 18px; bottom: -34px; width: 84px; height: 84px;
+  background: rgba(246,236,77,.16);
+}
+.estancia-proxima .rotulo {
+  margin: 0; font-size: .72rem; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase; color: #BDDCF0;
+}
+.estancia-proxima h2 {
+  margin: .6rem 0 0; font-size: 2.1rem; font-weight: 700;
+  letter-spacing: -.02em; line-height: 1; color: #fff;
+}
+.estancia-proxima .cuando { margin: .5rem 0 0; font-weight: 300; color: #DDEBF6; }
+.estancia-proxima .cuenta {
+  margin-top: 1.2rem; display: flex; align-items: baseline; gap: .5rem;
+}
+.estancia-proxima .cuenta strong {
+  font-size: 2.9rem; font-weight: 700; line-height: 1; color: var(--amarillo);
+}
+.estancia-proxima .cuenta span { font-size: .95rem; color: #DDEBF6; }
+
+/* ---------- Atajos ---------- */
+.atajos { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: 1rem; }
+.atajo {
+  background: var(--tarjeta); border: 1px solid var(--borde);
+  border-radius: 18px; padding: 1.1rem; cursor: pointer; text-align: left;
+  font: inherit; color: var(--texto);
+}
+.atajo:hover { border-color: var(--azul-claro); }
+.atajo strong { display: block; margin-top: .7rem; font-size: .95rem; font-weight: 600; }
+.atajo span { font-size: .8rem; color: var(--texto-flojo); font-weight: 300; }
+
+/* ---------- El menú de la izquierda ----------
+   Todas las opciones a la vista, sin «Más». En vertical caben de
+   sobra, que es justo lo que no pasaba con nueve pestañas en
+   horizontal. */
+#app.con-lateral {
+  display: flex; min-height: 100vh;
+  max-width: none; margin: 0; padding: 0;   /* anula .contenedor */
+}
+
+.lateral {
+  width: 228px; flex: none; background: var(--tarjeta);
+  border-right: 1px solid var(--borde);
+  padding: 1.25rem .8rem calc(1rem + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: .3rem;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+.lateral-logo { width: 108px; height: auto; margin: 0 .5rem 1.4rem; }
+.lateral-lista { display: flex; flex-direction: column; gap: .15rem; flex: 1; }
+
+.lateral-op, .lateral-salir {
+  display: flex; align-items: center; gap: .75rem; width: 100%;
+  background: none; border: 0; font: inherit; font-size: .93rem; cursor: pointer;
+  text-align: left; padding: .62rem .7rem; border-radius: 11px; color: var(--texto-flojo);
+}
+.lateral-op:hover, .lateral-salir:hover { background: #F3EDE2; color: var(--texto); }
+.lateral-op.activa { background: var(--azul); color: #fff; font-weight: 600; }
+.lateral-op svg, .lateral-salir svg { flex: none; }
+
+.lateral-grupo {
+  margin: 1.1rem 0 .3rem .7rem; font-size: .68rem; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--texto-flojo); font-weight: 700;
+}
+.lateral-salir { margin-top: .6rem; border-top: 1px solid var(--borde); border-radius: 0 0 11px 11px; padding-top: .9rem; }
+
+.principal { flex: 1; min-width: 0; }
+.principal .contenedor { padding-bottom: 6rem; }
+
+/* En pantallas estrechas el menú se queda a la izquierda, pero en
+   columna de iconos: todas las opciones siguen estando. */
+@media (max-width: 700px) {
+  .lateral { width: 66px; padding: 1rem .4rem; align-items: center; }
+  .lateral-logo { width: 40px; margin-bottom: 1rem; }
+  .lateral-op span, .lateral-salir span, .lateral-grupo { display: none; }
+  .lateral-op, .lateral-salir { justify-content: center; padding: .7rem .4rem; }
+  .lateral-grupo { display: block; height: 1px; background: var(--borde); margin: .6rem .4rem; padding: 0; }
+}

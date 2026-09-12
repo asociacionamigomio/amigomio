@@ -97,3 +97,25 @@ test("no hay datos reales de nadie en el repositorio", () => {
       assert.doesNotMatch(texto, re, `${f} lleva ${que}`);
   }
 });
+
+test("los iconos llevan su medida escrita", () => {
+  /* Un SVG sin width/height ocupa todo lo que le dejen. Basta
+     olvidarse de ponérsela en un sitio —el cajón de «Más»— para
+     que salga un icono del tamaño de la pantalla. */
+  const app = lee("js/app.js");
+  assert.match(app, /<svg width="22" height="22" viewBox="0 0 24 24"/);
+});
+
+test("todas las opciones van en el menú de la izquierda", () => {
+  /* Sin «Más»: en vertical caben de sobra, que es justo lo que no
+     pasaba con nueve pestañas en horizontal. */
+  const app = lee("js/app.js");
+  assert.match(app, /class="lateral"/);
+  assert.doesNotMatch(app, /id="mas"|barra-abajo|cajon/,
+    "ni barra abajo ni cajón de Más");
+
+  const css = lee("css/estilo.css");
+  assert.match(css, /\.lateral \{/);
+  assert.match(css, /@media \(max-width: 700px\)[\s\S]{0,300}\.lateral \{/,
+    "en móvil se estrecha, pero sigue a la izquierda y con todo");
+});

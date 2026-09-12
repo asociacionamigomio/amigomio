@@ -44,16 +44,7 @@ export function render(contenedor) {
       <span class="clicker-dentro">CLIC</span>
     </button>
 
-    <p class="cuenta-clics" id="cuenta">Toca para empezar</p>
-
-    <div class="tarjeta">
-      <h3>Si es la primera vez</h3>
-      <p>El clic no premia: <strong>avisa de que el premio viene</strong>. Antes de
-         usarlo para enseñar nada, haz veinte veces esto: clic, y comida. Clic, y
-         comida. Sin pedirle nada. Cuando al oír el clic te mire buscando la comida,
-         ya significa algo y puedes empezar.</p>
-      <p class="flojo">Y sube el volumen del móvil, que si no se queda en nada.</p>
-    </div>`;
+    <p class="cuenta-clics" id="cuenta">Toca para empezar</p>`;
 
   const boton = contenedor.querySelector("#clic");
   const cuentaTexto = contenedor.querySelector("#cuenta");

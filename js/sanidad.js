@@ -223,6 +223,26 @@ function diasDeAviso(idRequisito, registro) {
   return AVISO_POR_DEFECTO;
 }
 
+/* ------------------------------------------------------------
+   Papeles con fecha de caducidad.
+
+   No son requisitos sanitarios y no impiden entrar, pero caducan
+   igual y hay que avisar. La licencia y el seguro de PPP ya se
+   guardaban desde el principio y NO se avisaba de ellos: el dato
+   estaba ahí sin servir para nada.
+
+   Avisan con un mes, no con una semana: renovar una licencia no
+   es ponerle una pipeta. Hay que pedir cita, pagar y esperar.
+   ------------------------------------------------------------ */
+export const DOCUMENTOS = [
+  { id: "licencia_deportiva",  nombre: "Licencia deportiva",
+    campo: "licencia_deportiva_hasta", aviso: 30 },
+  { id: "ppp_licencia_hasta",  nombre: "Licencia de perro potencialmente peligroso",
+    campo: "ppp_licencia_hasta", aviso: 45 },
+  { id: "ppp_seguro_hasta",    nombre: "Seguro de responsabilidad civil",
+    campo: "ppp_seguro_hasta", aviso: 30 },
+];
+
 /**
  * Lo que se le va a caducar pronto a este perro, de lo más
  * urgente a lo menos. Lo que no tiene fecha NO se avisa aquí:
@@ -256,6 +276,25 @@ export function avisosDelPerro(perro, hoy = new Date().toISOString().slice(0, 10
       caduca, dias,
       estado: dias < 0 ? "caducado" : "caduca-pronto",
       mensaje,
+    });
+  }
+
+  /* Y los papeles, que caducan igual aunque no impidan entrar. */
+  for (const doc of DOCUMENTOS) {
+    const caduca = perro?.[doc.campo];
+    if (!caduca) continue;
+
+    const dias = Math.round((aFecha(caduca) - aFecha(hoy)) / DIA);
+    if (dias > doc.aviso) continue;
+
+    const quien = perro?.nombre ? `${perro.nombre}: ` : "";
+    avisos.push({
+      id: doc.id, nombre: doc.nombre, obligatorio: false,
+      caduca, dias,
+      estado: dias < 0 ? "caducado" : "caduca-pronto",
+      mensaje: dias < 0
+        ? `${quien}${doc.nombre.toLowerCase()} venció el ${enCristiano(caduca)}.`
+        : `${quien}${doc.nombre.toLowerCase()} vence el ${enCristiano(caduca)}.`,
     });
   }
 

@@ -138,3 +138,54 @@ test("los días de aviso se guardan como número, no como texto", () => {
   const vista = lee("js/vistas/perros.js");
   assert.match(vista, /el\.type === "number"\s+\? Number\(el\.value\)/);
 });
+
+/* ---------- Papeles con fecha de caducidad ---------- */
+import { avisosDelPerro as avisos2, DOCUMENTOS } from "../js/sanidad.js";
+
+test("los papeles también caducan y también avisan", () => {
+  /* La licencia deportiva, la de perro potencialmente peligroso y
+     su seguro. Los dos últimos ya se guardaban y NO se avisaba de
+     ellos: el dato estaba y no servía para nada. */
+  const ids = DOCUMENTOS.map(d => d.id);
+  for (const id of ["licencia_deportiva", "ppp_licencia_hasta", "ppp_seguro_hasta"])
+    assert.ok(ids.includes(id), `falta ${id}`);
+});
+
+test("un papel avisa con un mes, no con una semana", () => {
+  /* Renovar una licencia no es ponerle una pipeta: hay que pedir
+     cita, pagar y esperar. Una semana llega tarde. */
+  for (const d of DOCUMENTOS) assert.ok(d.aviso >= 30, `${d.id} avisa demasiado tarde`);
+});
+
+test("avisa de la licencia deportiva cuando se acerca", () => {
+  const perro = { nombre: "Argos", licencia_deportiva: "12345",
+                  licencia_deportiva_hasta: "2026-09-01" };
+  const a = avisos2(perro, "2026-08-10").find(x => x.id === "licencia_deportiva");
+  assert.ok(a, "faltan 22 días: tiene que avisar");
+  assert.equal(a.dias, 22);
+  assert.match(a.mensaje, /Argos/);
+  assert.match(a.mensaje, /licencia deportiva/i);
+});
+
+test("no avisa de una licencia que no tiene", () => {
+  assert.equal(avisos2({ nombre: "Luna", sanidad: {} }, "2026-08-10").length, 0);
+});
+
+test("la licencia y el seguro de PPP avisan igual", () => {
+  const perro = { nombre: "Bravo", es_ppp: true,
+                  ppp_licencia_hasta: "2026-08-25", ppp_seguro_hasta: "2026-09-05" };
+  const ids = avisos2(perro, "2026-08-10").map(a => a.id);
+  assert.ok(ids.includes("ppp_licencia_hasta"));
+  assert.ok(ids.includes("ppp_seguro_hasta"));
+});
+
+test("papeles y vacunas salen en la misma lista, por urgencia", () => {
+  const perro = {
+    nombre: "Argos",
+    licencia_deportiva_hasta: "2026-08-20",
+    sanidad: { rabia: { fecha: "2025-08-15" } },
+  };
+  const l = avisos2(perro, "2026-08-10");
+  assert.equal(l.length, 2);
+  assert.equal(l[0].id, "rabia", "la rabia vence antes: va primero");
+});

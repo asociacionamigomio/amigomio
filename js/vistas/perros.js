@@ -103,6 +103,8 @@ async function formulario(contenedor, id) {
     /* Cambiar de producto cambia qué se pregunta debajo. */
     contenedor.querySelector('[data-sanidad="antiparasitario_externo:producto"]')
       ?.addEventListener("change", () => { recoger(); pintar(); });
+    contenedor.querySelector("#tiene_licencia")
+      ?.addEventListener("change", () => { recoger(); pintar(); });
 
     contenedor.querySelectorAll("[data-pedir]").forEach(b =>
       b.addEventListener("click", () => pedirCambioDe(b.dataset.pedir)));
@@ -211,11 +213,14 @@ async function formulario(contenedor, id) {
 
 /* Quita lo que no es columna de la tabla. */
 function limpiar(d) {
-  const fuera = new Set(["foto_archivo"]);
+  /* `tiene_licencia` es solo para la pantalla: decide si se
+     pregunta el número. No es columna de la tabla. */
+  const fuera = new Set(["foto_archivo", "tiene_licencia"]);
   const salida = {};
   for (const [k, v] of Object.entries(d)) if (!fuera.has(k)) salida[k] = v === "" ? null : v;
   /* Los textos vacíos son '' en la base, no null. */
-  for (const k of ["raza", "capa", "estado_reproductivo", "pautas_alimentacion", "cuidados"])
+  for (const k of ["raza", "capa", "estado_reproductivo", "pautas_alimentacion",
+                   "cuidados", "licencia_deportiva", "incidentes_con_personas"])
     if (salida[k] == null) salida[k] = "";
   return salida;
 }
@@ -380,6 +385,22 @@ function cuerpoPaso2(d, error) {
       <input type="checkbox" id="es_ppp" data-campo="es_ppp" ${d.es_ppp ? "checked" : ""}>
       Es un perro potencialmente peligroso (PPP)
     </label>
+
+    <h4>Papeles</h4>
+    <label class="casilla">
+      <input type="checkbox" id="tiene_licencia" data-campo="tiene_licencia"
+             ${d.licencia_deportiva || d.licencia_deportiva_hasta || d.tiene_licencia ? "checked" : ""}>
+      Tiene licencia deportiva
+    </label>
+
+    ${(d.tiene_licencia || d.licencia_deportiva || d.licencia_deportiva_hasta) ? `
+      <label for="lic_dep">Número de licencia</label>
+      <input id="lic_dep" data-campo="licencia_deportiva" value="${esc(d.licencia_deportiva)}"
+             placeholder="El de la RSCE o la federación">
+      <label for="lic_dep_h">¿Hasta cuándo vale?</label>
+      <input id="lic_dep_h" type="date" data-campo="licencia_deportiva_hasta"
+             value="${esc(d.licencia_deportiva_hasta)}">
+      <p class="flojo">Te avisamos un mes antes de que caduque.</p>` : ""}
 
     ${d.es_ppp ? `
       <label for="lic">¿Hasta cuándo vale tu licencia?</label>

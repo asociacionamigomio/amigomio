@@ -24,22 +24,46 @@ let ficha = null;
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-/* `admin: true` sólo decide si se enseña la pestaña. Lo que de
-   verdad protege es RLS: aunque alguien llegue a la pantalla, la
-   base de datos le rechaza la operación. */
+/* `admin: true` sólo decide si se enseña. Lo que de verdad
+   protege es RLS: aunque alguien llegue a la pantalla, la base de
+   datos le rechaza la operación.
+
+   Todas las opciones van en el menú de la izquierda, sin «Más»:
+   en vertical caben de sobra, que es justo lo que no pasaba con
+   nueve pestañas en horizontal. */
 const SECCIONES = [
-  { id: "inicio",      texto: "Inicio",       render: renderInicio },
-  { id: "reservar",    texto: "Reservar",     render: renderReservar },
-  { id: "reservas",    texto: "Mis reservas", render: renderMisReservas },
-  { id: "perros",      texto: "Mis perros",   render: renderPerros },
-  { id: "clicker",     texto: "Clicker",      render: renderClicker },
-  { id: "ficha",       texto: "Mi ficha",     render: renderMiFicha },
-  { id: "solicitudes", texto: "Solicitudes",  render: renderSolicitudes,   admin: true },
-  { id: "clientes",    texto: "Clientes",     render: renderAdminClientes, admin: true },
-  { id: "tarifas",     texto: "Tarifas",      render: renderTarifas,       admin: true },
+  { id: "inicio",      texto: "Inicio",       render: renderInicio,        icono: "casa" },
+  { id: "reservar",    texto: "Reservar",     render: renderReservar,      icono: "calendario" },
+  { id: "reservas",    texto: "Mis reservas", render: renderMisReservas,   icono: "lista" },
+  { id: "perros",      texto: "Mis perros",   render: renderPerros,        icono: "corazon" },
+  { id: "clicker",     texto: "Clicker",      render: renderClicker,       icono: "circulo" },
+  { id: "ficha",       texto: "Mi ficha",     render: renderMiFicha,       icono: "persona" },
+  { id: "solicitudes", texto: "Solicitudes",  render: renderSolicitudes,   admin: true, icono: "sobre" },
+  { id: "clientes",    texto: "Clientes",     render: renderAdminClientes, admin: true, icono: "gente" },
+  { id: "tarifas",     texto: "Tarifas",      render: renderTarifas,       admin: true, icono: "euro" },
 ];
 
 const visibles = () => SECCIONES.filter(s => !s.admin || ficha?.es_admin);
+
+const ICONOS = {
+  casa:       '<path d="M3.5 10.5 12 3.5l8.5 7"/><path d="M5.5 9.8V20h13V9.8"/>',
+  calendario: '<path d="M8 2v3M16 2v3M3.5 9h17"/><rect x="3.5" y="5" width="17" height="16" rx="3"/>',
+  lista:      '<path d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"/>',
+  corazon:    '<path d="M12 20.5S3.5 15 3.5 9.2A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.5 2.8c0 5.8-8.5 11.3-8.5 11.3Z"/>',
+  circulo:    '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/>',
+  persona:    '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+  sobre:      '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.6 6.5 8.4 6 8.4-6"/>',
+  gente:      '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-5.8 6.5-5.8s6.5 2.2 6.5 5.8"/><path d="M16.5 5.2a3.5 3.5 0 0 1 0 6.6M17 14.4c2.7.5 4.5 2.5 4.5 5.6"/>',
+  euro:       '<path d="M18 6.5A7 7 0 0 0 7.2 9M7.2 15A7 7 0 0 0 18 17.5M3.5 10.5h9M3.5 13.5h9"/>',
+  salida:     '<path d="M14 3.5H6.5A2.5 2.5 0 0 0 4 6v12a2.5 2.5 0 0 0 2.5 2.5H14"/><path d="m16.5 8.5 3.5 3.5-3.5 3.5M20 12H9.5"/>',
+};
+
+/* Con width y height escritos: un SVG sin medida ocupa todo lo
+   que le dejen, y basta olvidarse de ponérsela en un sitio para
+   que salga del tamaño de la pantalla. */
+const icono = n => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+  stroke="currentColor" stroke-width="1.9" stroke-linecap="round"
+  stroke-linejoin="round">${ICONOS[n] || ""}</svg>`;
 
 async function arrancar() {
   if (!window.CONFIG?.configurado) {
@@ -56,6 +80,7 @@ async function arrancar() {
 
   if (!sesion.usuario) {
     ficha = null;
+    app.className = "contenedor";
     renderEntrada(app, { alEntrar: arrancar });
     return;
   }
@@ -70,6 +95,7 @@ async function arrancar() {
 }
 
 function pintarSinConfirmar(sesion) {
+  app.className = "contenedor";
   app.innerHTML = `
     <div class="portada"><img src="assets/logo.png" alt="AmigoMío" class="logo"></div>
     <div class="tarjeta">
@@ -85,18 +111,31 @@ function pintarSinConfirmar(sesion) {
 
 function pintarMarco(seccionId, sesion) {
   const seccion = visibles().find(s => s.id === seccionId) || SECCIONES[0];
+  const mias  = visibles().filter(s => !s.admin);
+  const suyas = visibles().filter(s => s.admin);
+
+  const boton = s => `
+    <button class="lateral-op ${s.id === seccion.id ? "activa" : ""}" data-ir="${s.id}">
+      ${icono(s.icono)}<span>${s.texto}</span>
+    </button>`;
+
+  /* Con menú lateral la página ocupa todo el ancho; sin él
+     —entrada, correo sin confirmar— se centra en una columna. */
+  app.className = "con-lateral";
 
   app.innerHTML = `
-    <header class="barra">
-      <img src="assets/logo.png" alt="AmigoMío" class="logo-barra">
-      <nav>
-        ${visibles().map(s =>
-          `<button class="pestana ${s.id === seccion.id ? "activa" : ""}"
-                   data-ir="${s.id}">${s.texto}</button>`).join("")}
+    <aside class="lateral">
+      <img src="assets/logo.png" alt="AmigoMío" class="lateral-logo">
+      <nav class="lateral-lista">
+        ${mias.map(boton).join("")}
+        ${suyas.length ? `<p class="lateral-grupo">Administración</p>${suyas.map(boton).join("")}` : ""}
       </nav>
-      <button class="enlace" id="salir">Salir</button>
-    </header>
-    <main id="hueco"></main>`;
+      <button class="lateral-salir" id="salir">
+        ${icono("salida")}<span>Salir</span>
+      </button>
+    </aside>
+
+    <main class="principal"><div class="contenedor" id="hueco"></div></main>`;
 
   app.querySelectorAll("[data-ir]").forEach(b =>
     b.addEventListener("click", () => pintarMarco(b.dataset.ir, sesion)));
@@ -105,12 +144,8 @@ function pintarMarco(seccionId, sesion) {
 
   /* Para que una vista pueda mandar a otra sin conocerla. */
   window.irA = id => pintarMarco(id, sesion);
-  /* Y para que Zapatilla pueda refrescar lo que haya debajo
-     cuando cree una reserva o dé de alta un perro. */
   window.refrescar = () => pintarMarco(seccion.id, sesion);
 
-  /* Zapatilla, en todas las pantallas. Solo para quien ha
-     entrado: habla con la base de datos usando su sesión. */
   montarZapatilla();
 
   seccion.render(app.querySelector("#hueco"), { sesion, ficha });

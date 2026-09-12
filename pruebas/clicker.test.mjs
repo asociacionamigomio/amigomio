@@ -39,10 +39,3 @@ test("el clic es corto y seco", () => {
 test("si el navegador no deja sonar, el botón responde igual", () => {
   assert.match(src, /try \{ clic\(\); \} catch/);
 });
-
-test("explica lo que casi todo el mundo hace mal", () => {
-  /* El clic no premia: anuncia el premio. Sin cargarlo antes, el
-     clicker no significa nada para el perro. */
-  assert.match(src, /El clic no premia/);
-  assert.match(src, /clic, y comida/i);
-});
