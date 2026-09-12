@@ -99,3 +99,33 @@ test("la escalera de precios respeta el orden del diseño", () => {
   assert.ok(festivo < finde,   "festivo antes que fin de semana");
   assert.ok(finde < semana,    "fin de semana antes que el resto");
 });
+
+test("el presupuesto comprueba el ejemplo del diseño", () => {
+  /* Viernes 7 a martes 11 de agosto, 2 perros, uno con curas y
+     recogida fuera de horario: 191 €. Es el ejemplo que Santiago
+     validó, así que es la cifra que no puede moverse. */
+  assert.match(sql, /presupuesto\('2026-08-07 11:00', '2026-08-11 20:00', 'normal', 2, 1\)/);
+  assert.match(sql, /= 191/, "el total del ejemplo del diseño tiene que estar comprobado");
+});
+
+test("lo que cobra la veterinaria no entra en el total", () => {
+  assert.match(sql, /lo_cobra = 'veterinaria'[\s\S]{0,400}?aparte/i);
+  assert.match(sql, /no puede sumar al total/);
+});
+
+test("la franja nocturna gana al día de la semana", () => {
+  /* Un sábado a las 22:00 son 120, no 75. Si se invierte, se
+     cobran 45 € de menos en cada recogida nocturna de fin de
+     semana. */
+  assert.match(sql, /recargo_horario\('2026-08-08 22:00'\)\s*=\s*120/);
+});
+
+test("los sábados por la tarde no se abre, los domingos sí", () => {
+  assert.match(sql, /recargo_horario\('2026-08-08 17:30'\)\s*=\s*75/);
+  assert.match(sql, /recargo_horario\('2026-08-09 17:30'\)\s*=\s*0/);
+});
+
+test("la reserva mínima y el perro solo del especial se comprueban", () => {
+  assert.match(sql, /una sola noche tendría que dar error/);
+  assert.match(sql, /el especial no admite dos perros/);
+});

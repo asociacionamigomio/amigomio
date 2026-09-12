@@ -263,3 +263,234 @@ begin
 
   raise notice 'Precios: las 19 comprobaciones pasan.';
 end $$;
+
+-- ============================================================
+-- RECARGO POR ENTREGA O RECOGIDA FUERA DE HORARIO
+--
+-- Horario de AmigoMío:
+--   Lunes a viernes y domingos: 10:00-12:30 y 16:30-19:00
+--   Sábados:                    10:00-12:30
+--
+-- Fuera de eso, previa consulta, y se cobra POR CADA MOVIMIENTO:
+-- una entrada y una salida fuera de horario son dos recargos.
+--
+--   Entre las 21:00 y las 7:30 -> 120, SEA EL DÍA QUE SEA
+--   Sábado o domingo           ->  75
+--   Resto                      ->  50
+--
+-- Gana siempre la regla más específica: un sábado a las 22:00
+-- son 120, no 75.
+-- ============================================================
+create or replace function recargo_horario(momento timestamp)
+returns numeric language plpgsql stable
+set search_path = public as $$
+declare
+  h    time    := momento::time;
+  dia  integer := extract(dow from momento);   -- 0 domingo, 6 sábado
+  dentro boolean;
+  importe numeric;
+begin
+  if momento is null then return 0; end if;
+
+  if dia = 6 then                              -- sábado: solo mañanas
+    dentro := h >= '10:00' and h <= '12:30';
+  else                                         -- resto, domingo incluido
+    dentro := (h >= '10:00' and h <= '12:30')
+           or (h >= '16:30' and h <= '19:00');
+  end if;
+
+  if dentro then return 0; end if;
+
+  if h >= '21:00' or h < '07:30' then
+    select t.importe into importe from tarifa t where t.clave = 'fuera_horario_noche';
+  elsif dia in (0, 6) then
+    select t.importe into importe from tarifa t where t.clave = 'fuera_horario_finde';
+  else
+    select t.importe into importe from tarifa t where t.clave = 'fuera_horario_semana';
+  end if;
+
+  return importe;
+end $$;
+
+-- ============================================================
+-- EL PRESUPUESTO COMPLETO
+--
+-- Devuelve el desglose línea a línea: es lo que ve el cliente
+-- antes de confirmar y lo que se congela dentro de la reserva.
+--
+-- Lo que cobra la veterinaria va APARTE, nunca en el total: si
+-- entrara, AmigoMío estaría cobrando por cuenta de un tercero.
+-- ============================================================
+create or replace function presupuesto(
+  la_entrada    timestamp,
+  la_salida     timestamp,
+  el_tipo       text    default 'normal',
+  los_perros    integer default 1,
+  con_curas     integer default 0,
+  los_extras    integer[] default '{}'
+) returns jsonb language plpgsql stable
+set search_path = public as $$
+declare
+  noches   integer;
+  minimo   integer;
+  base     numeric := 0;
+  d        date;
+  lineas   jsonb := '[]'::jsonb;
+  aparte   jsonb := '[]'::jsonb;
+  total    numeric := 0;
+  importe  numeric;
+  ex       record;
+  r        numeric;
+begin
+  noches := (la_salida::date - la_entrada::date);
+
+  select t.importe::integer into minimo from tarifa t where t.clave = 'minimo_noches';
+  if noches < minimo then
+    raise exception 'La reserva mínima son % noches.', minimo;
+  end if;
+
+  if los_perros < 1 or los_perros > 3 then
+    raise exception 'En un alojamiento caben de 1 a 3 perros.';
+  end if;
+
+  if el_tipo = 'especial' and los_perros > 1 then
+    raise exception 'Un perro agresivo con personas va siempre solo.';
+  end if;
+
+  if con_curas > los_perros then
+    raise exception 'No puede haber más perros con curas que perros.';
+  end if;
+
+  -- Base: noche a noche, desde la entrada hasta la víspera de la salida
+  for d in select generate_series(la_entrada::date, la_salida::date - 1, '1 day')::date loop
+    base := base + precio_noche(d, el_tipo);
+  end loop;
+  lineas := lineas || jsonb_build_object(
+    'concepto', noches || ' noche' || case when noches = 1 then '' else 's' end,
+    'importe', base);
+  total := total + base;
+
+  -- Segundo y tercer perro
+  if los_perros >= 2 then
+    select t.importe into importe from tarifa t
+     where t.clave = case when los_perros = 2 then 'segundo_perro' else 'tercer_perro' end;
+    lineas := lineas || jsonb_build_object(
+      'concepto', case when los_perros = 2 then 'Segundo perro' else 'Segundo y tercer perro' end,
+      'importe', importe * noches);
+    total := total + importe * noches;
+  end if;
+
+  -- Curas o inyectables. La medicación oral no lleva cargo.
+  if con_curas > 0 then
+    select t.importe into importe from tarifa t where t.clave = 'curas_dia';
+    lineas := lineas || jsonb_build_object(
+      'concepto', 'Curas o inyectables' ||
+                  case when con_curas > 1 then ' (' || con_curas || ' perros)' else '' end,
+      'importe', importe * con_curas * noches);
+    total := total + importe * con_curas * noches;
+  end if;
+
+  -- Extras. Los de la veterinaria van aparte, fuera del total.
+  for ex in select * from extra where id = any(los_extras) and activo loop
+    importe := case when ex.por_noche then ex.importe * noches else ex.importe end;
+    if ex.lo_cobra = 'veterinaria' then
+      aparte := aparte || jsonb_build_object(
+        'concepto', ex.nombre, 'importe', importe,
+        'nota', 'Lo factura la clínica, no AmigoMío');
+    else
+      lineas := lineas || jsonb_build_object('concepto', ex.nombre, 'importe', importe);
+      total := total + importe;
+    end if;
+  end loop;
+
+  -- Fuera de horario: se cobra por cada movimiento
+  r := recargo_horario(la_entrada);
+  if r > 0 then
+    lineas := lineas || jsonb_build_object('concepto', 'Entrega fuera de horario', 'importe', r);
+    total := total + r;
+  end if;
+
+  r := recargo_horario(la_salida);
+  if r > 0 then
+    lineas := lineas || jsonb_build_object('concepto', 'Recogida fuera de horario', 'importe', r);
+    total := total + r;
+  end if;
+
+  return jsonb_build_object(
+    'noches', noches,
+    'lineas', lineas,
+    'total', total,
+    'aparte', aparte);
+end $$;
+
+-- ============================================================
+-- PRUEBAS DEL PRESUPUESTO.
+-- Si algo no cuadra, la instalación ABORTA.
+-- ============================================================
+do $$
+declare p jsonb; fallo text;
+begin
+  -- Horarios: dentro de horario no se cobra recargo
+  assert recargo_horario('2026-08-11 11:00') = 0,  'un martes a las 11:00 está dentro';
+  assert recargo_horario('2026-08-11 17:30') = 0,  'un martes a las 17:30 está dentro';
+  assert recargo_horario('2026-08-08 11:00') = 0,  'un sábado a las 11:00 está dentro';
+
+  -- Sábado por la tarde: fuera de horario, y es finde
+  assert recargo_horario('2026-08-08 17:30') = 75, 'el sábado por la tarde no se abre: 75';
+  -- Domingo por la tarde SÍ está dentro
+  assert recargo_horario('2026-08-09 17:30') = 0,  'los domingos por la tarde sí se abre';
+  -- Entre semana fuera de horario
+  assert recargo_horario('2026-08-11 20:00') = 50, 'un martes a las 20:00 son 50';
+  -- La franja nocturna gana al día de la semana
+  assert recargo_horario('2026-08-08 22:00') = 120,'un sábado a las 22:00 son 120, no 75';
+  assert recargo_horario('2026-08-11 06:00') = 120,'un martes a las 6:00 son 120';
+
+  -- EL EJEMPLO DEL DISEÑO §6.7
+  -- Viernes 7 a martes 11 de agosto, 2 perros en el mismo alojamiento,
+  -- uno con curas, recogida el martes a las 20:00. Total esperado: 191 €
+  p := presupuesto('2026-08-07 11:00', '2026-08-11 20:00', 'normal', 2, 1);
+  assert (p->>'noches')::int = 4, 'del 7 al 11 son 4 noches';
+  assert (p->>'total')::numeric = 191,
+         'el ejemplo del diseño tiene que dar 191, dio ' || (p->>'total');
+
+  -- Una sola noche no se admite
+  begin
+    p := presupuesto('2026-08-07 11:00', '2026-08-08 11:00', 'normal', 1, 0);
+    assert false, 'una sola noche tendría que dar error';
+  exception
+    when assert_failure then raise;
+    when others then null;   -- bien: lo rechazó
+  end;
+
+  -- Un perro en alojamiento especial no puede ir acompañado
+  begin
+    p := presupuesto('2026-08-07 11:00', '2026-08-11 11:00', 'especial', 2, 0);
+    assert false, 'el especial no admite dos perros';
+  exception
+    when assert_failure then raise;
+    when others then null;
+  end;
+
+  -- Estancia sencilla: sábado a lunes, un perro, dentro de horario
+  -- 18 (sáb) + 18 (dom) = 36
+  p := presupuesto('2026-08-08 11:00', '2026-08-10 11:00', 'normal', 1, 0);
+  assert (p->>'total')::numeric = 36, 'sábado y domingo son 36, dio ' || (p->>'total');
+
+  -- Tres perros: base + 20 por noche
+  p := presupuesto('2026-08-10 11:00', '2026-08-12 11:00', 'normal', 3, 0);
+  assert (p->>'total')::numeric = 15 + 15 + 20 * 2,
+         'dos noches entre semana con tres perros son 70, dio ' || (p->>'total');
+
+  -- Especial: 35 planos por noche, sin recargos
+  p := presupuesto('2026-08-07 11:00', '2026-08-09 11:00', 'especial', 1, 0);
+  assert (p->>'total')::numeric = 70, 'dos noches en especial son 70, dio ' || (p->>'total');
+
+  -- Lo que cobra la veterinaria NO entra en el total
+  p := presupuesto('2026-08-10 11:00', '2026-08-12 11:00', 'normal', 1, 0,
+                   array(select id from extra where lo_cobra = 'veterinaria' limit 1));
+  assert (p->>'total')::numeric = 30,
+         'lo de la clínica no puede sumar al total, dio ' || (p->>'total');
+  assert jsonb_array_length(p->'aparte') = 1, 'pero sí tiene que aparecer aparte';
+
+  raise notice 'Presupuesto: todas las comprobaciones pasan.';
+end $$;
