@@ -200,3 +200,7 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 .nombre-req em { font-weight: 400; color: var(--texto-flojo); font-style: normal; }
 
 #luego { display: block; margin: .8rem auto 0; }
+
+.aviso-tarjeta { border-left: 4px solid var(--amarillo); margin-top: 1rem; }
+.aviso-tarjeta h3 { margin-top: 0; font-size: 1.05rem; }
+.aviso-tarjeta .boton { width: auto; margin-top: .75rem; }

@@ -8,13 +8,18 @@ import { sesionActual, salir, puedeReservar } from "./sesion.js";
 import { miFicha } from "./datos.js";
 import { render as renderEntrada } from "./vistas/entrada.js";
 import { render as renderPerros }  from "./vistas/perros.js";
+import { render as renderMiFicha } from "./vistas/mi-ficha.js";
 
 const app = document.getElementById("app");
 let ficha = null;
 
+const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
 const SECCIONES = [
   { id: "inicio", texto: "Inicio",     render: renderInicio },
   { id: "perros", texto: "Mis perros", render: renderPerros },
+  { id: "ficha",  texto: "Mi ficha",   render: renderMiFicha },
 ];
 
 async function arrancar() {
@@ -84,12 +89,25 @@ function pintarMarco(seccionId, sesion) {
 
 function renderInicio(contenedor, { sesion }) {
   const nombre = ficha?.nombre || sesion.usuario.email.split("@")[0];
+  const fichaAMedias = !ficha?.dni || !ficha?.consiente_datos;
+
   contenedor.innerHTML = `
     <div class="tarjeta">
-      <h2>¡Hola, ${nombre}!</h2>
+      <h2>¡Hola, ${esc(nombre)}!</h2>
       <p>Aquí irán tus estancias. De momento, lo primero es presentarnos a tu perro.</p>
       ${ficha?.es_admin ? `<p class="flojo">Entras como administración.</p>` : ""}
-    </div>`;
+    </div>
+
+    ${fichaAMedias ? `
+      <div class="tarjeta aviso-tarjeta">
+        <h3>Nos faltan tus datos</h3>
+        <p>Antes de la primera estancia necesitamos tu DNI, tu dirección y un teléfono:
+           la normativa nos obliga a anotarlos.</p>
+        <button class="boton" data-ir="ficha">Rellenar mi ficha</button>
+      </div>` : ""}`;
+
+  contenedor.querySelectorAll("[data-ir]").forEach(b =>
+    b.addEventListener("click", () => pintarMarco(b.dataset.ir, sesion)));
 }
 
 arrancar();
