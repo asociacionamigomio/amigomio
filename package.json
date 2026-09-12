@@ -1,6 +1,7 @@
 {
   "name": "amigomio",
   "private": true,
+  "type": "module",
   "description": "App de reservas de la residencia canina AmigoMío",
   "scripts": {
     "test": "node --test \"pruebas/*.test.mjs\"",

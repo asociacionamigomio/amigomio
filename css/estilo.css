@@ -63,3 +63,41 @@ h1, h2, h3 { font-weight: 600; line-height: 1.25; margin: 0 0 .5rem; }
 
 /* El móvil manda: casi todo el uso será desde el teléfono. */
 .contenedor { max-width: 760px; margin: 0 auto; padding: 1rem; }
+
+/* ------------------------------------------------------------
+   Portada y puerta de entrada.
+   ------------------------------------------------------------ */
+.portada { text-align: center; padding: 2rem 0 1.25rem; }
+.portada h1 { color: var(--azul); font-weight: 700; font-size: 2.1rem; margin: 0; }
+.lema { color: var(--texto-flojo); margin: .25rem 0 0; font-weight: 300; }
+
+label {
+  display: block;
+  margin: 1rem 0 .3rem;
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--texto-flojo);
+}
+
+input[type="email"], input[type="password"], input[type="text"],
+input[type="date"], input[type="number"], select, textarea {
+  width: 100%;
+  font: inherit;
+  padding: .7rem .9rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--texto);
+}
+input:focus, select:focus, textarea:focus {
+  outline: 0;
+  border-color: var(--azul-medio);
+  box-shadow: 0 0 0 3px rgba(97, 153, 200, .22);
+}
+
+.tarjeta .boton { width: 100%; margin-top: 1.25rem; }
+
+.cambiar { text-align: center; margin: 1rem 0 0; color: var(--texto-flojo); font-size: .92rem; }
+.cambiar a { color: var(--azul); font-weight: 600; }
+
+.aviso, .error { border-radius: 8px; margin-bottom: .5rem; font-size: .93rem; }
