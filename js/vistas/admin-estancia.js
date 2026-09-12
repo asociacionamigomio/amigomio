@@ -5,7 +5,8 @@
    se va, quién puede recogerlo y qué ha pasado estos días.
    ============================================================ */
 import { unaEstancia, incidenciasDe, anotarIncidencia, cambiarEstado, cuadrante,
-         moverDeAlojamiento } from "../datos.js";
+         moverDeAlojamiento, documentosDe, verDocumento } from "../datos.js";
+import { tipoDocumento } from "../documentos.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -74,6 +75,7 @@ export async function render(contenedor, { reservaId } = {}) {
             <strong>Manejo de peligrosidad.</strong> Alojamiento propio y siempre solo.</div>` : ""}
           ${p.pautas_alimentacion ? `<p><b>Come:</b> ${esc(p.pautas_alimentacion)}</p>` : ""}
           ${p.cuidados ? `<p><b>Cuidados:</b> ${esc(p.cuidados)}</p>` : ""}
+          <div class="papeles-de" data-papeles="${p.id}"></div>
         </div>`).join("")}
 
       <div class="tarjeta" style="margin-top:1rem">
@@ -129,6 +131,32 @@ export async function render(contenedor, { reservaId } = {}) {
       }));
 
     contenedor.querySelector("#mover").addEventListener("click", () => elegirAlojamiento(r));
+
+    papelesDeLosPerros();
+  }
+
+  /* La cartilla que haya subido el cliente. Se pide DESPUÉS de
+     pintar: son varias consultas y no vale la pena hacer esperar
+     la ficha entera por ellas. Si no hay nada subido, no aparece
+     ni el rótulo. */
+  async function papelesDeLosPerros() {
+    for (const caja of contenedor.querySelectorAll("[data-papeles]")) {
+      const papeles = await documentosDe(caja.dataset.papeles);
+      if (!papeles.length) continue;
+
+      caja.innerHTML = `<p class="rotulo" style="margin-top:.6rem">Cartilla</p>
+        <div class="papel-subidos">
+          ${papeles.map(x => `
+            <button class="marca enlace" data-ver="${x.id}" data-ruta="${esc(x.ruta)}"
+            >${esc(tipoDocumento(x.tipo)?.nombre || x.tipo)}</button>`).join("")}
+        </div>`;
+
+      caja.querySelectorAll("[data-ver]").forEach(b =>
+        b.addEventListener("click", async () => {
+          const url = await verDocumento(b.dataset.ruta);
+          if (url) window.open(url, "_blank", "noopener");
+        }));
+    }
   }
 
   async function elegirAlojamiento(r) {

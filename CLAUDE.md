@@ -85,6 +85,12 @@ Lee `2026-09-12-amigomio-reservas-design.md` (el diseño), `2026-09-12-plan-fase
    un descuido.
 6. **El alta del perro va en tres pasos y se puede guardar a medias.** De una sentada la gente
    abandona el formulario.
+7. **Subir la cartilla es VOLUNTARIO.** Ni bloquea, ni impide reservar, ni se pide dos veces.
+   Está al final de la ficha del perro y con ese tono. Si algún día pareciera un trámite
+   obligatorio, la gente abandonaría la ficha entera.
+8. **El antiparasitario externo va en lista, no en hueco.** Collar y pipeta a la vez es lo
+   normal aquí. La caducidad del conjunto es la MÁS TARDÍA: está cubierto mientras le quede
+   alguno.
 
 ## Mañas que ya han costado una tarde
 
@@ -128,10 +134,11 @@ en el repositorio ni en una conversación.
 ## Cómo se aplica un cambio de base de datos
 
 Los ficheros de base de datos, y **en este orden**: `db/schema.sql`, `db/storage.sql`,
-`db/tarifas.sql`, `db/reservas.sql`, `db/peligrosidad.sql`, `db/crear-reserva.sql`.
+`db/documentos.sql`, `db/tarifas.sql`, `db/reservas.sql`, `db/peligrosidad.sql`,
+`db/crear-reserva.sql`.
 
-`db/tarifas.sql`, `db/reservas.sql`, `db/peligrosidad.sql` y `db/crear-reserva.sql` **llevan sus
-propias pruebas dentro**, en bloques `do $$ ... assert ... end $$`. Aplicarlos en Supabase ES
+`db/documentos.sql`, `db/tarifas.sql`, `db/reservas.sql`, `db/peligrosidad.sql` y
+`db/crear-reserva.sql` **llevan sus propias pruebas dentro**, en bloques `do $$ ... assert ... end $$`. Aplicarlos en Supabase ES
 ejecutar esas pruebas contra Postgres de verdad: si un precio o una regla falla, la instalación
 aborta en vez de quedarse callada.
 

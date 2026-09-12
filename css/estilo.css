@@ -768,3 +768,35 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
   color: #fff; text-decoration: none;
 }
 .boton.whatsapp:hover { background: #1da851; border-color: #1da851; }
+
+/* ============================================================
+   La cartilla fotografiada.
+
+   Va al final de la ficha y con el tono de «si quieres»: subirla
+   es voluntario, y si parece un trámite obligatorio la gente
+   abandona la ficha entera.
+   ============================================================ */
+.papeles .lista-papeles { margin-top: .8rem; }
+
+.papel {
+  display: flex; align-items: center; gap: .8rem; flex-wrap: wrap;
+  padding: .7rem 0; border-top: 1px solid var(--borde, #eef2f5);
+}
+.papel:first-child { border-top: none; }
+.papel-que-es { flex: 1 1 12rem; min-width: 0; }
+.papel-que-es strong { display: block; font-size: .92rem; }
+.papel-que-es span { display: block; font-size: .8rem; line-height: 1.35; }
+
+/* Con algo subido, la línea deja de ser una tarea pendiente. */
+.papel.puesto .papel-que-es strong::after {
+  content: " ✓"; color: var(--verde, #6b8f3f); font-weight: 700;
+}
+
+.papel-subidos { display: flex; gap: .35rem; flex-wrap: wrap; }
+.papel-uno { display: inline-flex; align-items: center; gap: .3rem; }
+.papel-uno .enlace { font-size: .8rem; padding: 0; }
+.papel-uno .quitar { color: var(--rojo, #b4453a); font-size: 1rem; line-height: 1; }
+
+/* El <input type=file> es feo e imposible de estilar: se esconde
+   y el que se ve es la etiqueta. */
+.papel .subir { cursor: pointer; white-space: nowrap; }

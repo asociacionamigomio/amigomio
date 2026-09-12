@@ -5,7 +5,9 @@
    más largo de la app y de una sentada la gente lo abandona.
    ============================================================ */
 import { PASOS, validarPaso } from "../formularios.js";
-import { misPerros, guardarPerro, unPerro, borrarPerro, pedirCambio, misSolicitudes } from "../datos.js";
+import { misPerros, guardarPerro, unPerro, borrarPerro, pedirCambio, misSolicitudes,
+         documentosDe, subirDocumento, borrarDocumento, verDocumento } from "../datos.js";
+import { tiposPara, tipoDocumento } from "../documentos.js";
 import { camposSanidad, PRODUCTOS_EXTERNOS, AVISO_POR_DEFECTO,
          avisosDelPerro, caducidadDe, enCristiano } from "../sanidad.js";
 import { chipValido } from "../perro.js";
@@ -70,6 +72,7 @@ async function ficha(contenedor, id) {
   const d = await unPerro(id);
   if (!d) { contenedor.innerHTML = `<div class="error">No encontramos ese perro.</div>`; return; }
 
+  let papeles = await documentosDe(id);
   const avisos = avisosDelPerro(d);
   const campos = camposSanidad(d);
   const hoy = new Date().toISOString().slice(0, 10);
@@ -158,10 +161,87 @@ async function ficha(contenedor, id) {
         ${d.es_ppp ? `<p>Perro potencialmente peligroso${
           d.ppp_licencia_hasta ? ` · licencia hasta el ${enCristiano(d.ppp_licencia_hasta)}` : ""}${
           d.ppp_seguro_hasta ? ` · seguro hasta el ${enCristiano(d.ppp_seguro_hasta)}` : ""}</p>` : ""}
-      </div>` : ""}`;
+      </div>` : ""}
+
+    <div id="papeles-perro"></div>`;
 
   contenedor.querySelector("#volver").addEventListener("click", () => render(contenedor));
   contenedor.querySelector("#editar").addEventListener("click", () => formulario(contenedor, id));
+
+  pintarPapeles();
+
+  /* La cartilla fotografiada. Es lo último de la ficha porque es
+     VOLUNTARIO: quien no quiera, ni se entera. */
+  function pintarPapeles(aviso = "", clase = "aviso") {
+    const caja = contenedor.querySelector("#papeles-perro");
+    if (!caja) return;
+    const tipos = tiposPara(d);
+
+    caja.innerHTML = `
+      <div class="tarjeta papeles" style="margin-top:1rem">
+        <p class="rotulo">La cartilla y los papeles</p>
+        <p class="flojo">Si quieres, súbenos una foto de la cartilla. No hace falta
+           —puedes reservar igual—, pero así lo tenemos todo aquí y no te lo
+           volvemos a pedir.</p>
+
+        ${aviso ? `<div class="${clase}">${esc(aviso)}</div>` : ""}
+
+        <div class="lista-papeles">
+          ${tipos.map(t => {
+            const suyos = papeles.filter(x => x.tipo === t.id);
+            return `
+            <div class="papel ${suyos.length ? "puesto" : ""}">
+              <div class="papel-que-es">
+                <strong>${esc(t.nombre)}</strong>
+                <span class="flojo">${esc(t.pista)}</span>
+              </div>
+
+              ${suyos.length ? `
+                <div class="papel-subidos">
+                  ${suyos.map(x => `
+                    <span class="marca papel-uno">
+                      <button class="enlace" data-ver="${x.id}">Ver</button>
+                      <button class="enlace quitar" data-quitar="${x.id}"
+                              aria-label="Quitar">×</button>
+                    </span>`).join("")}
+                </div>` : ""}
+
+              <label class="boton fantasma pequeno subir">
+                ${suyos.length ? "Añadir otra" : "Subir foto"}
+                <input type="file" accept="image/*,application/pdf"
+                       capture="environment" data-subir="${t.id}" hidden>
+              </label>
+            </div>`;
+          }).join("")}
+        </div>
+      </div>`;
+
+    caja.querySelectorAll("[data-subir]").forEach(entrada =>
+      entrada.addEventListener("change", async () => {
+        const fichero = entrada.files?.[0];
+        if (!fichero) return;
+        pintarPapeles(`Subiendo ${tipoDocumento(entrada.dataset.subir).nombre.toLowerCase()}…`, "aviso");
+        const r = await subirDocumento(id, entrada.dataset.subir, fichero);
+        papeles = await documentosDe(id);
+        pintarPapeles(r.mensaje, r.ok ? "aviso" : "error");
+      }));
+
+    caja.querySelectorAll("[data-ver]").forEach(b =>
+      b.addEventListener("click", async () => {
+        const papel = papeles.find(x => x.id === b.dataset.ver);
+        const url = await verDocumento(papel.ruta);
+        if (url) window.open(url, "_blank", "noopener");
+        else pintarPapeles("No hemos podido abrirlo. Inténtalo otra vez.", "error");
+      }));
+
+    caja.querySelectorAll("[data-quitar]").forEach(b =>
+      b.addEventListener("click", async () => {
+        const papel = papeles.find(x => x.id === b.dataset.quitar);
+        const r = await borrarDocumento(papel.id, papel.ruta);
+        papeles = await documentosDe(id);
+        pintarPapeles(r.mensaje, r.ok ? "aviso" : "error");
+      }));
+  }
 }
 
 /* ------------------------------------------------------------

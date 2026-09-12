@@ -8,6 +8,7 @@
    ============================================================ */
 import { supabase } from "./sesion.js";
 import { normalizarChip } from "./perro.js";
+import { rutaDocumento, encoger, queLePasa } from "./documentos.js";
 
 /* ------------------------------------------------------------
    Mi ficha de cliente
@@ -363,4 +364,64 @@ export async function moverDeAlojamiento(reservaId, alojamientoId) {
 export async function cambiarEstado(reservaId, estado) {
   const { error } = await supabase.from("reserva").update({ estado }).eq("id", reservaId);
   return { ok: !error, mensaje: error ? "No hemos podido cambiarlo." : "Hecho." };
+}
+
+/* ------------------------------------------------------------
+   Los papeles del perro: la cartilla, el seguro, la licencia.
+
+   El cubo `cartillas` es PRIVADO. Una cartilla lleva el chip del
+   animal y los datos del propietario, así que no se sirve en
+   abierto: para verla se pide un enlace firmado, que caduca.
+   ------------------------------------------------------------ */
+const CUBO = "cartillas";
+
+/** Los papeles que tiene este perro, el último arriba. */
+export async function documentosDe(perroId) {
+  const { data, error } = await supabase.from("documento_perro")
+    .select("*").eq("perro_id", perroId).order("subido", { ascending: false });
+  if (error) return [];
+  return data || [];
+}
+
+/**
+ * Sube un papel. La foto se encoge antes: una de móvil son
+ * cuatro megas y esto se usa muchas veces desde la calle.
+ */
+export async function subirDocumento(perroId, tipo, fichero, nota = "") {
+  const pega = queLePasa(fichero);
+  if (pega) return { ok: false, mensaje: pega };
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, mensaje: "Vuelve a entrar, que se ha caído la sesión." };
+
+  const encogido = await encoger(fichero);
+  const ruta = rutaDocumento(user.id, perroId, tipo, encogido.name || fichero.name);
+
+  const { error: fallo } = await supabase.storage.from(CUBO)
+    .upload(ruta, encogido, { contentType: encogido.type, upsert: false });
+  if (fallo) return { ok: false, mensaje: "No hemos podido subirlo. Inténtalo otra vez." };
+
+  const { error } = await supabase.from("documento_perro")
+    .insert({ perro_id: perroId, tipo, ruta, nota });
+  if (error) {
+    /* El fichero se subió pero el apunte no: se quita, que si no
+       queda un huérfano que nadie va a ver nunca. */
+    await supabase.storage.from(CUBO).remove([ruta]);
+    return { ok: false, mensaje: "No hemos podido guardarlo. Inténtalo otra vez." };
+  }
+  return { ok: true, mensaje: "Subido. Gracias." };
+}
+
+/** Un enlace para verlo, que caduca a la hora. */
+export async function verDocumento(ruta, segundos = 3600) {
+  const { data, error } = await supabase.storage.from(CUBO)
+    .createSignedUrl(ruta, segundos);
+  return error ? null : data.signedUrl;
+}
+
+export async function borrarDocumento(id, ruta) {
+  const { error } = await supabase.from("documento_perro").delete().eq("id", id);
+  if (error) return { ok: false, mensaje: "No hemos podido quitarlo." };
+  await supabase.storage.from(CUBO).remove([ruta]);
+  return { ok: true, mensaje: "Quitado." };
 }
