@@ -30,6 +30,11 @@ export async function render(contenedor) {
     const fecha = new Date(dia + "T00:00:00")
       .toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
+    /* Los que necesitan algo hoy, arriba del todo: si hay que
+       pinchar a alguien, eso no puede quedar enterrado en la
+       tercera línea de su párrafo. */
+    const conCuidados = h.dentro.filter(p => p.curas || p.en_celo || p.peligrosidad);
+
     const movimiento = (lista, cual) => lista.length
       ? lista.map(x => `<strong>${esc(x.quienes)}</strong> ${esc(x.hora)}`).join(" · ")
       : `<span class="flojo">Nadie ${cual}</span>`;
@@ -60,6 +65,18 @@ export async function render(contenedor) {
           <div><p class="rotulo">Se van hoy</p><p>${movimiento(h.salen, "se va")}</p></div>
         </div>
 
+        ${conCuidados.length ? `
+          <div class="hoja-ojo">
+            <p class="rotulo">Hoy, ojo con</p>
+            <p>${conCuidados.map(p => {
+              const q = [];
+              if (p.curas) q.push("curas");
+              if (p.en_celo) q.push("en celo");
+              if (p.peligrosidad) q.push("manejo aparte");
+              return `<strong>${esc(p.perro)}</strong> (${q.join(", ")})`;
+            }).join(" · ")}</p>
+          </div>` : ""}
+
         <p class="rotulo separa">Los que están dentro</p>
 
         ${h.dentro.length === 0
@@ -71,10 +88,22 @@ export async function render(contenedor) {
                 <div class="hoja-nombre">
                   <strong>${esc(p.perro)}</strong>
                   ${p.peligrosidad ? `<span class="marca roja">manejo de peligrosidad</span>` : ""}
+                  ${p.curas ? `<span class="marca roja">curas o inyectables</span>` : ""}
+                  ${p.en_celo ? `<span class="marca roja">EN CELO</span>` : ""}
+                  ${p.se_le_espera_celo && !p.en_celo ? `<span class="marca">se le espera el celo</span>` : ""}
                   ${(p.marcas || []).map(m => `<span class="marca">${esc(m)}</span>`).join("")}
+                  ${p.peso ? `<span class="marca">${esc(p.peso)} kg</span>` : ""}
                 </div>
+
+                ${p.curas ? `<p class="cuidado-fuerte"><b>Curas o inyectables hoy.</b>
+                   Anotar producto, dosis, vía y hora en el libro de tratamientos.</p>` : ""}
+
+                ${p.en_celo ? `<p class="cuidado-fuerte"><b>Está en celo.</b>
+                   No sale al patio con machos ni coincide con ellos en el pasillo.</p>` : ""}
+
                 ${p.come ? `<p><b>Come:</b> ${esc(p.come)}</p>` : ""}
                 ${p.cuidados ? `<p><b>Cuidados:</b> ${esc(p.cuidados)}</p>` : ""}
+                ${p.esta_vez ? `<p><b>Esta vez además:</b> ${esc(p.esta_vez)}</p>` : ""}
                 ${p.peligrosidad ? `<p class="ojo-texto"><b>Siempre solo.</b> No coincide con nadie,
                    ni separado por valla. Lo maneja Santi o Elena.</p>` : ""}
               </div>

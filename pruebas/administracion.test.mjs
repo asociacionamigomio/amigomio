@@ -110,3 +110,34 @@ test("el diario de la estancia lo lee el dueño y lo escribe administración", (
 test("el diario es el germen del parte diario que exige el programa", () => {
   assert.match(sql, /observación mínima dos veces al día/);
 });
+
+/* ---------- Los cuidados de ESTA estancia ---------- */
+test("la hoja saca lo que hay que hacerle hoy, no solo su ficha", () => {
+  /* El texto de cuidados del perro no basta: las curas, el celo y
+     el peso se guardan POR RESERVA, porque cambian de un viaje a
+     otro. Estaba todo guardado y no se veía en la hoja. */
+  assert.match(sql, /'curas', r\.con_curas > 0/);
+  assert.match(sql, /'en_celo', rp\.en_celo/);
+  assert.match(sql, /'peso', rp\.peso/);
+  assert.match(sql, /'esta_vez', rp\.cuidados_esta_vez/);
+});
+
+test("las curas recuerdan que hay que anotarlas en el libro", () => {
+  /* El programa sanitario exige registrar producto, dosis, vía y
+     facultativo. Si la hoja no lo recuerda, no se anota. */
+  assert.match(hoja, /Curas o inyectables hoy/);
+  assert.match(hoja, /producto, dosis, vía y hora en el libro de tratamientos/);
+});
+
+test("una perra en celo sale marcada y con la instrucción", () => {
+  assert.match(hoja, /EN CELO/);
+  assert.match(hoja, /No sale al patio con machos/);
+});
+
+test("lo urgente va arriba, no enterrado en su párrafo", () => {
+  /* Si hay que pinchar a alguien, eso no puede estar en la tercera
+     línea del tercer perro de la lista. */
+  assert.match(hoja, /Hoy, ojo con/);
+  assert.match(hoja, /const conCuidados = h\.dentro\.filter/);
+  assert.match(hoja, /eso no puede quedar enterrado/);
+});

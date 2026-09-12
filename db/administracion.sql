@@ -100,6 +100,15 @@ set search_path = public as $$
                'come', p.pautas_alimentacion,
                'cuidados', p.cuidados,
                'peligrosidad', p.agresivo_con_personas,
+
+               /* Lo que hay que hacerle A ESTE PERRO EN ESTA
+                  ESTANCIA, que es distinto de lo que pone su
+                  ficha. Estaba todo guardado y no se veía. */
+               'curas', r.con_curas > 0,
+               'en_celo', rp.en_celo,
+               'se_le_espera_celo', rp.se_le_espera_celo,
+               'peso', rp.peso,
+               'esta_vez', rp.cuidados_esta_vez,
                'marcas', (select coalesce(jsonb_agg(m), '[]'::jsonb) from (
                    select 'comilón' as m where p.comilon
                    union all select 'bebe muchísima agua' where p.polidipsia

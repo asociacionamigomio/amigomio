@@ -657,3 +657,10 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 .aloj:hover { border-color: var(--azul); }
 .aloj.actual { border-color: var(--azul); background: #F2F8FC; }
 .aloj span { font-size: .7rem; font-weight: 400; color: var(--texto-flojo); }
+
+.cuidado-fuerte { color: #8B2220; }
+.hoja-ojo {
+  margin-top: 1rem; border: 2px solid var(--rojo); border-radius: 10px;
+  padding: .7rem .9rem; background: #FDF6F5;
+}
+.hoja-ojo p:last-child { margin: .3rem 0 0; font-size: .9rem; color: #5C1A18; }
