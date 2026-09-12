@@ -41,7 +41,7 @@ test("ningún precio está escrito a fuego en el código de la app", () => {
 
 test("las tarifas son filas, y están todas las del diseño", () => {
   for (const clave of ["base_entre_semana", "base_finde", "base_festivo", "base_navidad",
-                       "especial_dia", "segundo_perro", "tercer_perro", "curas_dia",
+                       "especial_dia", "perro_adicional", "curas_dia",
                        "fuera_horario_semana", "fuera_horario_finde", "fuera_horario_noche",
                        "minimo_noches"])
     assert.match(sql, new RegExp(`'${clave}'`), `falta la tarifa ${clave}`);
@@ -128,4 +128,16 @@ test("los sábados por la tarde no se abre, los domingos sí", () => {
 test("la reserva mínima y el perro solo del especial se comprueban", () => {
   assert.match(sql, /una sola noche tendría que dar error/);
   assert.match(sql, /el especial no admite dos perros/);
+});
+
+test("el perro de más es una sola tarifa, repetida", () => {
+  /* Corrección de Santiago, 12/09/2026: no son "dos perros +10" y
+     "tres perros +20" como tarifas sueltas, sino +10 por cada perro
+     de más. Los totales salen iguales, pero con dos tarifas había
+     que acordarse de cambiar las dos. */
+  assert.doesNotMatch(sql, /'segundo_perro'|'tercer_perro'/,
+    "no puede haber una tarifa distinta para el tercero");
+  assert.match(sql, /importe \* \(los_perros - 1\) \* noches/,
+    "se multiplica por los perros de más");
+  assert.match(sql, /con tres perros son 70: 10 por cada perro de más/);
 });

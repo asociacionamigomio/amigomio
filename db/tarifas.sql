@@ -45,14 +45,17 @@ create table if not exists tarifa (
   nota    text not null default ''
 );
 
+-- Antes eran dos tarifas sueltas (segundo_perro, tercer_perro).
+-- Se unificaron el 12/09/2026 en una sola repetida.
+delete from tarifa where clave in ('segundo_perro','tercer_perro');
+
 insert into tarifa (clave, importe, nota) values
   ('base_entre_semana',    15, 'Lunes, martes, miércoles y jueves'),
   ('base_finde',           18, 'Viernes, sábado y domingo'),
   ('base_festivo',         18, 'Festivos en Puerto Real y sus vísperas'),
   ('base_navidad',         25, '24, 25 y 31 de diciembre, y 1 de enero'),
   ('especial_dia',         35, 'Alojamiento especial: tarifa plana, sin recargos'),
-  ('segundo_perro',        10, 'Por noche, si van dos en el mismo alojamiento'),
-  ('tercer_perro',         20, 'Por noche, si van tres'),
+  ('perro_adicional',      10, 'Por noche y por cada perro de más en el mismo alojamiento'),
   ('curas_dia',             8, 'Por perro y noche: inyectables o curas. La oral no lleva cargo'),
   ('fuera_horario_semana', 50, 'Entrega o recogida fuera de horario, entre semana'),
   ('fuera_horario_finde',  75, 'Entrega o recogida fuera de horario, sábado o domingo'),
@@ -370,14 +373,17 @@ begin
     'importe', base);
   total := total + base;
 
-  -- Segundo y tercer perro
+  -- Perros de más: 10 € por noche POR CADA UNO a partir del primero.
+  -- Dos perros suman 10, tres suman 20. No son dos tarifas
+  -- distintas: es la misma repetida, y así cambiarla es cambiar
+  -- un solo número.
   if los_perros >= 2 then
-    select t.importe into importe from tarifa t
-     where t.clave = case when los_perros = 2 then 'segundo_perro' else 'tercer_perro' end;
+    select t.importe into importe from tarifa t where t.clave = 'perro_adicional';
     lineas := lineas || jsonb_build_object(
-      'concepto', case when los_perros = 2 then 'Segundo perro' else 'Segundo y tercer perro' end,
-      'importe', importe * noches);
-    total := total + importe * noches;
+      'concepto', case when los_perros = 2 then 'Segundo perro'
+                       else 'Segundo y tercer perro' end,
+      'importe', importe * (los_perros - 1) * noches);
+    total := total + importe * (los_perros - 1) * noches;
   end if;
 
   -- Curas o inyectables. La medicación oral no lleva cargo.
@@ -476,10 +482,17 @@ begin
   p := presupuesto('2026-08-08 11:00', '2026-08-10 11:00', 'normal', 1, 0);
   assert (p->>'total')::numeric = 36, 'sábado y domingo son 36, dio ' || (p->>'total');
 
-  -- Tres perros: base + 20 por noche
+  -- Perros de más: 10 por cada uno a partir del primero, por noche
+  p := presupuesto('2026-08-10 11:00', '2026-08-12 11:00', 'normal', 1, 0);
+  assert (p->>'total')::numeric = 30, 'dos noches con un perro son 30, dio ' || (p->>'total');
+
+  p := presupuesto('2026-08-10 11:00', '2026-08-12 11:00', 'normal', 2, 0);
+  assert (p->>'total')::numeric = 30 + 10 * 2,
+         'con dos perros son 50, dio ' || (p->>'total');
+
   p := presupuesto('2026-08-10 11:00', '2026-08-12 11:00', 'normal', 3, 0);
-  assert (p->>'total')::numeric = 15 + 15 + 20 * 2,
-         'dos noches entre semana con tres perros son 70, dio ' || (p->>'total');
+  assert (p->>'total')::numeric = 30 + 10 * 2 * 2,
+         'con tres perros son 70: 10 por cada perro de más, dio ' || (p->>'total');
 
   -- Especial: 35 planos por noche, sin recargos
   p := presupuesto('2026-08-07 11:00', '2026-08-09 11:00', 'especial', 1, 0);
