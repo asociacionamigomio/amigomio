@@ -83,6 +83,22 @@ create table if not exists extra (
   nota      text not null default ''
 );
 
+-- El nombre del extra es único, y esto va AQUÍ, entre la tabla y
+-- el insert que hay debajo. Estuvo un rato en un fichero aparte
+-- que se aplicaba al final, y el `on conflict (nombre)` de abajo
+-- reventaba con «there is no unique or exclusion constraint
+-- matching the ON CONFLICT specification»: una restricción tiene
+-- que existir antes de que alguien la nombre.
+--
+-- Primero se limpian los repetidos que dejó la versión sin
+-- restricción —se queda el más antiguo de cada nombre—, porque
+-- con duplicados dentro no se puede crear.
+delete from extra e
+ where e.id > (select min(e2.id) from extra e2 where e2.nombre = e.nombre);
+
+alter table extra drop constraint if exists extra_nombre_unico;
+alter table extra add constraint extra_nombre_unico unique (nombre);
+
 insert into extra (nombre, importe, por_noche, en_verano, lo_cobra, nota) values
   ('Gimnasio canino (cintas)',        0, true,  true,  'amigomio',    'Precio por definir'),
   ('Alimentación a cargo del hotel',  0, true,  true,  'amigomio',    'Precio por definir'),
@@ -93,8 +109,8 @@ insert into extra (nombre, importe, por_noche, en_verano, lo_cobra, nota) values
   ('Desparasitación durante la estancia', 0, false, true, 'veterinaria', 'Lo factura la clínica')
 /* Sobre `nombre`, y no a secas: `on conflict do nothing` sin
    columna no detecta nada, y cada aplicación del fichero volvía
-   a insertar los siete. La marca de unicidad va en
-   db/extras-repetidos.sql. */
+   a insertar los siete. La marca de unicidad está justo encima,
+   creada antes de llegar aquí. */
 on conflict (nombre) do nothing;
 
 -- ------------------------------------------------------------

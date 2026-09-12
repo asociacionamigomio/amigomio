@@ -158,7 +158,16 @@ test("los extras no se pueden duplicar al reaplicar el fichero", () => {
   assert.doesNotMatch(soloCodigo, /on conflict do nothing/,
     "nunca `on conflict do nothing` a secas");
 
-  const limpieza = readFileSync(new URL("../db/extras-repetidos.sql", import.meta.url), "utf8");
-  assert.match(limpieza, /unique \(nombre\)/, "y poner la marca de unicidad");
-  assert.match(limpieza, /delete from extra e/, "y limpiar los que ya se colaron");
+  /* La marca de unicidad y la limpieza de los que ya se colaron
+     viven en el MISMO fichero y ANTES del insert. Estuvieron en
+     `db/extras-repetidos.sql`, que se aplicaba el último, y el
+     `on conflict (nombre)` reventaba con «there is no unique or
+     exclusion constraint matching the ON CONFLICT
+     specification»: una restricción tiene que existir antes de
+     que alguien la nombre. */
+  assert.match(soloCodigo, /unique \(nombre\)/, "falta la marca de unicidad");
+  assert.match(soloCodigo, /delete from extra e/, "y limpiar los que ya se colaron");
+
+  assert.ok(soloCodigo.indexOf("unique (nombre)") < soloCodigo.indexOf("on conflict (nombre)"),
+    "la restricción tiene que crearse ANTES del insert que la nombra");
 });

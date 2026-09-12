@@ -1,31 +1,24 @@
 -- ============================================================
--- Los extras se habían duplicado.
+-- Este fichero ya no hace nada. Se deja porque lo de dentro
+-- explica un fallo que costó dos intentos.
 --
--- Causa: en tarifas.sql el insert llevaba `on conflict do
--- nothing` SIN decir sobre qué columna, y la tabla no tenía
--- ninguna restricción de unicidad. Sin conflicto que detectar,
--- «no hagas nada» no hace nada: cada vez que se aplicaba el
--- fichero, los siete extras entraban otra vez.
+-- Los extras salían repetidos: `db/tarifas.sql` los insertaba
+-- con `on conflict do nothing` A SECAS, sin decir sobre qué
+-- columna, y sin columna eso no detecta nada. Cada vez que se
+-- aplicaba el fichero, los siete extras entraban otra vez.
 --
--- Este fichero limpia lo repetido y pone la marca que faltaba,
--- para que no pueda volver a pasar.
+-- El arreglo fue `on conflict (nombre) do nothing` más una
+-- restricción de unicidad en `extra.nombre`. La restricción se
+-- puso primero AQUÍ, y este fichero se aplicaba el último: el
+-- `on conflict (nombre)` de tarifas.sql se encontraba con que
+-- esa restricción todavía no existía y abortaba la instalación
+-- entera con
+--
+--   42P10: there is no unique or exclusion constraint matching
+--          the ON CONFLICT specification
+--
+-- La lección: una restricción tiene que crearse ANTES de que
+-- alguien la nombre, y eso significa en el mismo fichero, entre
+-- la tabla y el insert. Está en db/tarifas.sql, justo después
+-- del `create table extra`.
 -- ============================================================
-
--- 1. Fuera los repetidos, quedándose con el primero de cada
---    nombre: es el que puede tener precio ya puesto.
-delete from extra e
- where e.id > (select min(e2.id) from extra e2 where e2.nombre = e.nombre);
-
--- 2. Y la marca que faltaba. A partir de aquí, insertar un
---    nombre repetido es imposible, no «inofensivo».
-alter table extra drop constraint if exists extra_nombre_unico;
-alter table extra add constraint extra_nombre_unico unique (nombre);
-
-do $$
-declare repetidos integer;
-begin
-  select count(*) into repetidos from (
-    select nombre from extra group by nombre having count(*) > 1) x;
-  assert repetidos = 0, 'todavía quedan extras repetidos';
-  raise notice 'Extras: % en total, ninguno repetido.', (select count(*) from extra);
-end $$;
