@@ -476,3 +476,70 @@ export async function borrarDocumento(id, ruta) {
   await supabase.storage.from(CUBO).remove([ruta]);
   return { ok: true, mensaje: "Quitado." };
 }
+
+/* ------------------------------------------------------------
+   El justificante de la transferencia.
+
+   El cliente lo sube; eso PARA EL RELOJ pero no confirma nada.
+   Confirma administración, después de ver el dinero en la
+   cuenta: una foto puede ser de cualquier cosa.
+   ------------------------------------------------------------ */
+const CUBO_JUSTIFICANTES = "justificantes";
+
+export async function subirJustificante(reservaId, fichero) {
+  const pega = queLePasa(fichero);
+  if (pega) return { ok: false, mensaje: pega };
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, mensaje: "Vuelve a entrar, que se ha caído la sesión." };
+
+  const encogido = await encoger(fichero);
+  const ruta = rutaDocumento(user.id, reservaId, "justificante",
+                             encogido.name || fichero.name);
+
+  const { error: fallo } = await supabase.storage.from(CUBO_JUSTIFICANTES)
+    .upload(ruta, encogido, { contentType: encogido.type, upsert: false });
+  if (fallo) return { ok: false, mensaje: "No hemos podido subirlo. Inténtalo otra vez." };
+
+  /* El apunte lo hace la base, no esta línea: ahí es donde se
+     comprueba que la reserva es tuya y que todavía espera el
+     papel. */
+  const { data, error } = await supabase.rpc("subir_justificante", {
+    la_reserva: reservaId, la_ruta: ruta,
+  });
+  if (error) {
+    await supabase.storage.from(CUBO_JUSTIFICANTES).remove([ruta]);
+    return { ok: false, mensaje: error.message };
+  }
+  return { ok: true, mensaje: data?.mensaje || "Recibido. Lo miramos y te confirmamos." };
+}
+
+/** Un enlace para mirarlo, que caduca a la hora. */
+export async function verJustificante(ruta, segundos = 3600) {
+  const { data, error } = await supabase.storage.from(CUBO_JUSTIFICANTES)
+    .createSignedUrl(ruta, segundos);
+  return error ? null : data.signedUrl;
+}
+
+export async function validarJustificante(reservaId) {
+  const { error } = await supabase.rpc("validar_justificante", { la_reserva: reservaId });
+  return error ? { ok: false, mensaje: error.message }
+               : { ok: true, mensaje: "Reserva confirmada." };
+}
+
+export async function rechazarJustificante(reservaId, motivo) {
+  const { data, error } = await supabase.rpc("rechazar_justificante", {
+    la_reserva: reservaId, el_motivo: motivo || "",
+  });
+  return error ? { ok: false, mensaje: error.message }
+               : { ok: true, mensaje: data?.mensaje || "Rechazado." };
+}
+
+/** El reloj, a mano. Lo mismo que hace el cron cada diez minutos. */
+export async function caducarReservas() {
+  const { data, error } = await supabase.rpc("caducar_reservas");
+  if (error) return { ok: false, mensaje: "No hemos podido pasar el reloj." };
+  return { ok: true, cuantas: data,
+           mensaje: data === 0 ? "No había ninguna por soltar."
+             : `${data} reserva${data === 1 ? "" : "s"} sin pagar, soltada${data === 1 ? "" : "s"}.` };
+}

@@ -23,7 +23,11 @@ create table if not exists reserva (
   con_curas      integer not null default 0,
 
   estado         text not null default 'pendiente'
-                 check (estado in ('pendiente','confirmada','en_curso',
+                 -- `revisando`: el cliente ya mandó el justificante y
+                 -- administración todavía no lo ha mirado. Ni pendiente
+                 -- —el reloj ya no corre— ni confirmada —el dinero no
+                 -- se ha visto en la cuenta.
+                 check (estado in ('pendiente','revisando','confirmada','en_curso',
                                    'finalizada','cancelada','caducada')),
 
   -- El precio se CONGELA al crear la reserva. Una subida de
@@ -70,7 +74,7 @@ alter table reserva add constraint sin_solapes
   exclude using gist (
     alojamiento_id with =,
     daterange(entrada::date, salida::date, '[)') with &&
-  ) where (estado in ('pendiente','confirmada','en_curso'));
+  ) where (estado in ('pendiente','revisando','confirmada','en_curso'));
 
 -- ============================================================
 -- ¿Cuántos perros hay dentro esa noche?
@@ -82,7 +86,7 @@ returns integer language sql stable
 set search_path = public as $$
   select coalesce(sum(r.perros), 0)::integer
     from reserva r
-   where r.estado in ('pendiente','confirmada','en_curso')
+   where r.estado in ('pendiente','revisando','confirmada','en_curso')
      and la_noche >= r.entrada::date
      and la_noche <  r.salida::date;
 $$;
@@ -140,7 +144,7 @@ begin
        and not exists (
              select 1 from reserva r
               where r.alojamiento_id = al.id
-                and r.estado in ('pendiente','confirmada','en_curso')
+                and r.estado in ('pendiente','revisando','confirmada','en_curso')
                 and d >= r.entrada::date and d < r.salida::date);
 
     if libres = 0 then
@@ -168,7 +172,7 @@ begin
      and not exists (
            select 1 from reserva r
             where r.alojamiento_id = al.id
-              and r.estado in ('pendiente','confirmada','en_curso')
+              and r.estado in ('pendiente','revisando','confirmada','en_curso')
               and daterange(r.entrada::date, r.salida::date, '[)')
                   && daterange(la_entrada::date, la_salida::date, '[)'))
    order by al.id limit 1;

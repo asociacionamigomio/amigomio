@@ -5,7 +5,8 @@
    se va, quién puede recogerlo y qué ha pasado estos días.
    ============================================================ */
 import { unaEstancia, incidenciasDe, anotarIncidencia, cambiarEstado, cuadrante,
-         moverDeAlojamiento, documentosDe, verDocumento } from "../datos.js";
+         moverDeAlojamiento, documentosDe, verDocumento,
+         verJustificante, validarJustificante, rechazarJustificante } from "../datos.js";
 import { tipoDocumento } from "../documentos.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
@@ -18,7 +19,8 @@ const cuando = iso => new Date(iso).toLocaleString("es-ES",
   { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 const ROTULOS = {
-  pendiente: "Falta el justificante", confirmada: "Confirmada",
+  pendiente: "Falta el justificante", revisando: "Justificante por revisar",
+  confirmada: "Confirmada",
   en_curso: "Está dentro", finalizada: "Terminada",
   cancelada: "Cancelada", caducada: "Caducó sin pagar",
 };
@@ -53,7 +55,7 @@ export async function render(contenedor, { reservaId } = {}) {
           <p>${perros.map(p => esc(p.raza) || "sin raza").join(" · ")}</p>
         </div>
         <div class="estancia-estado">
-          <span class="etiqueta ${r.estado === "pendiente" ? "" : "azul"}">${ROTULOS[r.estado] || r.estado}</span>
+          <span class="etiqueta ${["pendiente","revisando"].includes(r.estado) ? "" : "azul"}">${ROTULOS[r.estado] || r.estado}</span>
           <p>${esc(r.alojamiento?.nombre || "")}${dentro ? ` · noche ${nocheActual} de ${noches}` : ""}</p>
         </div>
       </div>
@@ -67,6 +69,8 @@ export async function render(contenedor, { reservaId } = {}) {
         <div><p class="rotulo">Estancia</p><p class="dato">${euros(r.total)}</p>
           <p class="flojo">${esc(r.cliente?.telefono) || "sin teléfono"}</p></div>
       </div>
+
+      ${["pendiente","revisando"].includes(r.estado) ? bloqueJustificante(r) : ""}
 
       ${perros.map(p => `
         <div class="tarjeta" style="margin-top:1rem">
@@ -133,6 +137,73 @@ export async function render(contenedor, { reservaId } = {}) {
     contenedor.querySelector("#mover").addEventListener("click", () => elegirAlojamiento(r));
 
     papelesDeLosPerros();
+
+    contenedor.querySelector("#ver-justificante")?.addEventListener("click", async b => {
+      const url = await verJustificante(r.justificante);
+      if (url) window.open(url, "_blank", "noopener");
+      else pintar("No hemos podido abrirlo.", "error");
+    });
+
+    contenedor.querySelector("#validar")?.addEventListener("click", async () => {
+      const res = await validarJustificante(id);
+      pintar(res.mensaje, res.ok ? "aviso" : "error");
+    });
+
+    contenedor.querySelector("#rechazar")?.addEventListener("click", async () => {
+      const motivo = contenedor.querySelector("#motivo")?.value.trim();
+      if (!motivo)
+        return pintar("Dile POR QUÉ no vale, o volverá a mandar la misma foto.", "error");
+      const res = await rechazarJustificante(id, motivo);
+      pintar(res.mensaje, res.ok ? "aviso" : "error");
+    });
+  }
+
+  /* El papel de la transferencia.
+
+     Que esté subido NO significa que el dinero haya llegado: una
+     foto puede ser de cualquier cosa. Se mira la cuenta y se
+     confirma aquí. Rechazarlo no mata la reserva: le da otras 24
+     horas, porque perder un cliente por una foto movida es
+     perderlo por nada. */
+  function bloqueJustificante(r) {
+    if (r.estado === "pendiente") {
+      const quedan = r.expira
+        ? Math.round((new Date(r.expira) - Date.now()) / 3600000) : null;
+      return `
+        <div class="tarjeta justificante" style="margin-top:1rem">
+          <p class="rotulo">El pago</p>
+          <p>Todavía no ha mandado el justificante.
+             ${quedan !== null ? (quedan > 0
+               ? `<strong>Le quedan ${quedan} hora${quedan === 1 ? "" : "s"}</strong>
+                  y el sitio se suelta solo.`
+               : `<strong>Se le pasó el plazo</strong>: el reloj la soltará en cuanto pase.`)
+               : ""}</p>
+          ${r.justificante_nota ? `<p class="flojo">Le rechazamos el anterior:
+             «${esc(r.justificante_nota)}»</p>` : ""}
+          <button class="boton pequeno" id="validar">Ya ha pagado, confirmar</button>
+          <p class="flojo">Úsalo si te lo ha pagado por otro camino o lo has visto en la cuenta.</p>
+        </div>`;
+    }
+
+    return `
+      <div class="tarjeta justificante mirar" style="margin-top:1rem">
+        <p class="rotulo">El pago</p>
+        <p>Mandó el justificante${r.justificante_subido
+          ? ` el ${cuando(r.justificante_subido)}` : ""}.
+          <strong>Míralo en la cuenta antes de confirmar</strong>: la foto no es el dinero.</p>
+
+        <div class="botonera" style="margin-top:.6rem">
+          <button class="boton fantasma pequeno" id="ver-justificante">Ver el justificante</button>
+          <button class="boton pequeno" id="validar">He visto el dinero, confirmar</button>
+        </div>
+
+        <div class="rechazo">
+          <input id="motivo" placeholder="Si no vale, por qué (lo lee el cliente)">
+          <button class="enlace quitar" id="rechazar">No vale</button>
+        </div>
+        <p class="flojo">Rechazarlo no cancela la reserva: le da otras 24 horas
+           para mandar otro.</p>
+      </div>`;
   }
 
   /* La cartilla que haya subido el cliente. Se pide DESPUÉS de

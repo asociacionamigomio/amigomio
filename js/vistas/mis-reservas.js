@@ -2,7 +2,7 @@
    Mis reservas: las que vienen, las pendientes de pagar y el
    historial de estancias.
    ============================================================ */
-import { misReservas, cancelarReserva } from "../datos.js";
+import { misReservas, cancelarReserva, subirJustificante } from "../datos.js";
 import { enlaceWhatsApp } from "../contacto.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
@@ -16,6 +16,7 @@ const dia = iso => new Date(iso).toLocaleDateString("es-ES",
 
 const ROTULOS = {
   pendiente:   { texto: "Falta el justificante", clase: "amarilla" },
+  revisando:   { texto: "Estamos mirándolo",      clase: "amarilla" },
   confirmada:  { texto: "Confirmada",            clase: "azul" },
   en_curso:    { texto: "Está aquí ahora",       clase: "azul" },
   finalizada:  { texto: "Terminada",             clase: "" },
@@ -65,6 +66,24 @@ export async function render(contenedor) {
         await cancelarReserva(b.dataset.cancelar);
         render(contenedor);
       }));
+
+    /* El justificante. Subirlo NO confirma la reserva —eso lo
+       hace administración cuando ve el dinero— pero sí para el
+       reloj de las 24 horas. */
+    contenedor.querySelectorAll("[data-justificante]").forEach(entrada =>
+      entrada.addEventListener("change", async () => {
+        const fichero = entrada.files?.[0];
+        if (!fichero) return;
+        const etiqueta = entrada.closest("label");
+        etiqueta.textContent = "Subiendo…";
+        const r = await subirJustificante(entrada.dataset.justificante, fichero);
+        if (!r.ok) {
+          etiqueta.textContent = r.mensaje;
+          etiqueta.classList.add("error-linea");
+          return;
+        }
+        render(contenedor);
+      }));
   }
 }
 
@@ -87,12 +106,29 @@ function tarjeta(r) {
           <strong>Nos falta el justificante de la transferencia.</strong>
           ${r.expira ? `<br>Tienes hasta el ${dia(r.expira)} a las
             ${new Date(r.expira).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})}.` : ""}
-          <br>Pídenos el número de cuenta si no lo tienes: 673 229 399.
+          ${r.justificante_nota ? `
+            <br><strong>El anterior no nos valía:</strong> ${esc(r.justificante_nota)}` : ""}
+          <br>Pídenos el número de cuenta si no lo tienes por
+          <a target="_blank" rel="noopener"
+             href="${enlaceWhatsApp("Hola, ¿me pasáis el número de cuenta para la transferencia?")}"
+          >WhatsApp</a>.
+
+          <label class="boton pequeno subir" style="margin-top:.6rem">
+            Subir el justificante
+            <input type="file" accept="image/*,application/pdf"
+                   data-justificante="${r.id}" hidden>
+          </label>
+        </div>` : ""}
+
+      ${r.estado === "revisando" ? `
+        <div class="aviso">
+          <strong>Lo hemos recibido.</strong> Lo miramos y te confirmamos.
+          No tienes que hacer nada más.
         </div>` : ""}
 
       ${sePuedeCancelar
         ? `<button class="enlace" data-cancelar="${r.id}">Cancelar (te devolvemos todo)</button>`
-        : ["pendiente","confirmada"].includes(r.estado)
+        : ["pendiente","revisando","confirmada"].includes(r.estado)
           ? `<p class="flojo">Quedan menos de 7 días: ya no se puede cancelar por aquí.
                Si ha pasado algo, <a target="_blank" rel="noopener"
                href="${enlaceWhatsApp("Hola, ha pasado algo con una reserva y ya no puedo cancelarla por la app.")}"

@@ -8,7 +8,8 @@
    ============================================================ */
 import { tarifas, guardarTarifa, festivos, anadirFestivo, quitarFestivo,
          extras, guardarExtra, ajustes, guardarAjuste,
-         promociones, guardarPromocion, borrarPromocion } from "../datos.js";
+         promociones, guardarPromocion, borrarPromocion,
+         caducarReservas } from "../datos.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -285,7 +286,21 @@ export async function render(contenedor) {
           <input id="a-${a.clave}" value="${esc(a.valor)}" data-ajuste="${a.clave}"
                  ${a.clave === "iban" ? 'placeholder="ESxx xxxx xxxx xxxx xxxx xxxx"' : ""}>
           <p class="flojo">${esc(a.nota)}</p>`).join("")}
+      </div>
+
+      <div class="tarjeta" style="margin-top:1rem">
+        <h3>El reloj de las 24 horas</h3>
+        <p class="flojo">Cada diez minutos el servidor suelta las reservas que no
+           han mandado el justificante a tiempo. Si te falla y ves alojamientos
+           ocupados por reservas que nadie pagó, púlsalo aquí.</p>
+        <button class="boton fantasma pequeno" id="pasar-reloj">Pasar el reloj ahora</button>
       </div>`;
+
+    panel().querySelector("#pasar-reloj").addEventListener("click", async e => {
+      e.target.disabled = true;
+      const r = await caducarReservas();
+      pintar(r.mensaje, r.ok ? "aviso" : "error");
+    });
 
     panel().querySelectorAll("[data-ajuste]").forEach(i =>
       i.addEventListener("change", async () => {

@@ -23,10 +23,12 @@ test("la sobreventa la impide el motor, no una comprobación previa", () => {
 
 test("la restricción solo mira las reservas vivas", () => {
   /* Una reserva cancelada o caducada no puede seguir bloqueando
-     el alojamiento. */
+     el alojamiento. Una en `revisando` SÍ: el cliente ya mandó
+     el justificante y estamos nosotros mirándolo. */
   const i = sql.indexOf("sin_solapes");
   const bloque = sql.slice(i, i + 500);
-  assert.match(bloque, /where\s*\(estado in \('pendiente','confirmada','en_curso'\)\)/i);
+  assert.match(bloque,
+    /where\s*\(estado in \('pendiente','revisando','confirmada','en_curso'\)\)/i);
 });
 
 test("el rango es '[)': salir e entrar el mismo día no se solapa", () => {

@@ -879,3 +879,27 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 .promo p { margin: .2rem 0 0; font-size: .82rem; }
 .promo-botones { display: flex; gap: .5rem; align-items: center; }
 .promo-botones .quitar { color: var(--rojo, #b4453a); font-size: .82rem; }
+
+/* ============================================================
+   El justificante de la transferencia.
+
+   Lo que se decide aquí es si una reserva se confirma o no, así
+   que el bloque tiene que saltar a la vista, no esconderse
+   entre las notas del perro.
+   ============================================================ */
+.justificante { border-left: 4px solid var(--amarillo, #E8C547); }
+.justificante.mirar { border-left-color: var(--azul, #4E80A5); }
+.justificante p { font-size: .9rem; }
+.justificante .botonera { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+.rechazo {
+  display: flex; gap: .5rem; align-items: center; flex-wrap: wrap;
+  margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--borde);
+}
+.rechazo input { flex: 1 1 12rem; min-width: 0; }
+.rechazo .quitar { color: var(--rojo, #b4453a); white-space: nowrap; }
+
+/* El <input type=file> es imposible de estilar: se esconde y se
+   ve la etiqueta. */
+.aviso .subir { display: inline-block; cursor: pointer; }
+.error-linea { color: var(--rojo, #b4453a); }
