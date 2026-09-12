@@ -135,7 +135,9 @@ test("el perro de más es una sola tarifa, repetida", () => {
      "tres perros +20" como tarifas sueltas, sino +10 por cada perro
      de más. Los totales salen iguales, pero con dos tarifas había
      que acordarse de cambiar las dos. */
-  assert.doesNotMatch(sql, /'segundo_perro'|'tercer_perro'/,
+  /* La línea que las BORRA sí puede nombrarlas: es la migración. */
+  const sinLimpieza = sql.replace(/delete from tarifa[^;]*;/gi, "");
+  assert.doesNotMatch(sinLimpieza, /'segundo_perro'|'tercer_perro'/,
     "no puede haber una tarifa distinta para el tercero");
   assert.match(sql, /importe \* \(los_perros - 1\) \* noches/,
     "se multiplica por los perros de más");

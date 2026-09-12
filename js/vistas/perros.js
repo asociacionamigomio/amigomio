@@ -321,13 +321,28 @@ function cuerpoPaso2(d, error) {
     ${casilla("polidipsia", "Bebe muchísima agua")}
     ${casilla("destroyer",  "Rompe cosas: camas, juguetes…")}
 
-    <h4>Cosas importantes</h4>
+    <h4>Lo más importante que nos puedes contar</h4>
+    ${d.agresivo_con_personas ? `
+      <div class="aviso">
+        <strong>Este perro está clasificado con manejo de peligrosidad.</strong>
+        Va a alojamiento propio, siempre solo, y su estancia tiene tarifa especial.
+        Si crees que ya no hace falta, háblalo con nosotros.
+      </div>` : ""}
+
     <label class="casilla">
-      <input type="checkbox" data-campo="agresivo_con_personas" ${d.agresivo_con_personas ? "checked" : ""}>
-      <span><strong>Ha tenido problemas de agresividad con personas</strong>
-        <br><span class="flojo">Si es así, va a un alojamiento aparte y siempre solo.
-        Dínoslo aunque te dé apuro: es por su seguridad y la de todos.</span></span>
+      <input type="checkbox" data-campo="ha_mordido" ${d.ha_mordido ? "checked" : ""}>
+      <span><strong>Ha mordido o ha intentado morder a alguna persona</strong>
+        <br><span class="flojo">Aunque fuera una vez y hace años.</span></span>
     </label>
+
+    <label for="incidentes">¿Ha pasado algo con personas que debamos saber?</label>
+    <p class="flojo">Cuéntanoslo con tus palabras, aunque te dé apuro. No es para juzgar
+       a tu perro: es para que quien lo maneje sepa a qué atenerse y no haya sustos.
+       <strong>Lo decidimos nosotros</strong>, no tú, y te lo diremos antes de cobrarte nada
+       distinto.</p>
+    <textarea id="incidentes" data-campo="incidentes_con_personas" rows="3"
+      placeholder="Gruñe si le tocan mientras come. Con desconocidos en casa se pone nervioso."
+      >${esc(d.incidentes_con_personas)}</textarea>
 
     <label class="casilla">
       <input type="checkbox" id="es_ppp" data-campo="es_ppp" ${d.es_ppp ? "checked" : ""}>

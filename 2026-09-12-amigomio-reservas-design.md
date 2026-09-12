@@ -154,9 +154,26 @@ Cuelga de un cliente. Se graba una vez:
 
 Se contesta en el alta, en desplegables. Sus respuestas se usan en tres sitios distintos:
 
-**Cambia precio y alojamiento:**
-- **Agresivo con personas** → sólo puede ir a uno de los 2 boxes especiales, **siempre solo**,
-  a 35 €/día.
+**Cambia precio y alojamiento — y lo decide AmigoMío, no el cliente:**
+
+- **Agresivo con personas** → sólo puede ir a uno de los 2 alojamientos especiales, **siempre
+  solo**, a 35 €/día.
+
+**La raza no entra en esta decisión** (Santiago, 12/09/2026). Un perro potencialmente peligroso
+por tipología puede ser un trozo de pan; un mestizo de 12 kilos puede necesitar manejo especial.
+Son dos cosas distintas:
+
+| | Qué es | Quién lo decide | Efecto |
+|---|---|---|---|
+| **PPP** | Raza o tipología, por ley | La ley | Licencia y seguro obligatorios |
+| **Manejo de peligrosidad** | Comportamiento de ese perro | **AmigoMío** | Alojamiento especial y 35 €/día |
+
+**El cliente declara, AmigoMío clasifica.** El propietario dice si su perro ha mordido y cuenta
+lo que haya pasado, con sus palabras. La casilla que manda al perro a alojamiento especial la
+marca administración, y lo impide un trigger (`perro_peligrosidad_la_marca_admin`).
+
+> Por qué: si la marca el dueño, no la marca nadie. Nadie va a declarar voluntariamente que su
+> perro es un problema cuando declararlo cuesta 35 € al día.
 
 **Decide si puede compartir box y patio:**
 - Bueno con todos los perros / sólo con machos / sólo con hembras / con ninguno
@@ -240,8 +257,7 @@ Gana **la primera regla que encaje**:
 
 | Concepto | Importe |
 |---|---|
-| Segundo perro en el mismo box | +10 € por noche |
-| Tercer perro en el mismo box | +20 € por noche |
+| Cada perro de más en el mismo box | +10 € por noche y por perro |
 | Medicación **oral** | Incluida, sin cargo |
 | Medicación **inyectable** o curas | +8 € por perro y noche |
 
