@@ -94,6 +94,23 @@ Lee `2026-09-12-amigomio-reservas-design.md` (el diseño), `2026-09-12-plan-fase
 
 ## Mañas que ya han costado una tarde
 
+- **Aplicar todo el SQL de golpe sacó seis fallos seguidos el 12/09/2026.** Todos de la misma
+  familia: *lo idempotente no actualiza lo que ya existe*.
+  - `create table if not exists` **no toca nada** de una tabla que ya está: ni columnas, ni
+    índices, **ni restricciones**. El `check` de `estado` hay que rehacerlo con
+    `drop constraint if exists` + `add constraint`.
+  - `create or replace function` **no reemplaza si cambian los parámetros: SOBRECARGA**. Al
+    añadir `el_cliente` quedaron dos `presupuesto` y las llamadas se volvieron ambiguas
+    (`42725: ... is not unique`). Hay que `drop function if exists` la firma vieja.
+  - Una **restricción tiene que existir antes de que alguien la nombre**. Un `on conflict
+    (nombre)` con la restricción creada en otro fichero posterior aborta con `42P10`.
+  - Los **tipos del `returns table` tienen que ser EXACTOS**. `reserva.entrada` es `timestamp`
+    sin zona; declarar `timestamptz` no convierte, aborta (`42804`).
+  - **Una cadena vacía no es nula.** El formulario guarda `"fecha": ""`, y `is not null` la deja
+    pasar hasta el cast (`22007`). `nullif(..., '')` antes de convertir.
+  - Y las funciones que exigen administración **tienen que poder correr desde el SQL Editor**,
+    donde `auth.uid()` es nulo: para eso está `es_admin_o_servidor()`.
+
 - **EL NAVEGADOR SE DESPLIEGA ANTES QUE LA BASE. SIEMPRE.** Uno va con `git push` y GitHub Pages
   lo publica en segundos; la otra, cuando una persona pega el SQL en Supabase. El 12/09/2026
   esto dejó a todo el mundo sin poder reservar: la pantalla empezó a pedir

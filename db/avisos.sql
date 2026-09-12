@@ -122,7 +122,7 @@ declare
   puestos integer := 0;
   f       record;
 begin
-  if not (current_user in ('postgres','supabase_admin') or es_admin()) then
+  if not es_admin_o_servidor() then
     raise exception 'Esto lo dispara el servidor.';
   end if;
 
@@ -186,10 +186,18 @@ begin
            min(v.caduca) as primera
       from perro p
       cross join lateral (
-        select (p.sanidad -> k ->> 'fecha')::date
+        /* `nullif(..., '')` y no `is not null`: el formulario
+           guarda `"fecha": ""` cuando el campo se deja en
+           blanco, y una cadena vacía NO es nula. Con `is not
+           null` pasaba el filtro y reventaba en el cast:
+
+             22007: invalid input syntax for type date: ""
+
+           Convertida a nulo, la fecha sale nula, el `between`
+           de abajo la descarta y no hay que ordenar nada. */
+        select nullif(p.sanidad -> k ->> 'fecha', '')::date
                + case when k = 'desparasitacion_interna' then 30 else 365 end as caduca
           from jsonb_object_keys(p.sanidad) k
-         where p.sanidad -> k ->> 'fecha' is not null
       ) v
      where not p.borrador
        and v.caduca between current_date and current_date + 30

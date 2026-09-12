@@ -57,7 +57,7 @@ declare
 begin
   -- La puerta: o la llama el servidor (el cron), o la llama
   -- administración desde el panel. Nadie más.
-  if not (current_user in ('postgres','supabase_admin') or es_admin()) then
+  if not es_admin_o_servidor() then
     raise exception 'Esto no lo decides tú.';
   end if;
 
@@ -162,7 +162,7 @@ create or replace function validar_justificante(la_reserva uuid)
 returns jsonb language plpgsql security definer
 set search_path = public as $$
 begin
-  if not es_admin() then
+  if not es_admin_o_servidor() then
     raise exception 'Esto lo confirma administración.';
   end if;
 
@@ -183,7 +183,7 @@ set search_path = public as $$
 declare
   horas integer;
 begin
-  if not es_admin() then
+  if not es_admin_o_servidor() then
     raise exception 'Esto lo decide administración.';
   end if;
 

@@ -44,6 +44,21 @@ create table if not exists reserva (
   constraint salida_despues_de_entrada check (salida > entrada)
 );
 
+-- OJO: `create table if not exists` NO toca una tabla que ya
+-- existe. Ni columnas, ni índices, NI RESTRICCIONES. El check de
+-- `estado` de arriba sólo se aplica a una base recién creada; en
+-- la que ya estaba funcionando seguía el check viejo, sin
+-- `revisando`, y subir un justificante reventaba con
+--
+--   23514: new row for relation "reserva" violates check
+--          constraint "reserva_estado_check"
+--
+-- Así que se rehace siempre, a mano.
+alter table reserva drop constraint if exists reserva_estado_check;
+alter table reserva add constraint reserva_estado_check
+  check (estado in ('pendiente','revisando','confirmada','en_curso',
+                    'finalizada','cancelada','caducada'));
+
 create index if not exists reserva_por_fechas on reserva (entrada, salida);
 create index if not exists reserva_del_cliente on reserva (cliente_id);
 

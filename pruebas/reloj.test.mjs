@@ -117,3 +117,17 @@ test("la pantalla de administración deja mirarlo y decidir", () => {
   assert.match(vista, /validarJustificante/);
   assert.match(vista, /rechazarJustificante/);
 });
+
+test("las funciones de administración se pueden probar desde el SQL Editor", () => {
+  /* En el editor `auth.uid()` es nulo, así que `es_admin()` es
+     falso: una prueba honesta abortaba la instalación entera con
+     «Esto lo decide administración». `es_admin_o_servidor()`
+     distingue a la persona del servidor, y no abre ninguna
+     puerta: lo que entra por internet llega como `anon` o
+     `authenticated`, nunca como `postgres`. */
+  assert.match(sql, /es_admin_o_servidor\(\)/);
+
+  const esquema = aplanar(leer("db/schema.sql"));
+  assert.match(esquema, /create or replace function es_admin_o_servidor/);
+  assert.match(esquema, /current_user in \('postgres','supabase_admin'\)/);
+});

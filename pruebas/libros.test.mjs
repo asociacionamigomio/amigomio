@@ -30,7 +30,8 @@ const sql = aplanar(leer("db/libros.sql"));
 /* ---------- El libro ---------- */
 test("el libro existe y sólo lo abre administración", () => {
   assert.match(sql, /create or replace function libro_entradas_salidas/);
-  assert.match(sql, /es_admin\(\)/);
+  assert.match(sql, /es_admin_o_servidor\(\)/,
+    "cierra la puerta a todo el que no sea administración ni el propio servidor");
   assert.match(sql, /security definer/,
     "tiene que cruzar reserva, perro y cliente: se salta RLS y vigila ella la puerta");
 });
@@ -81,7 +82,7 @@ test("el mes se cuenta por la ENTRADA, no por cuándo se reservó", () => {
 
 test("las cuentas tampoco las ve el cliente", () => {
   const cuentas = sql.match(/function ingresos_por_mes.*?end \$\$;/s)[0];
-  assert.match(cuentas, /es_admin\(\)/);
+  assert.match(cuentas, /es_admin_o_servidor\(\)/);
 });
 
 /* ---------- Las pantallas ---------- */
@@ -127,4 +128,14 @@ test("y lleva la marca del principio para que no se rompan las tildes", () => {
      sale «DesparasitaciÃ³n». */
   const vista = leer("js/vistas/admin-libro.js");
   assert.match(vista, /\\uFEFF|\uFEFF/);
+});
+
+test("las fechas del libro son del mismo tipo que en la tabla", () => {
+  /* `reserva.entrada` es `timestamp` SIN zona. Si el libro
+     declara `timestamptz`, Postgres no convierte: aborta con
+     «42804: Returned type timestamp without time zone does not
+     match expected type timestamp with time zone». */
+  const libro = sql.match(/function libro_entradas_salidas.*?language plpgsql/s)[0];
+  assert.match(libro, /entrada timestamp,/);
+  assert.doesNotMatch(libro, /entrada timestamptz/);
 });

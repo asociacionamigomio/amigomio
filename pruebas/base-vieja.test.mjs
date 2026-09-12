@@ -74,3 +74,29 @@ test("lo que no existe todavía no rompe la ficha del perro", () => {
   assert.match(fn, /return \[\]/,
     "sin la tabla, la lista de papeles se queda vacía y ya");
 });
+
+test("al cambiar los parámetros de una función, se tira la vieja", () => {
+  /* `create or replace function` NO reemplaza si cambia la
+     lista de parámetros: SOBRECARGA. Al añadir `el_cliente`
+     quedaron dos `presupuesto` y Postgres abortó la instalación
+     con «function presupuesto(...) is not unique». */
+  const sql = leer("db/tarifas.sql").replace(/^\s*--.*$/gm, "");
+  assert.match(sql, /drop function if exists presupuesto\(/,
+    "hay que tirar la firma vieja antes de crear la nueva");
+  assert.ok(sql.indexOf("drop function if exists presupuesto(")
+          < sql.indexOf("create or replace function presupuesto("),
+    "y tirarla ANTES");
+});
+
+test("los checks se rehacen, porque `if not exists` no los toca", () => {
+  /* `create table if not exists` no modifica NADA de una tabla
+     que ya existe: ni columnas, ni índices, ni restricciones. El
+     estado `revisando` entró en el check del CREATE TABLE y en
+     la base real seguía el check viejo:
+
+       23514: new row for relation "reserva" violates check
+              constraint "reserva_estado_check" */
+  const sql = leer("db/reservas.sql").replace(/^\s*--.*$/gm, "");
+  assert.match(sql, /alter table reserva drop constraint if exists reserva_estado_check/);
+  assert.match(sql, /add constraint reserva_estado_check[\s\S]*?'revisando'/);
+});

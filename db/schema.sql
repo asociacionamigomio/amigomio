@@ -136,6 +136,26 @@ set search_path = public as $$
   select coalesce((select es_admin from cliente where id = auth.uid()), false);
 $$;
 
+/* «Administración O el propio servidor».
+ *
+ * Las funciones que sólo puede usar administración también tienen
+ * que poder ejecutarse desde el SQL Editor: es donde se aplican
+ * los ficheros y donde corren las pruebas que llevan dentro. Ahí
+ * `auth.uid()` es nulo, así que `es_admin()` es falso y una
+ * prueba honesta abortaba la instalación entera con «Esto lo
+ * decide administración».
+ *
+ * Esto NO abre ninguna puerta: todo lo que entra por internet
+ * llega como `anon` o `authenticated`, nunca como `postgres`.
+ * Es la misma distinción que ya hacían `crear_reserva` y
+ * `caducar_reservas`, puesta en un solo sitio.
+ */
+create or replace function es_admin_o_servidor()
+returns boolean language sql stable security definer
+set search_path = public as $$
+  select es_admin() or current_user in ('postgres','supabase_admin');
+$$;
+
 -- ============================================================
 -- La regla que no se negocia: el propietario NO cambia el chip
 -- ni el nombre. Puede cambiar todo lo demás cuando quiera.

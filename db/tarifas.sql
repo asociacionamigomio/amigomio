@@ -446,6 +446,18 @@ end $$;
 -- Lo que cobra la veterinaria va APARTE, nunca en el total: si
 -- entrara, AmigoMío estaría cobrando por cuenta de un tercero.
 -- ============================================================
+-- OJO: `create or replace function` NO reemplaza si cambian los
+-- parámetros — SOBRECARGA. Al añadir `el_cliente` quedaron dos
+-- `presupuesto` distintas, y las llamadas con cinco argumentos
+-- se volvieron ambiguas:
+--
+--   42725: function presupuesto(unknown, unknown, unknown,
+--          unknown, integer, integer) is not unique
+--
+-- Así que la de seis parámetros se tira antes. Es idempotente:
+-- `if exists` no se queja si ya no está.
+drop function if exists presupuesto(timestamp, timestamp, text, integer, integer, integer[]);
+
 create or replace function presupuesto(
   la_entrada    timestamp,
   la_salida     timestamp,
@@ -730,13 +742,24 @@ begin
     'el descuento tiene que verse como línea, no sólo en el total';
 
   -- ---------- Y NO se come los recargos de fuera de horario ----------
-  -- Misma estancia, recogida a las 22:00 de un jueves: 50 € de
-  -- recargo. Con el 50 % de descuento serían 15 + 50 = 65.
-  -- Si el descuento mordiera el recargo, saldrían 40.
+  -- Misma estancia, recogida a las 22:00 de un jueves. Las 22:00
+  -- caen en la franja de NOCHE (de 21:00 a 7:30), que son 120 —
+  -- no los 50 del resto del día entre semana. Con el 50 % de
+  -- descuento: 15 de estancia + 120 de recargo = 135.
+  --
+  -- Si el descuento mordiera el recargo saldrían 75, y eso es lo
+  -- que esta comprobación impide.
   p := presupuesto('2026-08-11 11:00', '2026-08-13 22:00', 'normal', 1, 0);
-  assert (p->>'total')::numeric = 15 + 50,
-    'el recargo de fuera de horario no se descuenta: tenían que ser 65, dio '
+  assert (p->>'total')::numeric = 15 + 120,
+    'el recargo de fuera de horario no se descuenta: tenían que ser 135, dio '
     || (p->>'total');
+
+  -- Y lo mismo con la franja barata, por si algún día cambian
+  -- los importes y sólo se toca uno: las 20:00 de un jueves son
+  -- 50, y con el 50 % el total es 15 + 50 = 65.
+  p := presupuesto('2026-08-11 11:00', '2026-08-13 20:00', 'normal', 1, 0);
+  assert (p->>'total')::numeric = 15 + 50,
+    'a las 20:00 el recargo son 50 y tampoco se descuenta, dio ' || (p->>'total');
 
   delete from promocion where nombre = 'PRUEBA mitad';
 

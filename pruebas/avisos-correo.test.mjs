@@ -104,3 +104,13 @@ test("el correo se ve bien aunque el cliente no cargue imágenes", () => {
   assert.match(fn, /text:/,
     "todo correo lleva su versión en texto plano");
 });
+
+test("una fecha en blanco no revienta la preparación de avisos", () => {
+  /* El formulario guarda `"fecha": ""` cuando el campo se deja
+     vacío, y una cadena vacía NO es nula: con `is not null`
+     pasaba el filtro y el cast abortaba con
+     «22007: invalid input syntax for type date: ""», tirando la
+     instalación entera. */
+  assert.match(sql, /nullif\(p\.sanidad -> k ->> 'fecha', ''\)/);
+  assert.doesNotMatch(sql, /where p\.sanidad -> k ->> 'fecha' is not null/);
+});

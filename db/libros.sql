@@ -39,9 +39,13 @@ create or replace function libro_entradas_salidas(
   recoge_nombre       text,
   recoge_dni          text,
 
-  -- La estancia
-  entrada             timestamptz,
-  salida              timestamptz,
+  -- La estancia. `timestamp` SIN zona, igual que en la tabla
+  -- `reserva`: si aquí se declara `timestamptz`, Postgres no
+  -- convierte, aborta —
+  --   42804: Returned type timestamp without time zone does not
+  --          match expected type timestamp with time zone
+  entrada             timestamp,
+  salida              timestamp,
   alojamiento         text,
   procedencia         text,
 
@@ -54,7 +58,7 @@ create or replace function libro_entradas_salidas(
 ) language plpgsql security definer
 set search_path = public as $$
 begin
-  if not es_admin() then
+  if not es_admin_o_servidor() then
     raise exception 'El libro de registro lo consulta administración.';
   end if;
 
@@ -144,7 +148,7 @@ returns table (
 ) language plpgsql security definer
 set search_path = public as $$
 begin
-  if not es_admin() then
+  if not es_admin_o_servidor() then
     raise exception 'Las cuentas las mira administración.';
   end if;
 
