@@ -42,9 +42,15 @@ const REMITENTE = "AmigoMío <hola@amigomio.org>";
 
 Deno.serve(async (peticion) => {
   /* La puerta. Sin esto, cualquiera con la URL puede dispararla
-     tantas veces como quiera. */
+     tantas veces como quiera.
+
+     Va en SU PROPIA cabecera y no en `Authorization` a
+     propósito: Supabase tiene «Verify JWT» encendido y usa
+     `Authorization` para su anon key. Si el secreto fuera por
+     ahí, Supabase rechazaría la llamada antes de que este
+     código llegara a mirar nada. */
   const secreto = Deno.env.get("CRON_SECRET");
-  const dado = peticion.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  const dado = peticion.headers.get("x-cron-secret");
   if (!secreto || dado !== secreto) {
     return new Response("No.", { status: 401 });
   }

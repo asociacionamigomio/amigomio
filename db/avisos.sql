@@ -319,3 +319,62 @@ begin
 
   raise notice 'Avisos: todas las comprobaciones pasan.';
 end $$;
+
+-- ============================================================
+-- QUE SALGAN SOLOS
+--
+-- `preparar_avisos()` los mete en la cola; la Edge Function
+-- `avisos` los entrega. Falta quien la llame, y eso lo hace
+-- Postgres con pg_net, cada cinco minutos.
+--
+-- EL SECRETO. La función pide una contraseña en la cabecera
+-- `x-cron-secret` — sin ella, cualquiera con la URL podría
+-- vaciar la cola de correos de AmigoMío. Esa contraseña vive en
+-- `ajuste`, que tiene RLS y NO la lee nadie que no sea
+-- administración; es donde ya vive el IBAN.
+--
+-- Mientras el ajuste esté vacío, esto NO programa nada y lo
+-- dice. Programar un cron que va a fallar cada cinco minutos
+-- sólo llena el registro de ruido.
+-- ============================================================
+insert into ajuste (clave, valor, nota) values
+  ('cron_secret', '',
+   'Contraseña que dispara el envío de correos. La misma que el secreto CRON_SECRET de Edge Functions. VACÍO = los correos no salen solos'),
+  ('url_avisos', 'https://sovzbrrpcbmnevrdwaej.supabase.co/functions/v1/avisos',
+   'Dónde vive la función que entrega los correos')
+on conflict (clave) do nothing;
+
+do $$
+declare
+  secreto text;
+  url     text;
+  anon    text;
+begin
+  select valor into secreto from ajuste where clave = 'cron_secret';
+  select valor into url     from ajuste where clave = 'url_avisos';
+
+  if coalesce(secreto, '') = '' then
+    raise notice 'Los correos NO saldrán solos todavía: falta poner `cron_secret` en los ajustes.';
+    return;
+  end if;
+
+  create extension if not exists pg_net;
+  create extension if not exists pg_cron;
+
+  perform cron.unschedule('mandar-avisos')
+    where exists (select 1 from cron.job where jobname = 'mandar-avisos');
+
+  perform cron.schedule('mandar-avisos', '*/5 * * * *', format($f$
+    select net.http_post(
+      url     := %L,
+      headers := jsonb_build_object(
+                   'Content-Type',  'application/json',
+                   'x-cron-secret', (select valor from ajuste where clave = 'cron_secret')),
+      body    := '{}'::jsonb
+    );
+  $f$, url));
+
+  raise notice 'Los correos se entregan cada cinco minutos.';
+exception when others then
+  raise warning 'No se ha podido programar el envío (%). Se puede disparar a mano.', sqlerrm;
+end $$;

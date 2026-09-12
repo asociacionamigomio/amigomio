@@ -89,8 +89,13 @@ test("la función de envío no usa la clave de servicio a lo loco", () => {
   /* Ésta SÍ necesita service_role: escribe en la cola de todos.
      Pero entonces tiene que comprobar quién la llama. */
   assert.match(fn, /SERVICE_ROLE/);
-  assert.match(fn, /CRON_SECRET|authorization/i,
+  assert.match(fn, /CRON_SECRET/,
     "si cualquiera puede dispararla, cualquiera puede vaciarte la cola de correos");
+  /* En su propia cabecera: Supabase tiene «Verify JWT»
+     encendido y usa `Authorization` para su anon key. Si el
+     secreto fuera por ahí, Supabase rechazaría la llamada antes
+     de que la función llegara a mirar nada. */
+  assert.match(fn, /x-cron-secret/);
 });
 
 test("marca el aviso ANTES de mandarlo, no después", () => {
@@ -113,4 +118,25 @@ test("una fecha en blanco no revienta la preparación de avisos", () => {
      instalación entera. */
   assert.match(sql, /nullif\(p\.sanidad -> k ->> 'fecha', ''\)/);
   assert.doesNotMatch(sql, /where p\.sanidad -> k ->> 'fecha' is not null/);
+});
+
+test("hay quien dispare el envío, y no es el navegador", () => {
+  /* Sin esto la cola se llena y no sale nadie: `preparar_avisos`
+     los encola, pero alguien tiene que llamar a la función que
+     los entrega. */
+  assert.match(sql, /net\.http_post/);
+  assert.match(sql, /x-cron-secret/);
+});
+
+test("sin contraseña no se programa nada, y se dice", () => {
+  /* Programar un cron que va a fallar cada cinco minutos sólo
+     llena el registro de ruido. */
+  assert.match(sql, /coalesce\(secreto, ''\) = ''/);
+  assert.match(sql, /raise notice/);
+});
+
+test("la contraseña no se escribe en el repositorio", () => {
+  /* Vive en `ajuste`, que tiene RLS y no la lee nadie que no sea
+     administración. Es donde ya vive el IBAN. */
+  assert.match(sql, /'cron_secret', ''/, "se crea vacía, se rellena en el panel");
 });
