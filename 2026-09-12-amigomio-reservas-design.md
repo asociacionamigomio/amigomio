@@ -472,7 +472,7 @@ Labrador chocolate de AmigoMío, **perro de asistencia y terapia**, con chaleco 
 chatbot con nombre de perro: es uno de los perros de la casa. Habla tranquilo, paciente, sin
 prisa, el que acompaña. Ni vendedor ni gracioso forzado.
 
-### 9.4 Poderes de administración
+### 9.6 Poderes de administración
 
 Crear perros a nombre de otros clientes · crear y gestionar reservas de terceros (atención
 telefónica) · editar datos de cliente · autorizar descuentos puntuales · autorizar pago en
