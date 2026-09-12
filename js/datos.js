@@ -50,8 +50,21 @@ export async function guardarMiFicha(datos) {
 /* ------------------------------------------------------------
    Perros
    ------------------------------------------------------------ */
+/**
+ * MIS perros. Se filtra por el dueño a propósito, aunque RLS ya
+ * proteja: administración puede ver los perros de todo el mundo,
+ * así que sin este filtro «Mis perros» le enseñaría los de todos
+ * los clientes, y los avisos de caducidad mezclarían las vacunas
+ * de sus perros con las de los ajenos.
+ *
+ * A los perros de los clientes se llega por el panel de Clientes,
+ * que es donde tiene sentido.
+ */
 export async function misPerros() {
-  const { data, error } = await supabase.from("perro").select("*").order("nombre");
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await supabase.from("perro")
+    .select("*").eq("cliente_id", user.id).order("nombre");
   if (error) throw error;
   return data || [];
 }

@@ -86,3 +86,22 @@ test("las consultas con tablas que se enlazan dos veces dicen por cuál", () => 
     }
   }
 });
+
+test("«Mis perros» son los míos, aunque sea administración", () => {
+  /* Fallo real: RLS deja a administración ver los perros de todos
+     los clientes, así que sin filtrar por dueño «Mis perros» le
+     enseñaba los de todo el mundo, y los avisos de caducidad le
+     mezclaban las vacunas de sus perros con las de los ajenos.
+
+     A los perros de los clientes se llega por el panel de
+     Clientes: ahí sí tiene sentido. */
+  assert.match(cuerpoDe("misPerros"), /\.eq\("cliente_id", user\.id\)/,
+    "hay que filtrar por dueño aunque RLS ya proteja");
+  /* El porqué va en el comentario de encima, fuera del cuerpo. */
+  assert.match(datos, /panel de Clientes/, "y decir dónde se ven los ajenos");
+});
+
+test("el panel de clientes sí ve los perros de cada uno", () => {
+  const c = cuerpoDe("perrosDe");
+  assert.match(c, /\.eq\("cliente_id", clienteId\)/);
+});
