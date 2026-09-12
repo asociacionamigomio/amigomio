@@ -87,6 +87,21 @@ function escribe(quien, texto) {
   return d;
 }
 
+/* Los tres puntitos del «está escribiendo».
+   Va por su propia puerta y no por escribe(), porque ahí TODO se
+   escapa —a propósito: lo que dice Zapatilla viene de un modelo
+   que ha leído datos escritos por clientes—. Si le pasas etiquetas
+   como texto, te las enseña tal cual, que es justo lo que pasó. */
+function puntitos() {
+  const charla = document.getElementById("zapatilla-charla");
+  const d = document.createElement("div");
+  d.className = "globo zapatilla pensando";
+  for (let i = 0; i < 3; i++) d.appendChild(document.createElement("span"));
+  charla.appendChild(d);
+  charla.scrollTop = charla.scrollHeight;
+  return d;
+}
+
 async function enviar(e) {
   e.preventDefault();
   if (hablando) return;
@@ -100,7 +115,7 @@ async function enviar(e) {
   historia.push({ role: "user", content: texto });
 
   hablando = true;
-  const esperando = escribe("zapatilla pensando", "<span></span><span></span><span></span>");
+  const esperando = puntitos();
 
   try {
     const { data: { session } } = await supabase.auth.getSession();

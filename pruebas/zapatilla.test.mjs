@@ -15,7 +15,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const lee = f => readFileSync(new URL("../" + f, import.meta.url), "utf8");
-const fn = lee("supabase/functions/zapatilla/index.ts");
+
+/* El texto de Zapatilla va envuelto a 76 columnas, así que casi
+   cualquier frase que se busque cruza un salto de línea. Esto
+   aplasta los espacios para que buscar una frase funcione sin
+   tener que adivinar dónde cae el corte: es la trampa que más
+   veces ha hecho fallar una prueba buena hoy. */
+const aplanar = t => t.replace(/\s+/g, " ");
+const fn = aplanar(lee("supabase/functions/zapatilla/index.ts"));
 
 test("Zapatilla usa la sesión del cliente, NO la llave maestra", () => {
   /* Con service_role se saltaría RLS y podría ver y tocar los
@@ -58,7 +65,7 @@ test("las reservas que crea quedan marcadas como suyas", () => {
 });
 
 test("tiene prohibido reservar sin enseñar el desglose y sin un sí", () => {
-  assert.match(fn, /NUNCA reserves sin haber enseñado antes el\s+desglose/);
+  assert.match(fn, /NUNCA reserves sin haber enseñado antes el desglose/);
   assert.match(fn, /Un "vale" a otra cosa no cuenta/);
 });
 
@@ -102,7 +109,7 @@ test("si le preguntan qué es, no lo niega", () => {
 
      Pero tampoco va avisando sin venir a cuento: eso rompería el
      personaje sin que nadie lo haya pedido. */
-  assert.match(fn, /no\s+lo niegas/i);
+  assert.match(fn, /no lo niegas/i);
   assert.match(fn, /Perra de verdad no soy/);
   assert.match(fn, /No lo sueltes si no te lo preguntan/);
 });
@@ -113,8 +120,8 @@ test("el sistema va cacheado: es el texto que se repite en cada vuelta", () => {
 });
 
 /* ---------- El botón flotante ---------- */
-const widget = lee("js/zapatilla.js");
-const app = lee("js/app.js");
+const widget = aplanar(lee("js/zapatilla.js"));
+const app = aplanar(lee("js/app.js"));
 
 test("está en todas las pantallas, no es una sección", () => {
   assert.match(app, /montarZapatilla\(\)/);
@@ -166,4 +173,35 @@ test("el panel arranca cerrado y se puede cerrar", () => {
 
   assert.match(widget, /panel\.hidden = true;/, "arranca cerrado");
   assert.match(widget, /\.cerrar"\)\.addEventListener\("click", cerrar\)/, "y la × lo cierra");
+});
+
+test("el «está escribiendo» no pasa por el escapado", () => {
+  /* Fallo real: los tres puntitos se mandaban como texto a
+     escribe(), que escapa TODO a propósito —lo que dice Zapatilla
+     viene de un modelo que ha leído datos escritos por clientes—.
+     Resultado: el cliente veía «<span></span><span></span>».
+
+     Lo que pone la app va por su puerta; lo que viene de fuera,
+     por la del escapado. */
+  assert.match(widget, /function puntitos\(\)/);
+  assert.match(widget, /createElement\("span"\)/,
+    "los puntitos se crean como elementos, no como texto");
+  assert.doesNotMatch(widget, /escribe\([^)]*<span>/,
+    "nunca etiquetas como texto a escribe()");
+});
+
+test("sabe consultar el recargo por hora, no se excusa", () => {
+  /* Preguntada por recoger a las 6 de la mañana contestó que no lo
+     sabía. Hizo bien en no inventárselo, pero es que no tenía
+     herramienta: el motor lo calcula. */
+  assert.match(fn, /name: "recargo_por_hora"/);
+  assert.match(fn, /rpc\("recargo_horario"/);
+  assert.match(fn, /no lo digas de memoria ni contestes que no lo sabes/);
+});
+
+test("la conversación va con esfuerzo bajo", () => {
+  /* Es una conversación de mostrador, no un problema difícil.
+     Siete segundos esperando a que te digan un precio se hacen
+     eternos, y además cuesta más. */
+  assert.match(fn, /effort: "low"/);
 });

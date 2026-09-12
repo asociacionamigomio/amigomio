@@ -81,8 +81,9 @@ LO QUE SABES DE LA CASA
   justificante. Si no llega, el sitio se suelta.
 - Se cancela sin coste hasta 7 días antes. Después ya no.
 - Entregas y recogidas: de lunes a viernes y domingos, de 10:00 a 12:30 y de
-  16:30 a 19:00. Sábados solo de 10:00 a 12:30. Fuera de eso, previa consulta
-  y con recargo.
+  16:30 a 19:00. Sábados solo de 10:00 a 12:30. Fuera de eso hay recargo y es
+  previa consulta: el importe lo miras con recargo_por_hora, no lo digas de
+  memoria ni contestes que no lo sabes.
 - Un perro que necesita manejo de peligrosidad va a un alojamiento propio y
   siempre solo. Eso lo deciden Santi y Elena, nunca el cliente y nunca tú.`;
 
@@ -121,6 +122,24 @@ const HERRAMIENTAS: Anthropic.Tool[] = [
         perros:  { type: "integer" },
       },
       required: ["entrada", "salida", "perros"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    name: "recargo_por_hora",
+    description:
+      "Cuánto cuesta entregar o recoger a una hora concreta. Úsala SIEMPRE que " +
+      "pregunten por una hora fuera del horario normal, en vez de decir que no lo sabes. " +
+      "Devuelve 0 si esa hora está dentro de horario.",
+    input_schema: {
+      type: "object",
+      properties: {
+        momento: { type: "string",
+                   description: "Día y hora, 'AAAA-MM-DD HH:MM'. Si solo te dan la hora, " +
+                                "usa un día que encaje con lo que preguntan." },
+      },
+      required: ["momento"],
       additionalProperties: false,
     },
     strict: true,
@@ -200,6 +219,11 @@ async function ejecutar(nombre: string, args: any, db: any, quienEs: string) {
         if (error) return { error: error.message };
         return data;
       }
+      case "recargo_por_hora": {
+        const { data, error } = await db.rpc("recargo_horario", { momento: args.momento });
+        if (error) return { error: error.message };
+        return { euros: data, dentro_de_horario: Number(data) === 0 };
+      }
       case "sus_perros": {
         const { data, error } = await db.from("perro")
           .select("id, nombre, chip, fecha_nacimiento, sexo, raza, sanidad, agresivo_con_personas");
@@ -269,6 +293,11 @@ Deno.serve(async (req) => {
       const respuesta = await claude.messages.create({
         model: MODELO,
         max_tokens: 4096,
+        /* Esto es una conversación de mostrador, no un problema
+           difícil: con esfuerzo bajo contesta antes y cuesta menos,
+           y la calidad aguanta de sobra. Siete segundos esperando
+           a que te digan un precio se hacen eternos. */
+        output_config: { effort: "low" },
         system: [{ type: "text", text: COMO_ES, cache_control: { type: "ephemeral" } }],
         tools: HERRAMIENTAS,
         messages: historia,
