@@ -42,7 +42,8 @@ export async function guardarMiFicha(datos) {
   /* es_admin y paga_en_persona no se mandan nunca desde aquí: los
      devuelve a su sitio el trigger cliente_no_se_asciende, pero
      mejor ni intentarlo. */
-  const { es_admin, paga_en_persona, id, creado, ...resto } = datos;
+  const { es_admin, paga_en_persona, descuento_pct, descuento_nota,
+          id, creado, ...resto } = datos;
   const { error } = await supabase.from("cliente").update(resto).eq("id", user.id);
   if (error) return { ok: false, mensaje: "No hemos podido guardar tus datos." };
   return { ok: true, mensaje: "Guardado." };
@@ -196,6 +197,49 @@ export async function perrosDe(clienteId) {
   return data || [];
 }
 
+/** El descuento del cliente fijo. Sólo lo deja la base a administración. */
+export async function ponerDescuento(clienteId, pct, nota = "") {
+  const numero = Number(pct);
+  if (!Number.isFinite(numero) || numero < 0 || numero > 100)
+    return { ok: false, mensaje: "El descuento va de 0 a 100." };
+
+  const { error } = await supabase.from("cliente")
+    .update({ descuento_pct: numero, descuento_nota: nota }).eq("id", clienteId);
+  if (error) return { ok: false, mensaje: "No hemos podido cambiarlo." };
+  return { ok: true, mensaje: numero > 0
+    ? `Descuento del ${numero} % puesto.` : "Descuento quitado." };
+}
+
+/* ------------------------------------------------------------
+   Promociones: un descuento con fecha de caducidad, para todos.
+   ------------------------------------------------------------ */
+export async function promociones() {
+  const { data } = await supabase.from("promocion").select("*").order("desde", { ascending: false });
+  return data || [];
+}
+
+export async function guardarPromocion(promo) {
+  const fila = {
+    nombre: promo.nombre, pct: Number(promo.pct),
+    desde: promo.desde, hasta: promo.hasta, activa: promo.activa !== false,
+  };
+  if (!fila.nombre) return { ok: false, mensaje: "Ponle un nombre: lo va a ver el cliente." };
+  if (!(fila.pct > 0 && fila.pct <= 100)) return { ok: false, mensaje: "El descuento va de 1 a 100." };
+  if (!fila.desde || !fila.hasta) return { ok: false, mensaje: "Faltan las fechas." };
+  if (fila.hasta < fila.desde) return { ok: false, mensaje: "La fecha de fin va después de la de inicio." };
+
+  const { error } = promo.id
+    ? await supabase.from("promocion").update(fila).eq("id", promo.id)
+    : await supabase.from("promocion").insert(fila);
+  if (error) return { ok: false, mensaje: "No hemos podido guardarla." };
+  return { ok: true, mensaje: "Guardada." };
+}
+
+export async function borrarPromocion(id) {
+  const { error } = await supabase.from("promocion").delete().eq("id", id);
+  return { ok: !error, mensaje: error ? "No hemos podido quitarla." : "Quitada." };
+}
+
 export async function autorizarPagoEnPersona(clienteId, valor) {
   const { error } = await supabase.from("cliente")
     .update({ paga_en_persona: valor }).eq("id", clienteId);
@@ -213,10 +257,17 @@ export async function autorizarPagoEnPersona(clienteId, valor) {
    el motor le dice que no igual que a todo el mundo.
    ------------------------------------------------------------ */
 export async function presupuesto({ entrada, salida, tipo = "normal", perros = 1,
-                                    conCuras = 0, extras = [] }) {
+                                    conCuras = 0, extras = [], cliente = null }) {
+  /* Con el cliente, para que le salga SU precio. Si no se pasa,
+     se usa el que está dentro de la aplicación: el presupuesto
+     de la pantalla de reservar es el suyo. Administración sí lo
+     pasa a mano, que reserva a nombre de otros. */
+  const quien = cliente ?? (await supabase.auth.getUser()).data?.user?.id ?? null;
+
   const { data, error } = await supabase.rpc("presupuesto", {
     la_entrada: entrada, la_salida: salida, el_tipo: tipo,
     los_perros: perros, con_curas: conCuras, los_extras: extras,
+    el_cliente: quien,
   });
   if (error) return { ok: false, mensaje: error.message };
   return { ok: true, ...data };

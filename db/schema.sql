@@ -25,6 +25,14 @@ create table if not exists cliente (
   paga_en_persona boolean not null default false,
   es_admin        boolean not null default false,
 
+  -- El descuento del cliente fijo: el que trae tres perros cada
+  -- agosto desde hace diez años. Lo pone administración y se
+  -- queda puesto. Si pudiera ponérselo el cliente no sería un
+  -- descuento, sería una lista de precios a su gusto.
+  descuento_pct   numeric not null default 0
+                  check (descuento_pct >= 0 and descuento_pct <= 100),
+  descuento_nota  text not null default '',   -- «socio del club», sale en la factura
+
   consiente_datos boolean not null default false,
   creado          timestamptz not null default now()
 );
@@ -205,6 +213,10 @@ end $$;
 -- ============================================================
 -- Nadie se asciende a sí mismo.
 -- ============================================================
+-- Para las bases que ya existían antes del 12/09/2026.
+alter table cliente add column if not exists descuento_pct numeric not null default 0;
+alter table cliente add column if not exists descuento_nota text not null default '';
+
 create or replace function cliente_no_se_asciende()
 returns trigger language plpgsql security definer
 set search_path = public as $$
@@ -212,6 +224,8 @@ begin
   if not es_admin() then
     new.es_admin        := old.es_admin;
     new.paga_en_persona := old.paga_en_persona;
+    new.descuento_pct   := old.descuento_pct;
+    new.descuento_nota  := old.descuento_nota;
   end if;
   return new;
 end $$;

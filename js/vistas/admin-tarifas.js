@@ -7,7 +7,8 @@
    fracasado.
    ============================================================ */
 import { tarifas, guardarTarifa, festivos, anadirFestivo, quitarFestivo,
-         extras, guardarExtra, ajustes, guardarAjuste } from "../datos.js";
+         extras, guardarExtra, ajustes, guardarAjuste,
+         promociones, guardarPromocion, borrarPromocion } from "../datos.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -19,6 +20,7 @@ const PESTANAS = [
   { id: "precios",  texto: "Precios" },
   { id: "festivos", texto: "Festivos" },
   { id: "extras",   texto: "Extras" },
+  { id: "promos",   texto: "Promociones" },
   { id: "ajustes",  texto: "Ajustes" },
 ];
 
@@ -47,8 +49,8 @@ export async function render(contenedor) {
     contenedor.querySelectorAll("[data-sub]").forEach(b =>
       b.addEventListener("click", () => { donde = b.dataset.sub; pintar(); }));
 
-    await ({ precios: verPrecios, festivos: verFestivos,
-             extras: verExtras, ajustes: verAjustes })[donde]();
+    await ({ precios: verPrecios, festivos: verFestivos, extras: verExtras,
+             promos: verPromociones, ajustes: verAjustes })[donde]();
   }
 
   /* ---------------------------------------------------------- */
@@ -183,6 +185,97 @@ export async function render(contenedor) {
   }
 
   /* ---------------------------------------------------------- */
+  /* ----------------------------------------------------------
+     Promociones: un descuento para todos, entre dos fechas.
+
+     No se acumulan con el del cliente fijo ni con el de estancia
+     larga: de los tres se queda el mayor. Se dice aquí porque si
+     no, se pone un 20 % creyendo que se suma al 10 % del
+     habitual y no es así.
+     ---------------------------------------------------------- */
+  async function verPromociones() {
+    const lista = await promociones();
+    const hoy = new Date().toISOString().slice(0, 10);
+
+    const fila = p => {
+      const viva = p.activa && p.desde <= hoy && p.hasta >= hoy;
+      const pasada = p.hasta < hoy;
+      return `
+        <div class="promo ${viva ? "viva" : ""} ${pasada ? "pasada" : ""}">
+          <div>
+            <strong>${esc(p.nombre)}</strong>
+            <span class="etiqueta ${viva ? "verde" : ""}">−${esc(p.pct)} %</span>
+            ${viva ? `<span class="flojo">· aplicándose ahora</span>`
+                   : pasada ? `<span class="flojo">· ya pasó</span>`
+                   : `<span class="flojo">· todavía no empieza</span>`}
+            <p class="flojo">Del ${dia(p.desde)} al ${dia(p.hasta)}</p>
+          </div>
+          <div class="promo-botones">
+            <button class="boton fantasma pequeno" data-promo-activa="${p.id}:${p.activa ? "no" : "si"}">
+              ${p.activa ? "Apagar" : "Encender"}
+            </button>
+            <button class="enlace quitar" data-promo-fuera="${p.id}">Quitar</button>
+          </div>
+        </div>`;
+    };
+
+    panel().innerHTML = `
+      <div class="tarjeta">
+        <h3>Promociones</h3>
+        <p class="flojo">Un descuento para todo el mundo, entre dos fechas. Cuenta
+           el día de <strong>entrada</strong>. <strong>No se suman</strong>: si el
+           cliente ya tiene su descuento fijo o le toca el de estancia larga, se le
+           aplica el mayor de los tres, no los tres.</p>
+        <div class="lista-promos">
+          ${lista.length ? lista.map(fila).join("")
+            : `<p class="flojo">Todavía no hay ninguna.</p>`}
+        </div>
+      </div>
+
+      <div class="tarjeta" style="margin-top:1rem">
+        <h3>Una nueva</h3>
+        <label for="p-nombre">Cómo se llama</label>
+        <input id="p-nombre" placeholder="Octubre tranquilo">
+        <p class="flojo">Esto lo ve el cliente en su presupuesto.</p>
+
+        <div class="fechas">
+          <div><label for="p-desde">Desde</label>
+            <input type="date" id="p-desde" value="${hoy}"></div>
+          <div><label for="p-hasta">Hasta</label>
+            <input type="date" id="p-hasta" value="${hoy}"></div>
+        </div>
+
+        <label class="mini">Descuenta
+          <input type="number" min="1" max="100" class="dias" id="p-pct" value="10"> %</label>
+
+        <button class="boton" id="p-crear" style="margin-top:.8rem">Crear promoción</button>
+      </div>`;
+
+    panel().querySelector("#p-crear").addEventListener("click", async () => {
+      const r = await guardarPromocion({
+        nombre: panel().querySelector("#p-nombre").value.trim(),
+        pct:    panel().querySelector("#p-pct").value,
+        desde:  panel().querySelector("#p-desde").value,
+        hasta:  panel().querySelector("#p-hasta").value,
+      });
+      pintar(r.mensaje, r.ok ? "aviso" : "error");
+    });
+
+    panel().querySelectorAll("[data-promo-activa]").forEach(b =>
+      b.addEventListener("click", async () => {
+        const [id, valor] = b.dataset.promoActiva.split(":");
+        const p = lista.find(x => String(x.id) === id);
+        const r = await guardarPromocion({ ...p, activa: valor === "si" });
+        pintar(r.mensaje, r.ok ? "aviso" : "error");
+      }));
+
+    panel().querySelectorAll("[data-promo-fuera]").forEach(b =>
+      b.addEventListener("click", async () => {
+        const r = await borrarPromocion(b.dataset.promoFuera);
+        pintar(r.mensaje, r.ok ? "aviso" : "error");
+      }));
+  }
+
   async function verAjustes() {
     const lista = await ajustes();
     panel().innerHTML = `

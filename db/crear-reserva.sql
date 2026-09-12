@@ -162,7 +162,9 @@ begin
   -- reescribirá esta reserva.
   select count(*) into curas from perro
    where id = any(los_perros) and cuidados ilike '%inyectab%';
-  cuentas := presupuesto(la_entrada, la_salida, tipo, n, curas, los_extras);
+  -- Con el cliente: su descuento tiene que quedar congelado en
+  -- el desglose, no calcularse otra vez al cobrar.
+  cuentas := presupuesto(la_entrada, la_salida, tipo, n, curas, los_extras, el_cliente);
 
   -- Los autorizados a pagar en persona se saltan el justificante
   select paga_en_persona into paga_luego from cliente where id = el_cliente;

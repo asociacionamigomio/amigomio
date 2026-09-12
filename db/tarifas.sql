@@ -113,8 +113,110 @@ insert into ajuste (clave, valor, nota) values
    'Mientras sea "no", solo administración puede crear reservas. Wix sigue mandando'),
   ('iban', '', 'Cuenta donde se transfiere. NO se escribe en el repositorio'),
   ('dias_cancelacion_gratis', '7',
-   'Con esta antelación o más, devolución completa. Menos, no se puede cancelar')
+   'Con esta antelación o más, devolución completa. Menos, no se puede cancelar'),
+  ('descuento_larga_noches', '15',
+   'A partir de tantas noches, descuento por estancia larga. VACÍO o 0 = no se aplica'),
+  ('descuento_larga_pct', '10',
+   'Tanto por ciento que se descuenta en las estancias largas')
 on conflict (clave) do nothing;
+
+-- ============================================================
+-- DESCUENTOS
+--
+-- Tres clases, y la diferencia importa:
+--
+--   CLIENTE FIJO     — se lo pone administración a una persona
+--                      y se queda puesto. El que trae tres
+--                      perros cada agosto desde hace diez años.
+--   PROMOCIÓN        — vale para todos, pero sólo entre dos
+--                      fechas. Para llenar octubre.
+--   ESTANCIA LARGA   — a partir de tantas noches. No lo decide
+--                      nadie: lo decide la reserva.
+--
+-- Y dos reglas que no se negocian:
+--
+--   1. NO SE ACUMULAN: gana el mayor. Un fijo del 10 % más una
+--      promoción del 15 % más una larga del 20 % sería regalar
+--      la estancia, y eso no se descubre hasta la factura.
+--   2. NO SE DESCUENTAN LOS RECARGOS DE FUERA DE HORARIO. Abrir
+--      a las once de la noche cuesta lo que cuesta, tenga quien
+--      tenga descuento. Ni lo de la veterinaria, que no es
+--      dinero de AmigoMío.
+-- ============================================================
+-- El descuento fijo del cliente vive en db/schema.sql, con el
+-- resto de su ficha: el trigger que impide ponérselo uno mismo
+-- está allí y no puede hablar de una columna que todavía no
+-- existe.
+
+create table if not exists promocion (
+  id      serial primary key,
+  nombre  text not null,          -- sale en la factura: «Octubre tranquilo»
+  pct     numeric not null check (pct > 0 and pct <= 100),
+  desde   date not null,
+  hasta   date not null,
+  activa  boolean not null default true,
+  check (hasta >= desde)
+);
+
+create index if not exists promocion_por_fecha on promocion (desde, hasta) where activa;
+
+alter table promocion enable row level security;
+
+-- El cliente TIENE que verla: si no, le sale más barato y parece
+-- un fallo de la aplicación.
+drop policy if exists promocion_la_ve_cualquiera on promocion;
+create policy promocion_la_ve_cualquiera on promocion
+  for select using (true);
+
+drop policy if exists promocion_solo_admin on promocion;
+create policy promocion_solo_admin on promocion
+  for all using (es_admin()) with check (es_admin());
+
+-- ------------------------------------------------------------
+-- Cuál de los tres se lleva la reserva.
+--
+-- Devuelve una fila con el porcentaje y CÓMO SE LLAMA: una
+-- línea negativa sin explicación es una llamada de teléfono
+-- preguntando qué es eso.
+-- ------------------------------------------------------------
+create or replace function descuento_aplicable(
+  el_cliente uuid,
+  la_entrada date,
+  las_noches integer
+) returns table (pct numeric, concepto text)
+language sql stable
+set search_path = public as $$
+  select d.pct, d.concepto
+    from (
+      -- El fijo del cliente
+      select c.descuento_pct as pct,
+             'Descuento de cliente' ||
+               case when c.descuento_nota <> '' then ' · ' || c.descuento_nota else '' end
+               as concepto
+        from cliente c
+       where c.id = el_cliente and c.descuento_pct > 0
+
+      union all
+
+      -- La promoción que esté viva el día de la entrada
+      select p.pct, 'Promoción · ' || p.nombre
+        from promocion p
+       where p.activa and la_entrada between p.desde and p.hasta
+
+      union all
+
+      -- La estancia larga
+      select (select a.valor from ajuste a where a.clave = 'descuento_larga_pct')::numeric,
+             'Estancia larga (' || las_noches || ' noches)'
+       where coalesce(nullif((select a.valor from ajuste a
+                               where a.clave = 'descuento_larga_noches'), ''), '0')::integer > 0
+         and las_noches >= (select a.valor::integer from ajuste a
+                             where a.clave = 'descuento_larga_noches')
+    ) d
+   where d.pct > 0
+   order by pct desc          -- gana el mayor; no se acumulan
+   limit 1;
+$$;
 
 -- ============================================================
 -- Row Level Security.
@@ -334,7 +436,8 @@ create or replace function presupuesto(
   el_tipo       text    default 'normal',
   los_perros    integer default 1,
   con_curas     integer default 0,
-  los_extras    integer[] default '{}'
+  los_extras    integer[] default '{}',
+  el_cliente    uuid    default null
 ) returns jsonb language plpgsql stable
 set search_path = public as $$
 declare
@@ -348,6 +451,13 @@ declare
   importe  numeric;
   ex       record;
   r        numeric;
+
+  -- Lo que SÍ se descuenta. Los recargos de fuera de horario se
+  -- suman después, ya fuera de esta cuenta: abrir a las once de
+  -- la noche cuesta lo mismo con descuento que sin él.
+  descontable numeric := 0;
+  dto      record;
+  rebaja   numeric;
 begin
   noches := (la_salida::date - la_entrada::date);
 
@@ -376,6 +486,7 @@ begin
     'concepto', noches || ' noche' || case when noches = 1 then '' else 's' end,
     'importe', base);
   total := total + base;
+  descontable := descontable + base;
 
   -- Perros de más: 10 € por noche POR CADA UNO a partir del primero.
   -- Dos perros suman 10, tres suman 20. No son dos tarifas
@@ -388,6 +499,7 @@ begin
                        else 'Segundo y tercer perro' end,
       'importe', importe * (los_perros - 1) * noches);
     total := total + importe * (los_perros - 1) * noches;
+    descontable := descontable + importe * (los_perros - 1) * noches;
   end if;
 
   -- Curas o inyectables. La medicación oral no lleva cargo.
@@ -398,6 +510,7 @@ begin
                   case when con_curas > 1 then ' (' || con_curas || ' perros)' else '' end,
       'importe', importe * con_curas * noches);
     total := total + importe * con_curas * noches;
+    descontable := descontable + importe * con_curas * noches;
   end if;
 
   -- Extras. Los de la veterinaria van aparte, fuera del total.
@@ -410,8 +523,26 @@ begin
     else
       lineas := lineas || jsonb_build_object('concepto', ex.nombre, 'importe', importe);
       total := total + importe;
+      descontable := descontable + importe;
     end if;
   end loop;
+
+  -- El descuento. Va aquí y no al final a propósito: lo que
+  -- viene después son los recargos por abrir fuera de hora, y
+  -- ésos no se descuentan.
+  --
+  -- Se redondea a dos decimales: un 12,5 % de 191 son 23,875, y
+  -- nadie cobra tres cuartos de céntimo.
+  if descontable > 0 then
+    select * into dto from descuento_aplicable(el_cliente, la_entrada::date, noches);
+    if dto.pct is not null and dto.pct > 0 then
+      rebaja := round(descontable * dto.pct / 100, 2);
+      lineas := lineas || jsonb_build_object(
+        'concepto', dto.concepto || ' (−' || trim(to_char(dto.pct, 'FM999D99')) || ' %)',
+        'importe', -rebaja);
+      total := total - rebaja;
+    end if;
+  end if;
 
   -- Fuera de horario: se cobra por cada movimiento
   r := recargo_horario(la_entrada);
@@ -510,4 +641,88 @@ begin
   assert jsonb_array_length(p->'aparte') = 1, 'pero sí tiene que aparecer aparte';
 
   raise notice 'Presupuesto: todas las comprobaciones pasan.';
+end $$;
+
+-- ============================================================
+-- PRUEBAS DE LOS DESCUENTOS.
+--
+-- Se crean, se comprueban y se deshacen: esto no deja nada
+-- puesto en la base real.
+-- ============================================================
+do $$
+declare
+  p       jsonb;
+  d       record;
+  antes   text;
+begin
+  -- Punto de partida conocido: dos noches de martes y miércoles
+  -- con un perro son 30 €.
+  p := presupuesto('2026-08-11 11:00', '2026-08-13 11:00', 'normal', 1, 0);
+  assert (p->>'total')::numeric = 30, 'la base cambió: estas pruebas ya no valen';
+
+  -- ---------- Estancia larga ----------
+  -- El ajuste de fábrica: 15 noches, 10 %.
+  select * into d from descuento_aplicable(null, '2026-08-11', 20);
+  assert d.pct = 10, 'veinte noches tendrían que llevar el 10 %, dio ' || coalesce(d.pct::text,'nada');
+  assert d.concepto like 'Estancia larga%', 'y decir por qué: ' || coalesce(d.concepto,'nada');
+
+  select * into d from descuento_aplicable(null, '2026-08-11', 3);
+  assert d.pct is null, 'tres noches no son una estancia larga';
+
+  -- Y se puede apagar dejando el número de noches a cero.
+  select valor into antes from ajuste where clave = 'descuento_larga_noches';
+  update ajuste set valor = '0' where clave = 'descuento_larga_noches';
+  select * into d from descuento_aplicable(null, '2026-08-11', 20);
+  assert d.pct is null, 'con 0 noches el descuento por estancia larga se apaga';
+  update ajuste set valor = antes where clave = 'descuento_larga_noches';
+
+  -- ---------- Promoción con fechas ----------
+  insert into promocion (nombre, pct, desde, hasta)
+       values ('PRUEBA octubre', 25, '2026-10-01', '2026-10-31');
+
+  select * into d from descuento_aplicable(null, '2026-10-15', 2);
+  assert d.pct = 25, 'dentro de la promoción tendría que aplicarse';
+  assert d.concepto like 'Promoción%', 'y decir cuál es';
+
+  select * into d from descuento_aplicable(null, '2026-09-30', 2);
+  assert d.pct is null, 'un día antes todavía no';
+  select * into d from descuento_aplicable(null, '2026-11-01', 2);
+  assert d.pct is null, 'un día después ya no';
+
+  -- Apagada no vale aunque la fecha caiga dentro.
+  update promocion set activa = false where nombre = 'PRUEBA octubre';
+  select * into d from descuento_aplicable(null, '2026-10-15', 2);
+  assert d.pct is null, 'una promoción apagada no se aplica';
+
+  -- ---------- No se acumulan: gana el mayor ----------
+  update promocion set activa = true where nombre = 'PRUEBA octubre';
+  select * into d from descuento_aplicable(null, '2026-10-15', 20);
+  assert d.pct = 25,
+    'con promoción del 25 y larga del 10 gana el 25, no suman 35: dio ' || d.pct;
+
+  delete from promocion where nombre = 'PRUEBA octubre';
+
+  -- ---------- El descuento sale en el desglose ----------
+  insert into promocion (nombre, pct, desde, hasta)
+       values ('PRUEBA mitad', 50, '2026-08-01', '2026-08-31');
+
+  p := presupuesto('2026-08-11 11:00', '2026-08-13 11:00', 'normal', 1, 0);
+  assert (p->>'total')::numeric = 15,
+    'con el 50 % las dos noches son 15, dio ' || (p->>'total');
+  assert exists (select 1 from jsonb_array_elements(p->'lineas') l
+                  where (l->>'importe')::numeric < 0),
+    'el descuento tiene que verse como línea, no sólo en el total';
+
+  -- ---------- Y NO se come los recargos de fuera de horario ----------
+  -- Misma estancia, recogida a las 22:00 de un jueves: 50 € de
+  -- recargo. Con el 50 % de descuento serían 15 + 50 = 65.
+  -- Si el descuento mordiera el recargo, saldrían 40.
+  p := presupuesto('2026-08-11 11:00', '2026-08-13 22:00', 'normal', 1, 0);
+  assert (p->>'total')::numeric = 15 + 50,
+    'el recargo de fuera de horario no se descuenta: tenían que ser 65, dio '
+    || (p->>'total');
+
+  delete from promocion where nombre = 'PRUEBA mitad';
+
+  raise notice 'Descuentos: todas las comprobaciones pasan.';
 end $$;

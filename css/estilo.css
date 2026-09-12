@@ -850,3 +850,32 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
   .antiparasitario .mini { flex-wrap: wrap; }
   .antiparasitario .mini input[type="date"] { flex: 1 0 100%; }
 }
+
+/* ============================================================
+   Descuentos y promociones.
+   ============================================================ */
+.descuento-cliente {
+  margin-top: .8rem; padding-top: .8rem;
+  border-top: 1px solid var(--borde);
+}
+.fila-descuento {
+  display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; margin-top: .5rem;
+}
+.fila-descuento input:not(.dias) { flex: 1 1 10rem; min-width: 0; }
+.etiqueta.verde { background: #EAF3E0; color: #4F7020; }
+.descuento-puesto { display: inline-block; margin-top: .4rem; }
+
+.lista-promos { margin-top: .8rem; }
+.promo {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: .8rem; flex-wrap: wrap;
+  padding: .7rem 0; border-top: 1px solid var(--borde);
+}
+.promo:first-child { border-top: none; }
+/* La que se está aplicando ahora mismo se ve de un vistazo: es
+   la única pregunta que se hace uno al abrir esta pantalla. */
+.promo.viva { border-left: 3px solid var(--verde, #6b8f3f); padding-left: .6rem; }
+.promo.pasada { opacity: .55; }
+.promo p { margin: .2rem 0 0; font-size: .82rem; }
+.promo-botones { display: flex; gap: .5rem; align-items: center; }
+.promo-botones .quitar { color: var(--rojo, #b4453a); font-size: .82rem; }

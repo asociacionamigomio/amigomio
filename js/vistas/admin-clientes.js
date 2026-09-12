@@ -2,7 +2,7 @@
    Clientes: buscar, ver sus perros y autorizar el pago en
    persona.
    ============================================================ */
-import { clientes, perrosDe, autorizarPagoEnPersona } from "../datos.js";
+import { clientes, perrosDe, autorizarPagoEnPersona, ponerDescuento } from "../datos.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -45,7 +45,7 @@ export async function render(contenedor) {
 
     hueco.querySelectorAll("[data-abrir]").forEach(el =>
       el.addEventListener("click", async e => {
-        if (e.target.closest("[data-pago]")) return;
+        if (e.target.closest("[data-pago], .descuento-cliente")) return;
         abierto = abierto === el.dataset.abrir ? null : el.dataset.abrir;
         await listar();
         if (abierto) await pintarPerros(abierto);
@@ -57,6 +57,18 @@ export async function render(contenedor) {
         const [id, valor] = b.dataset.pago.split(":");
         b.disabled = true;
         const r = await autorizarPagoEnPersona(id, valor === "si");
+        await pintar(r.mensaje);
+      }));
+
+    hueco.querySelectorAll("[data-dto]").forEach(b =>
+      b.addEventListener("click", async e => {
+        e.stopPropagation();
+        const id = b.dataset.dto;
+        b.disabled = true;
+        const r = await ponerDescuento(
+          id,
+          contenedor.querySelector(`#dto-${id}`).value,
+          contenedor.querySelector(`#nota-${id}`).value.trim());
         await pintar(r.mensaje);
       }));
 
@@ -78,7 +90,26 @@ export async function render(contenedor) {
             ${c.paga_en_persona ? "Paga en persona" : "Autorizar pago en persona"}
           </button>
         </div>
-        ${abiertoAhora ? `<div class="perros-de" id="perros-${c.id}">
+
+        ${Number(c.descuento_pct) > 0 ? `
+          <p class="etiqueta verde descuento-puesto">−${esc(c.descuento_pct)} %${
+            c.descuento_nota ? ` · ${esc(c.descuento_nota)}` : ""}</p>` : ""}
+
+        ${abiertoAhora ? `
+          <div class="descuento-cliente">
+            <p class="rotulo">Descuento de cliente fijo</p>
+            <p class="flojo">Se le aplica solo en cada reserva. No se suma a las
+               promociones ni al de estancia larga: se queda el mayor de los tres.</p>
+            <div class="fila-descuento">
+              <label class="mini">Descuenta
+                <input type="number" min="0" max="100" class="dias"
+                       id="dto-${c.id}" value="${esc(c.descuento_pct ?? 0)}"> %</label>
+              <input id="nota-${c.id}" placeholder="Por qué (sale en la factura)"
+                     value="${esc(c.descuento_nota)}">
+              <button class="boton pequeno" data-dto="${c.id}">Guardar</button>
+            </div>
+          </div>
+          <div class="perros-de" id="perros-${c.id}">
             <p class="cargando">Buscando sus perros…</p></div>` : ""}
       </div>`;
   }
