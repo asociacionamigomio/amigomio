@@ -119,3 +119,72 @@ export async function misSolicitudes(perroId) {
     .select("*").eq("perro_id", perroId).order("creada", { ascending: false });
   return data || [];
 }
+
+/* ------------------------------------------------------------
+   Administración
+   ------------------------------------------------------------ */
+export async function solicitudesPendientes() {
+  /* `cliente!...cliente_id_fkey` y no `cliente` a secas: la tabla
+     apunta DOS veces a cliente —quién la pide y quién la resuelve—
+     y sin decir cuál, Supabase se niega a adivinar. */
+  const { data, error } = await supabase.from("solicitud_cambio")
+    .select("*, perro(nombre, chip), cliente!solicitud_cambio_cliente_id_fkey(nombre, apellidos, telefono)")
+    .eq("estado", "pendiente").order("creada");
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Aprobar NO es sólo marcar la solicitud: hay que escribir el valor
+ * nuevo en el perro. Si se hace sólo lo primero, administración cree
+ * que lo ha resuelto y el perro sigue con el chip viejo hasta que
+ * alguien se presenta con un animal que no coincide.
+ */
+export async function resolverSolicitud(id, { aprobar }) {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data: solicitud, error: e1 } = await supabase
+    .from("solicitud_cambio").select("*").eq("id", id).single();
+  if (e1) return { ok: false, mensaje: "No encontramos esa solicitud." };
+
+  if (aprobar) {
+    const { error: e2 } = await supabase.from("perro")
+      .update({ [solicitud.campo]: solicitud.valor_nuevo })
+      .eq("id", solicitud.perro_id);
+    if (e2) return { ok: false, mensaje: "No hemos podido cambiar el dato del perro." };
+  }
+
+  const { error: e3 } = await supabase.from("solicitud_cambio").update({
+    estado: aprobar ? "aprobada" : "rechazada",
+    resuelta_por: user.id,
+    resuelta_el: new Date().toISOString(),
+  }).eq("id", id);
+
+  if (e3) return { ok: false,
+                   mensaje: "El dato se cambió, pero no pudimos cerrar la solicitud. Avísanos." };
+
+  return { ok: true, mensaje: aprobar ? "Aprobada y aplicada." : "Rechazada." };
+}
+
+export async function clientes(busqueda = "") {
+  let q = supabase.from("cliente").select("*").order("apellidos");
+  if (busqueda) {
+    const b = busqueda.replace(/[%,]/g, "");
+    q = q.or(`nombre.ilike.%${b}%,apellidos.ilike.%${b}%,telefono.ilike.%${b}%,dni.ilike.%${b}%`);
+  }
+  const { data, error } = await q;
+  if (error) throw error;
+  return data || [];
+}
+
+export async function perrosDe(clienteId) {
+  const { data } = await supabase.from("perro").select("*").eq("cliente_id", clienteId).order("nombre");
+  return data || [];
+}
+
+export async function autorizarPagoEnPersona(clienteId, valor) {
+  const { error } = await supabase.from("cliente")
+    .update({ paga_en_persona: valor }).eq("id", clienteId);
+  if (error) return { ok: false, mensaje: "No hemos podido cambiarlo." };
+  return { ok: true, mensaje: valor ? "Puede pagar en persona." : "Ya no puede pagar en persona." };
+}

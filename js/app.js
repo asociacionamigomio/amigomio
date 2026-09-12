@@ -9,6 +9,8 @@ import { miFicha } from "./datos.js";
 import { render as renderEntrada } from "./vistas/entrada.js";
 import { render as renderPerros }  from "./vistas/perros.js";
 import { render as renderMiFicha } from "./vistas/mi-ficha.js";
+import { render as renderSolicitudes } from "./vistas/admin-solicitudes.js";
+import { render as renderAdminClientes } from "./vistas/admin-clientes.js";
 
 const app = document.getElementById("app");
 let ficha = null;
@@ -16,11 +18,18 @@ let ficha = null;
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+/* `admin: true` sólo decide si se enseña la pestaña. Lo que de
+   verdad protege es RLS: aunque alguien llegue a la pantalla, la
+   base de datos le rechaza la operación. */
 const SECCIONES = [
-  { id: "inicio", texto: "Inicio",     render: renderInicio },
-  { id: "perros", texto: "Mis perros", render: renderPerros },
-  { id: "ficha",  texto: "Mi ficha",   render: renderMiFicha },
+  { id: "inicio",      texto: "Inicio",       render: renderInicio },
+  { id: "perros",      texto: "Mis perros",   render: renderPerros },
+  { id: "ficha",       texto: "Mi ficha",     render: renderMiFicha },
+  { id: "solicitudes", texto: "Solicitudes",  render: renderSolicitudes,   admin: true },
+  { id: "clientes",    texto: "Clientes",     render: renderAdminClientes, admin: true },
 ];
+
+const visibles = () => SECCIONES.filter(s => !s.admin || ficha?.es_admin);
 
 async function arrancar() {
   if (!window.CONFIG?.configurado) {
@@ -65,13 +74,13 @@ function pintarSinConfirmar(sesion) {
 }
 
 function pintarMarco(seccionId, sesion) {
-  const seccion = SECCIONES.find(s => s.id === seccionId) || SECCIONES[0];
+  const seccion = visibles().find(s => s.id === seccionId) || SECCIONES[0];
 
   app.innerHTML = `
     <header class="barra">
       <img src="assets/logo.png" alt="AmigoMío" class="logo-barra">
       <nav>
-        ${SECCIONES.map(s =>
+        ${visibles().map(s =>
           `<button class="pestana ${s.id === seccion.id ? "activa" : ""}"
                    data-ir="${s.id}">${s.texto}</button>`).join("")}
       </nav>

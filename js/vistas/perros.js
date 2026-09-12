@@ -5,8 +5,9 @@
    más largo de la app y de una sentada la gente lo abandona.
    ============================================================ */
 import { PASOS, validarPaso } from "../formularios.js";
-import { misPerros, guardarPerro, unPerro, borrarPerro } from "../datos.js";
-import { camposSanidad, estadoRequisito, REQUISITOS, enCristiano } from "../sanidad.js";
+import { misPerros, guardarPerro, unPerro, borrarPerro, pedirCambio, misSolicitudes } from "../datos.js";
+import { camposSanidad } from "../sanidad.js";
+import { chipValido } from "../perro.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -99,6 +100,64 @@ async function formulario(contenedor, id) {
     contenedor.querySelector("#luego").addEventListener("click", aMedias);
 
     contenedor.querySelector("#es_ppp")?.addEventListener("change", () => { recoger(); pintar(); });
+
+    contenedor.querySelectorAll("[data-pedir]").forEach(b =>
+      b.addEventListener("click", () => pedirCambioDe(b.dataset.pedir)));
+  }
+
+  /* El propietario no cambia el chip ni el nombre: los solicita.
+     Lo impide el trigger de la base de datos, así que esto no es
+     un adorno de pantalla. */
+  function pedirCambioDe(campo) {
+    const comoSeLlama = campo === "chip" ? "el número de chip" : "el nombre";
+    const actual = datos[campo];
+
+    contenedor.innerHTML = `
+      <div class="cabecera-seccion">
+        <h2>Pedir un cambio</h2>
+        <button class="boton fantasma" id="cancelar">Cancelar</button>
+      </div>
+      <div class="tarjeta">
+        <p>Quieres cambiar <strong>${comoSeLlama}</strong> de ${esc(datos.nombre)}.
+           Lo miramos y te decimos algo; mientras tanto, no cambia nada.</p>
+
+        <label>Ahora pone</label>
+        <input value="${esc(actual)}" disabled>
+
+        <label for="nuevo">Y tendría que poner</label>
+        <input id="nuevo" ${campo === "chip" ? 'inputmode="numeric"' : ""}>
+        <p class="error-campo" id="pega"></p>
+
+        <label for="motivo">¿Qué ha pasado? (opcional)</label>
+        <textarea id="motivo" rows="3"
+          placeholder="${campo === "chip"
+            ? "Me equivoqué al copiarlo de la cartilla."
+            : "Lo apunté con una falta."}"></textarea>
+
+        <button class="boton" id="enviar">Enviar la solicitud</button>
+      </div>`;
+
+    contenedor.querySelector("#cancelar").addEventListener("click", () => pintar());
+
+    contenedor.querySelector("#enviar").addEventListener("click", async () => {
+      const valorNuevo = contenedor.querySelector("#nuevo").value.trim();
+      const pega = contenedor.querySelector("#pega");
+
+      if (!valorNuevo) { pega.textContent = "Dinos qué tendría que poner."; return; }
+      if (valorNuevo === actual) { pega.textContent = "Eso es justo lo que pone ya."; return; }
+      if (campo === "chip" && !chipValido(valorNuevo)) {
+        pega.textContent = "Ese chip no cuadra: son 15 dígitos seguidos."; return;
+      }
+
+      const r = await pedirCambio({
+        perroId: datos.id, campo,
+        valorActual: actual, valorNuevo,
+        motivo: contenedor.querySelector("#motivo").value.trim(),
+      });
+
+      if (!r.ok) { pega.textContent = r.mensaje; return; }
+      pintar([], r.mensaje);
+    });
   }
 
   /* Recoge lo escrito en pantalla y lo mete en `datos`. */
@@ -165,14 +224,17 @@ function cuerpoPaso0(d, error, esNuevo) {
     ${esNuevo
       ? `<input id="nombre" data-campo="nombre" value="${esc(d.nombre)}" placeholder="Luna">`
       : `<input value="${esc(d.nombre)}" disabled>
-         <p class="flojo">El nombre y el chip solo se cambian con nuestro visto bueno.</p>`}
+         <button class="enlace" data-pedir="nombre">Pedir que lo cambiemos</button>`}
     ${error("nombre")}
 
     <label for="chip">Número de chip</label>
     ${esNuevo
       ? `<input id="chip" data-campo="chip" inputmode="numeric"
                 value="${esc(d.chip)}" placeholder="941 0000 1234 5678">`
-      : `<input value="${esc(d.chip)}" disabled>`}
+      : `<input value="${esc(d.chip)}" disabled>
+         <button class="enlace" data-pedir="chip">Pedir que lo cambiemos</button>
+         <p class="flojo">El nombre y el chip solo se cambian con nuestro visto bueno:
+            son los datos con los que identificamos a tu perro.</p>`}
     ${error("chip")}
 
     <label for="fecha_nacimiento">Fecha de nacimiento</label>

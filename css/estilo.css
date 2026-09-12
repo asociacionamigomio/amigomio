@@ -204,3 +204,36 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 .aviso-tarjeta { border-left: 4px solid var(--amarillo); margin-top: 1rem; }
 .aviso-tarjeta h3 { margin-top: 0; font-size: 1.05rem; }
 .aviso-tarjeta .boton { width: auto; margin-top: .75rem; }
+
+/* ------------------------------------------------------------
+   Administración
+   ------------------------------------------------------------ */
+.cuenta {
+  font-size: .8rem; vertical-align: middle;
+  background: var(--rojo); color: #fff;
+  padding: .15rem .55rem; border-radius: 999px; font-weight: 600;
+}
+
+.solicitud .botonera { margin-top: 1rem; }
+.cambio {
+  display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+  margin: .6rem 0; font-variant-numeric: tabular-nums;
+}
+.viejo { text-decoration: line-through; color: var(--texto-flojo); }
+.nuevo { font-weight: 700; color: var(--azul); }
+.flecha { color: var(--texto-flojo); }
+.motivo { font-style: italic; color: var(--texto-flojo); margin: .5rem 0 0; }
+
+.fila-cliente { display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.fila-cliente h3 { margin: 0 0 .15rem; font-size: 1.02rem; }
+.fila-cliente p { margin: 0; font-size: .87rem; }
+.tarjeta.cliente { cursor: pointer; display: block; }
+.boton.pequeno { width: auto; margin: 0; padding: .45rem 1rem; font-size: .85rem; }
+
+.perros-de { margin-top: .9rem; padding-top: .9rem; border-top: 1px solid var(--borde); display: grid; gap: .5rem; }
+.perro-mini { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; font-size: .9rem; }
+
+.etiqueta.azul { background: var(--azul-claro); color: #103A54; }
+.etiqueta.roja { background: var(--rojo); color: #fff; }
+
+#buscar { margin-bottom: 1rem; }
