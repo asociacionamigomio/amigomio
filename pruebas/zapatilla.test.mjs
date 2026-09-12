@@ -152,3 +152,18 @@ test("avisa si algo va mal, sin dejar al cliente colgado", () => {
   assert.match(widget, /673 229 399/);
   assert.match(widget, /esperando\.remove\(\)/, "y quita el 'está escribiendo'");
 });
+
+test("el panel arranca cerrado y se puede cerrar", () => {
+  /* Fallo real: el CSS le daba `display: flex` al panel, y eso gana
+     al `display: none` que el navegador aplica a [hidden]. Resultado:
+     el panel salía siempre abierto y la × no hacía nada visible.
+
+     Cualquier elemento que se oculte con `hidden` y tenga un display
+     propio necesita esta regla. */
+  const css = lee("css/estilo.css");
+  assert.match(css, /\.zapatilla-panel\[hidden\]\s*\{\s*display:\s*none\s*!important/,
+    "hace falta anular el display propio cuando está oculto");
+
+  assert.match(widget, /panel\.hidden = true;/, "arranca cerrado");
+  assert.match(widget, /\.cerrar"\)\.addEventListener\("click", cerrar\)/, "y la × lo cierra");
+});

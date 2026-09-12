@@ -1,0 +1,16 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",          "x": 0,    "y": 0,   "w": 390,  "h": 844, "title": "Inicio · cálido (A)" },
+    { "file": "InicioSobrio.dc.html",  "x": 500,  "y": 0,   "w": 390,  "h": 844, "title": "Inicio · sobrio (B)" },
+    { "file": "FichaEstancia.dc.html", "x": 1000, "y": 0,   "w": 720,  "h": 900, "title": "Ficha de la estancia" },
+    { "file": "CuadroSemana.dc.html",  "x": 0,    "y": 1030, "w": 1280, "h": 860, "title": "El cuadro de la semana" },
+    { "file": "HojaDelDia.dc.html",    "x": 1400, "y": 1030, "w": 794,  "h": 1123, "title": "La hoja del día", "print": "fixed" }
+  ],
+  "annotations": [
+    { "id": "nota-inicio", "x": 0, "y": -150, "w": 890,
+      "text": "DOS CAMINOS PARA EL INICIO\n\nA · cálido: fondo crema en vez del gris azulado, la próxima estancia como protagonista y una cuenta atrás grande. Es lo contrario de administrativo.\n\nB · sobrio: cabecera azul oscura, datos en columnas y una lista de lo que falta. Más serio, más denso, más rápido de leer.\n\nLos dos arreglan el menú: cuatro o cinco iconos abajo y un «Más»." },
+    { "id": "nota-admin", "x": 0, "y": 880, "w": 700,
+      "text": "LAS TRES DE ADMINISTRACIÓN\n\nEl cuadro es lo que mirarás cada mañana: 32 filas, la semana en horizontal, y abajo cuántos perros hay cada día. El sábado en rojo porque son 19.\n\nLa hoja del día está pensada para imprimirse y colgarla en la nave. Las tres casillas de la derecha son los tres paseos.\n\nLa ficha sale al pinchar un perro del cuadro: cuándo llegó, cuándo se va, quién lo recoge y qué ha pasado estos días." }
+  ],
+  "launch": { "view": "canvas" }
+}

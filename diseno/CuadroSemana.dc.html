@@ -1,0 +1,134 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: "Poppins", system-ui, sans-serif; }
+    a { color: #4E80A5; } a:hover { color: #3A627F; }
+    * { box-sizing: border-box; }
+    .celda { height: 30px; border-radius: 6px; display: flex; align-items: center;
+             padding: 0 8px; font-size: 11.5px; font-weight: 600; white-space: nowrap;
+             overflow: hidden; }
+    .box { font-size: 12px; font-weight: 600; color: #5C6B76; display: flex;
+           align-items: center; height: 30px; }
+  </style>
+</helmet>
+
+<div style="width: 1280px; height: 860px; background: #F7FAFC; padding: 26px 30px; display: flex; flex-direction: column; gap: 18px;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between;">
+    <div>
+      <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #223039; letter-spacing: -.01em;">Semana del 10 al 16 de agosto</h1>
+      <p style="margin: 4px 0 0; font-size: 13.5px; color: #5C6B76; font-weight: 300;">32 alojamientos · 19 perros dentro el sábado, el día más lleno</p>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <div style="display: flex; background: #fff; border: 1px solid #DCE6ED; border-radius: 999px; overflow: hidden;">
+        <div style="padding: 8px 16px; font-size: 13px; font-weight: 600; color: #fff; background: #4E80A5;">Semana</div>
+        <div style="padding: 8px 16px; font-size: 13px; color: #5C6B76;">Mes</div>
+      </div>
+      <div style="width: 36px; height: 36px; border: 1px solid #DCE6ED; border-radius: 10px; background: #fff; display: flex; align-items: center; justify-content: center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5C6B76" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg>
+      </div>
+      <div style="width: 36px; height: 36px; border: 1px solid #DCE6ED; border-radius: 10px; background: #fff; display: flex; align-items: center; justify-content: center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5C6B76" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 20px; font-size: 12px; color: #5C6B76;">
+    <div style="display: flex; align-items: center; gap: 7px;"><span style="width: 13px; height: 13px; border-radius: 4px; background: #4E80A5;"></span>Confirmada</div>
+    <div style="display: flex; align-items: center; gap: 7px;"><span style="width: 13px; height: 13px; border-radius: 4px; background: #F6EC4D;"></span>Falta justificante</div>
+    <div style="display: flex; align-items: center; gap: 7px;"><span style="width: 13px; height: 13px; border-radius: 4px; background: #2B4152;"></span>Está dentro</div>
+    <div style="display: flex; align-items: center; gap: 7px;"><span style="width: 13px; height: 13px; border-radius: 4px; background: #C32927;"></span>Mírala</div>
+  </div>
+
+  <div style="background: #fff; border: 1px solid #DCE6ED; border-radius: 16px; padding: 18px 20px; flex: 1; overflow: hidden;">
+
+    <div style="display: grid; grid-template-columns: 78px repeat(7, minmax(0, 1fr)); gap: 6px; padding-bottom: 10px; border-bottom: 1px solid #EDF2F6;">
+      <div></div>
+      <div style="text-align: center;"><p style="margin: 0; font-size: 11px; color: #96A3AC; text-transform: uppercase; letter-spacing: .05em;">lun</p><p style="margin: 2px 0 0; font-size: 16px; font-weight: 600; color: #223039;">10</p></div>
+      <div style="text-align: center;"><p style="margin: 0; font-size: 11px; color: #96A3AC; text-transform: uppercase; letter-spacing: .05em;">mar</p><p style="margin: 2px 0 0; font-size: 16px; font-weight: 600; color: #223039;">11</p></div>
+      <div style="text-align: center;"><p style="margin: 0; font-size: 11px; color: #96A3AC; text-transform: uppercase; letter-spacing: .05em;">mié</p><p style="margin: 2px 0 0; font-size: 16px; font-weight: 600; color: #223039;">12</p></div>
+      <div style="text-align: center;"><p style="margin: 0; font-size: 11px; color: #96A3AC; text-transform: uppercase; letter-spacing: .05em;">jue</p><p style="margin: 2px 0 0; font-size: 16px; font-weight: 600; color: #223039;">13</p></div>
+      <div style="text-align: center;"><p style="margin: 0; font-size: 11px; color: #4E80A5; text-transform: uppercase; letter-spacing: .05em; font-weight: 600;">vie</p><p style="margin: 2px 0 0; font-size: 16px; font-weight: 700; color: #4E80A5;">14</p></div>
+      <div style="text-align: center;"><p style="margin: 0; font-size: 11px; color: #96A3AC; text-transform: uppercase; letter-spacing: .05em;">sáb</p><p style="margin: 2px 0 0; font-size: 16px; font-weight: 600; color: #223039;">15</p></div>
+      <div style="text-align: center;"><p style="margin: 0; font-size: 11px; color: #96A3AC; text-transform: uppercase; letter-spacing: .05em;">dom</p><p style="margin: 2px 0 0; font-size: 16px; font-weight: 600; color: #223039;">16</p></div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 78px repeat(7, minmax(0, 1fr)); gap: 6px; padding-top: 10px;">
+
+      <div class="box">Box 01</div>
+      <div class="celda" style="background: #2B4152; color: #fff; grid-column: span 3;">Luna</div>
+      <div></div><div></div>
+      <div class="celda" style="background: #4E80A5; color: #fff; grid-column: span 2;">Rocky</div>
+
+      <div class="box">Box 02</div>
+      <div></div>
+      <div class="celda" style="background: #4E80A5; color: #fff; grid-column: span 5;">Toby y Nala</div>
+      <div></div>
+
+      <div class="box">Box 03</div>
+      <div class="celda" style="background: #2B4152; color: #fff; grid-column: span 2;">Kiba</div>
+      <div></div><div></div>
+      <div class="celda" style="background: #F6EC4D; color: #5C4A06; grid-column: span 3;">Duna</div>
+
+      <div class="box">Box 04</div>
+      <div></div><div></div>
+      <div class="celda" style="background: #4E80A5; color: #fff; grid-column: span 4;">Bruno</div>
+      <div></div>
+
+      <div class="box">Box 05</div>
+      <div class="celda" style="background: #C32927; color: #fff; grid-column: span 4;">Kira · sin cartilla</div>
+      <div></div><div></div><div></div>
+
+      <div class="box">Box 06</div>
+      <div></div><div></div><div></div>
+      <div class="celda" style="background: #4E80A5; color: #fff; grid-column: span 4;">Nube, Cielo y Mar</div>
+
+      <div class="box">Box 07</div>
+      <div class="celda" style="background: #2B4152; color: #fff; grid-column: span 7;">Argos</div>
+
+      <div class="box" style="color: #B6C0C7;">Box 08</div>
+      <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+
+      <div class="box" style="color: #B6C0C7;">Box 09</div>
+      <div></div><div></div>
+      <div class="celda" style="background: #F6EC4D; color: #5C4A06; grid-column: span 2;">Lía</div>
+      <div></div><div></div><div></div>
+
+      <div style="grid-column: span 8; height: 14px; display: flex; align-items: center; gap: 10px; margin: 4px 0;">
+        <div style="flex: 1; height: 1px; background: #EDF2F6;"></div>
+        <span style="font-size: 10.5px; color: #96A3AC; letter-spacing: .06em; text-transform: uppercase;">Box 10 a 30</span>
+        <div style="flex: 1; height: 1px; background: #EDF2F6;"></div>
+      </div>
+
+      <div class="box" style="color: #8B3B39;">Esp 31</div>
+      <div></div>
+      <div class="celda" style="background: #8B3B39; color: #fff; grid-column: span 4;">Bravo · manejo especial</div>
+      <div></div><div></div>
+
+      <div class="box" style="color: #B6C0C7;">Esp 32</div>
+      <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+
+      <div style="grid-column: span 8; height: 10px;"></div>
+
+      <div style="font-size: 11.5px; color: #96A3AC; display: flex; align-items: center; text-transform: uppercase; letter-spacing: .05em;">Perros</div>
+      <div style="text-align: center; font-size: 14px; font-weight: 600; color: #5C6B76;">11</div>
+      <div style="text-align: center; font-size: 14px; font-weight: 600; color: #5C6B76;">14</div>
+      <div style="text-align: center; font-size: 14px; font-weight: 600; color: #5C6B76;">16</div>
+      <div style="text-align: center; font-size: 14px; font-weight: 600; color: #5C6B76;">15</div>
+      <div style="text-align: center; font-size: 14px; font-weight: 700; color: #4E80A5;">18</div>
+      <div style="text-align: center; font-size: 14px; font-weight: 700; color: #C32927;">19</div>
+      <div style="text-align: center; font-size: 14px; font-weight: 600; color: #5C6B76;">12</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
