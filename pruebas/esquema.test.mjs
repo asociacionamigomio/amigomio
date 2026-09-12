@@ -117,6 +117,10 @@ test("el esquema va antes que todo lo que usa es_admin()", () => {
   assert.equal(orden[0], "schema.sql", "es_admin() nace aquí");
   assert.ok(orden.indexOf("reservas.sql") < orden.indexOf("reloj.sql"),
     "el reloj toca la tabla reserva");
-  assert.ok(orden.indexOf("reloj.sql") < orden.indexOf("avisos.sql"),
-    "los avisos hablan del estado `revisando`, que nace en el reloj");
+  /* Al revés de lo que parecía: el estado `revisando` nace en
+     `reservas.sql`, con el resto del check, y es el RELOJ el que
+     necesita a los avisos — `validar_justificante` manda el
+     correo de «todo listo». */
+  assert.ok(orden.indexOf("avisos.sql") < orden.indexOf("reloj.sql"),
+    "`validar_justificante` llama a `avisar_reserva_confirmada`");
 });

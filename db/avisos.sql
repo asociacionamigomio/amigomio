@@ -49,6 +49,7 @@ create table if not exists aviso (
   motivo      text not null check (motivo in (
                 'sanidad',        -- algo de la cartilla caduca
                 'pago',           -- la reserva va a caducar sin justificante
+                'confirmacion',   -- pago comprobado: ya está todo listo
                 'recordatorio',   -- la estancia empieza mañana
                 'justificante',   -- lo hemos recibido / no nos vale
                 'mano')),         -- lo escribió administración
@@ -167,8 +168,9 @@ begin
          'Mañana ' || to_char(f.entrada, 'DD/MM') || ' a las '
          || to_char(f.entrada, 'HH24:MI') || ' esperamos a '
          || coalesce(f.perros, 'tu perro') || '.' || chr(10) || chr(10) ||
-         'Tráete la cartilla, y si toma algo, la medicación con sus instrucciones. '
-         || 'Si te surge cualquier cosa, escríbenos por WhatsApp al 673 229 399.'
+         'Acuérdate del pasaporte sanitario, que sin él no podemos hacer la entrada. '
+         || 'Lo demás te lo contamos en el correo de la confirmación.' || chr(10) || chr(10) ||
+         'Si te surge cualquier cosa, escríbenos por WhatsApp al 673 229 399.'
          || chr(10) || chr(10) ||
          'Hasta mañana,' || chr(10) || 'AmigoMío')
     then puestos := puestos + 1; end if;
@@ -220,6 +222,88 @@ begin
 
   return puestos;
 end $$;
+
+-- ------------------------------------------------------------
+-- «YA ESTÁ TODO LISTO»
+--
+-- Se manda cuando administración da por bueno el pago. Es el
+-- correo que se lee DOS VECES: al recibirlo y la víspera,
+-- buscando qué había que traer. Por eso lleva todo, y en este
+-- orden:
+--
+--   1. Qué está confirmado — lo que se viene a comprobar.
+--   2. Los horarios — la pregunta número uno por teléfono.
+--   3. Qué puede traer — la lista de Santiago.
+--   4. Lo imprescindible, aparte y marcado: sin pasaporte el
+--      perro no entra, y enterarse en la puerta con el coche
+--      cargado es tarde.
+--
+-- Las fechas, las horas y el importe salen de la reserva. Un
+-- correo que dice una hora distinta de la reservada es peor que
+-- no mandar correo.
+-- ------------------------------------------------------------
+create or replace function avisar_reserva_confirmada(la_reserva uuid)
+returns boolean language plpgsql security definer
+set search_path = public as $$
+declare
+  r       reserva;
+  perros  text;
+  aloj    text;
+begin
+  select * into r from reserva where id = la_reserva;
+  if not found then return false; end if;
+
+  select string_agg(p.nombre, ' y ' order by p.nombre) into perros
+    from reserva_perro rp join perro p on p.id = rp.perro_id
+   where rp.reserva_id = r.id;
+
+  select a.nombre into aloj from alojamiento a where a.id = r.alojamiento_id;
+
+  return encolar_aviso(
+    r.cliente_id, 'confirmacion',
+    -- Una vez por reserva: administración puede darle al botón
+    -- dos veces, o confirmar algo ya confirmado.
+    'confirmacion:' || r.id,
+
+    'Todo listo para ' || coalesce(perros, 'tu perro') || ' en AmigoMío',
+
+    'Hola:' || chr(10) || chr(10) ||
+    'Hemos recibido el pago. La reserva está confirmada.' || chr(10) || chr(10) ||
+
+    '-- TU RESERVA --' || chr(10) ||
+    coalesce(perros, 'Tu perro') || chr(10) ||
+    'Entrada: ' || to_char(r.entrada, 'DD/MM/YYYY') || ' a las '
+                 || to_char(r.entrada, 'HH24:MI') || chr(10) ||
+    'Salida:  ' || to_char(r.salida,  'DD/MM/YYYY') || ' a las '
+                 || to_char(r.salida,  'HH24:MI') || chr(10) ||
+    coalesce('Alojamiento: ' || aloj || chr(10), '') ||
+    'Total: ' || trim(to_char(r.total, 'FM999999D99')) || ' euros (pagado)'
+    || chr(10) || chr(10) ||
+
+    '-- HORARIOS DE ENTREGA Y RECOGIDA --' || chr(10) ||
+    'De lunes a viernes y domingos: de 10:00 a 12:30 y de 16:30 a 19:00.' || chr(10) ||
+    'Sábados: de 10:00 a 12:30.' || chr(10) ||
+    'Fuera de esas horas se puede, avisando antes, y lleva recargo. '
+    || 'Escríbenos por WhatsApp al 673 229 399 y lo vemos.' || chr(10) || chr(10) ||
+
+    '-- LO QUE PUEDES TRAER --' || chr(10) ||
+    '- Alguna mantita o camita a la que tu perro esté habituado.' || chr(10) ||
+    '- Alguno de sus juguetes.' || chr(10) ||
+    '- Su comida, y cuéntanos sus pautas de alimentación.' || chr(10) ||
+    '- Si toma alguna medicación, tráela con la posología. El servicio de '
+    || 'medicación oral no tiene coste adicional.' || chr(10) || chr(10) ||
+
+    '-- IMPRESCINDIBLE PARA ENTRAR --' || chr(10) ||
+    'Trae el pasaporte sanitario: comprobamos la titularidad y hacemos una '
+    || 'lectura de chip. Sin eso no podemos hacer la entrada.' || chr(10) || chr(10) ||
+
+    'Ya está todo preparado. Tu perro también necesita vacaciones: '
+    || 'ser tu mejor amigo es agotador.' || chr(10) || chr(10) ||
+    'Un saludo,' || chr(10) || 'AmigoMío');
+end $$;
+
+revoke all on function avisar_reserva_confirmada(uuid) from public;
+grant execute on function avisar_reserva_confirmada(uuid) to authenticated;
 
 -- ------------------------------------------------------------
 -- Escribirle a un cliente a mano, desde el panel.

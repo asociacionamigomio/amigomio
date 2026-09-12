@@ -7,8 +7,8 @@ reservas.sql
 bloqueos.sql
 peligrosidad.sql
 crear-reserva.sql
-reloj.sql
 avisos.sql
+reloj.sql
 administracion.sql
 libros.sql
 extras-repetidos.sql

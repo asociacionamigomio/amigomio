@@ -173,6 +173,19 @@ begin
     raise exception 'Esa reserva no estaba esperando confirmación.';
   end if;
 
+  /* Y se le dice al cliente. Aquí y no en la pantalla, porque
+     administración también confirma por teléfono: el correo
+     tiene que salir se confirme desde donde se confirme.
+
+     Si falla el correo NO se deshace la confirmación: la
+     reserva está pagada, y eso pesa más que un aviso. Se queda
+     en la cola con su fallo apuntado. */
+  begin
+    perform avisar_reserva_confirmada(la_reserva);
+  exception when others then
+    raise warning 'La reserva se confirmó pero el correo no salió: %', sqlerrm;
+  end;
+
   return jsonb_build_object('ok', true, 'estado', 'confirmada');
 end $$;
 
@@ -291,6 +304,16 @@ begin
   perform validar_justificante(la_reserva);
   assert (select estado from reserva where id = la_reserva) = 'confirmada',
     'administración confirma';
+
+  /* MUY IMPORTANTE. Estas pruebas usan un cliente DE VERDAD —el
+     primero que haya— porque una reserva necesita uno. Y
+     `validar_justificante` encola el correo de «todo listo».
+
+     Sin esta línea, cada vez que se reaplicara el fichero le
+     llegaría a ese cliente un correo diciéndole que su perro
+     tiene plaza para enero de 2099. Se quita antes de que el
+     cartero pase. */
+  delete from aviso where marca = 'confirmacion:' || la_reserva;
 
   delete from reserva where id in (la_reserva, otra);
 
