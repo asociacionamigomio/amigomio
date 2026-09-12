@@ -12,8 +12,8 @@
      Project Settings > API  >  "Project URL"  y  "anon public"
    ============================================================ */
 window.CONFIG = {
-  SUPABASE_URL:  "PENDIENTE",
-  SUPABASE_ANON: "PENDIENTE",
+  SUPABASE_URL:  "https://sovzbrrpcbmnevrdwaej.supabase.co",
+  SUPABASE_ANON: "sb_publishable_1eNdsYkpqefEIwJU7aakrw_UwzFu9kP",
 };
 
 CONFIG.configurado = CONFIG.SUPABASE_URL !== "PENDIENTE" &&
