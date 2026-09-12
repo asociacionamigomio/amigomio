@@ -13,6 +13,9 @@ import { render as renderMiFicha } from "./vistas/mi-ficha.js";
 import { render as renderSolicitudes } from "./vistas/admin-solicitudes.js";
 import { render as renderAdminClientes } from "./vistas/admin-clientes.js";
 import { render as renderTarifas } from "./vistas/admin-tarifas.js";
+import { render as renderCuadro } from "./vistas/admin-cuadro.js";
+import { render as renderHoja } from "./vistas/admin-hoja.js";
+import { render as renderEstancia } from "./vistas/admin-estancia.js";
 import { render as renderReservar } from "./vistas/reservar.js";
 import { render as renderMisReservas } from "./vistas/mis-reservas.js";
 import { render as renderClicker } from "./vistas/clicker.js";
@@ -38,12 +41,18 @@ const SECCIONES = [
   { id: "perros",      texto: "Mis perros",   render: renderPerros,        icono: "corazon" },
   { id: "clicker",     texto: "Clicker",      render: renderClicker,       icono: "circulo" },
   { id: "ficha",       texto: "Mi ficha",     render: renderMiFicha,       icono: "persona" },
+  { id: "cuadro",      texto: "El cuadro",    render: renderCuadro,        admin: true, icono: "rejilla" },
+  { id: "hoja",        texto: "Hoja del día", render: renderHoja,          admin: true, icono: "papel" },
+  { id: "estancia",    texto: "Estancia",     render: renderEstancia,      admin: true, icono: "lista", oculta: true },
   { id: "solicitudes", texto: "Solicitudes",  render: renderSolicitudes,   admin: true, icono: "sobre" },
   { id: "clientes",    texto: "Clientes",     render: renderAdminClientes, admin: true, icono: "gente" },
   { id: "tarifas",     texto: "Tarifas",      render: renderTarifas,       admin: true, icono: "euro" },
 ];
 
-const visibles = () => SECCIONES.filter(s => !s.admin || ficha?.es_admin);
+/* `oculta` no sale en el menú: se llega a ella desde otra
+   pantalla, como la ficha de una estancia desde el cuadro. */
+const visibles = () => SECCIONES.filter(s => (!s.admin || ficha?.es_admin) && !s.oculta);
+const cualquiera = id => SECCIONES.find(s => s.id === id);
 
 const ICONOS = {
   casa:       '<path d="M3.5 10.5 12 3.5l8.5 7"/><path d="M5.5 9.8V20h13V9.8"/>',
@@ -55,6 +64,8 @@ const ICONOS = {
   sobre:      '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.6 6.5 8.4 6 8.4-6"/>',
   gente:      '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-5.8 6.5-5.8s6.5 2.2 6.5 5.8"/><path d="M16.5 5.2a3.5 3.5 0 0 1 0 6.6M17 14.4c2.7.5 4.5 2.5 4.5 5.6"/>',
   euro:       '<path d="M18 6.5A7 7 0 0 0 7.2 9M7.2 15A7 7 0 0 0 18 17.5M3.5 10.5h9M3.5 13.5h9"/>',
+  rejilla:    '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8.5 9.5V20M14 9.5V20"/>',
+  papel:      '<path d="M6 2.5h8l5 5V21a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 6 21V3a.5.5 0 0 1 .5-.5Z"/><path d="M13.5 2.8V8h5M9 12.5h6M9 16h6"/>',
   salida:     '<path d="M14 3.5H6.5A2.5 2.5 0 0 0 4 6v12a2.5 2.5 0 0 0 2.5 2.5H14"/><path d="m16.5 8.5 3.5 3.5-3.5 3.5M20 12H9.5"/>',
 };
 
@@ -110,7 +121,7 @@ function pintarSinConfirmar(sesion) {
 }
 
 function pintarMarco(seccionId, sesion) {
-  const seccion = visibles().find(s => s.id === seccionId) || SECCIONES[0];
+  const seccion = visibles().find(s => s.id === seccionId) || cualquiera(seccionId) || SECCIONES[0];
   const mias  = visibles().filter(s => !s.admin);
   const suyas = visibles().filter(s => s.admin);
 
@@ -145,6 +156,8 @@ function pintarMarco(seccionId, sesion) {
   /* Para que una vista pueda mandar a otra sin conocerla. */
   window.irA = id => pintarMarco(id, sesion);
   window.refrescar = () => pintarMarco(seccion.id, sesion);
+  /* Del cuadro a la ficha de una estancia concreta. */
+  window.verEstancia = rid => { window.__estancia = rid; pintarMarco("estancia", sesion); };
 
   montarZapatilla();
 

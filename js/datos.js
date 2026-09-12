@@ -311,3 +311,56 @@ export async function cancelarReserva(id) {
     .update({ estado: "cancelada" }).eq("id", id);
   return { ok: !error, mensaje: error ? "No hemos podido cancelarla." : "Cancelada." };
 }
+
+/* ------------------------------------------------------------
+   Administración: el cuadro, la hoja del día y la estancia
+   ------------------------------------------------------------ */
+export async function cuadro(desde, hasta) {
+  const { data, error } = await supabase.rpc("cuadro", { desde, hasta });
+  if (error) throw error;
+  return data;
+}
+
+export async function hojaDelDia(dia) {
+  const { data, error } = await supabase.rpc("hoja_del_dia", { el_dia: dia });
+  if (error) throw error;
+  return data;
+}
+
+export async function unaEstancia(id) {
+  const { data, error } = await supabase.from("reserva")
+    .select(`*, alojamiento(nombre, tipo),
+             cliente!reserva_cliente_id_fkey(nombre, apellidos, telefono, recoge_nombre, recoge_dni),
+             reserva_perro(peso, en_celo, perro(*))`)
+    .eq("id", id).single();
+  if (error) return null;
+  return data;
+}
+
+export async function incidenciasDe(reservaId) {
+  const { data } = await supabase.from("incidencia")
+    .select("*").eq("reserva_id", reservaId).order("cuando", { ascending: false });
+  return data || [];
+}
+
+export async function anotarIncidencia({ reservaId, perroId, tipo = "nota", texto }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase.from("incidencia")
+    .insert({ reserva_id: reservaId, perro_id: perroId || null, tipo, texto, la_puso: user.id });
+  return { ok: !error, mensaje: error ? "No hemos podido anotarlo." : "Anotado." };
+}
+
+export async function moverDeAlojamiento(reservaId, alojamientoId) {
+  const { error } = await supabase.from("reserva")
+    .update({ alojamiento_id: alojamientoId }).eq("id", reservaId);
+  /* La base de datos rechaza el solape: no hace falta comprobarlo
+     antes, basta con contar lo que responde. */
+  if (error) return { ok: false, mensaje: /exclusion|solap/i.test(error.message)
+    ? "Ese alojamiento ya está ocupado esas noches." : "No hemos podido moverlo." };
+  return { ok: true, mensaje: "Movido." };
+}
+
+export async function cambiarEstado(reservaId, estado) {
+  const { error } = await supabase.from("reserva").update({ estado }).eq("id", reservaId);
+  return { ok: !error, mensaje: error ? "No hemos podido cambiarlo." : "Hecho." };
+}

@@ -535,3 +535,125 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
   .lateral-op, .lateral-salir { justify-content: center; padding: .7rem .4rem; }
   .lateral-grupo { display: block; height: 1px; background: var(--borde); margin: .6rem .4rem; padding: 0; }
 }
+
+/* ============================================================
+   EL CUADRO
+   ============================================================ */
+.mando-cuadro { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+.mando-cuadro select, .mando-cuadro input { width: auto; padding: .45rem .7rem; }
+
+.leyenda { display: flex; gap: 1.1rem; flex-wrap: wrap; margin-bottom: 1rem; font-size: .82rem; color: var(--texto-flojo); }
+.leyenda span { display: flex; align-items: center; gap: .4rem; }
+.leyenda i { width: 13px; height: 13px; border-radius: 4px; display: block; }
+.ojo-muestra { background: var(--tarjeta); box-shadow: inset 0 0 0 2px var(--rojo); }
+
+.cuadro {
+  background: var(--tarjeta); border: 1px solid var(--borde);
+  border-radius: 16px; padding: 1rem; overflow-x: auto;
+}
+.cuadro-cabeza, .cuadro-filas, .cuadro-pie {
+  display: grid; grid-template-columns: 92px repeat(var(--dias), minmax(42px, 1fr)); gap: 4px;
+  min-width: max-content;
+}
+.cuadro-cabeza { padding-bottom: .6rem; border-bottom: 1px solid var(--borde); }
+.cuadro-cabeza .dia { text-align: center; }
+.cuadro-cabeza .dia span { display: block; font-size: .66rem; text-transform: uppercase; color: var(--texto-flojo); }
+.cuadro-cabeza .dia strong { font-size: .95rem; }
+.cuadro-cabeza .dia.hoy span, .cuadro-cabeza .dia.hoy strong { color: var(--azul); font-weight: 700; }
+
+.cuadro-filas { padding-top: .6rem; }
+.nombre-aloj {
+  font-size: .74rem; font-weight: 600; color: var(--texto-flojo);
+  display: flex; align-items: center; height: 28px;
+  white-space: nowrap; overflow: hidden;   /* «Especial 1» no cabe partido */
+}
+.nombre-aloj.parado { text-decoration: line-through; opacity: .5; }
+.hueco { height: 28px; }
+.barra {
+  height: 28px; border-radius: 6px; display: flex; align-items: center;
+  padding: 0 .5rem; font-size: .74rem; font-weight: 600; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.barra:hover { filter: brightness(1.08); }
+.barra.ojo { box-shadow: inset 0 0 0 2px var(--rojo); }
+
+.cuadro-aparte { margin: 1rem 0 .2rem; font-size: .7rem; letter-spacing: .07em; text-transform: uppercase; color: var(--texto-flojo); }
+.cuadro-pie { padding-top: .8rem; margin-top: .6rem; border-top: 1px solid var(--borde); font-size: .76rem; color: var(--texto-flojo); }
+.cuenta-dia { text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--texto); }
+.cuenta-dia.lleno { color: var(--rojo); }
+
+/* ============================================================
+   LA HOJA DEL DÍA
+   ============================================================ */
+.hoja { background: #fff; border: 1px solid var(--borde); border-radius: 14px; padding: 2rem; }
+.hoja-cabeza { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2.5px solid var(--texto); padding-bottom: .9rem; }
+.hoja-cabeza h1 { margin: 0; font-size: 1.6rem; }
+.hoja-cabeza p { margin: .2rem 0 0; font-size: .88rem; color: var(--texto-flojo); font-weight: 300; }
+.hoja-marca { text-align: right; }
+.rotulo { margin: 0; font-size: .66rem; letter-spacing: .09em; text-transform: uppercase; color: var(--texto-flojo); font-weight: 700; }
+.separa { margin: 1.4rem 0 .6rem; }
+
+.hoja-movimientos { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-top: 1rem; }
+.hoja-movimientos > div { border: 1px solid var(--borde); border-radius: 10px; padding: .7rem .9rem; }
+.hoja-movimientos p:last-child { margin: .3rem 0 0; font-size: .85rem; }
+
+.hoja-perro { display: flex; gap: .9rem; padding: .85rem 0; border-bottom: 1px solid var(--borde); }
+.hoja-perro.ojo { background: #FDF6F5; }
+.hoja-box { width: 62px; flex: none; font-size: .78rem; font-weight: 700; color: var(--azul); }
+.hoja-perro.ojo .hoja-box { color: #8B2220; }
+.hoja-datos { flex: 1; }
+.hoja-datos p { margin: .25rem 0 0; font-size: .86rem; line-height: 1.5; }
+.hoja-nombre { display: flex; gap: .45rem; align-items: center; flex-wrap: wrap; }
+.hoja-nombre strong { font-size: 1.02rem; }
+.ojo-texto { color: #8B2220; }
+.hoja-casillas { display: flex; gap: .45rem; flex: none; padding-top: .2rem; }
+.hoja-casillas i { width: 17px; height: 17px; border: 1.6px solid var(--texto-flojo); border-radius: 4px; display: block; }
+.hoja-pie { display: flex; justify-content: space-between; border-top: 1px solid var(--borde); margin-top: 1rem; padding-top: .8rem; }
+.hoja-pie p { margin: 0; font-size: .76rem; color: var(--texto-flojo); font-weight: 300; }
+
+.marca { font-size: .68rem; font-weight: 600; padding: .15rem .5rem; border-radius: 999px; background: #F3EDE2; color: var(--texto-flojo); }
+.marca.roja { background: var(--rojo); color: #fff; }
+
+@media print {
+  .lateral, .no-imprimir, .zapatilla-boton, .zapatilla-panel, .boton.instalar { display: none !important; }
+  body, #app.con-lateral { display: block; background: #fff; }
+  .principal .contenedor { padding: 0; max-width: none; }
+  .hoja { border: 0; padding: 0; }
+  .hoja-perro { break-inside: avoid; }
+}
+
+/* ============================================================
+   LA FICHA DE LA ESTANCIA
+   ============================================================ */
+.estancia-cabeza { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+.estancia-cabeza h2 { margin: 0; }
+.estancia-cabeza p { margin: .2rem 0 0; color: var(--texto-flojo); font-size: .9rem; }
+.estancia-estado { text-align: right; }
+
+.estancia-datos {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;
+  background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 14px;
+  padding: 1.1rem; margin-top: 1rem;
+}
+.estancia-datos .dato { margin: .25rem 0 0; font-size: 1rem; font-weight: 600; }
+.estancia-datos .flojo { font-size: .78rem; margin: .15rem 0 0; }
+
+.anotar { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .8rem; }
+.anotar input { flex: 1 1 200px; }
+.anotar select { width: auto; }
+
+.diario { margin-top: 1rem; display: grid; gap: .1rem; }
+.diario-linea { display: flex; gap: .8rem; padding: .6rem 0; border-bottom: 1px solid var(--borde); }
+.diario-linea:last-child { border-bottom: 0; }
+.diario-cuando { font-size: .76rem; color: var(--texto-flojo); width: 110px; flex: none; }
+.diario-linea p { margin: 0; font-size: .9rem; }
+
+.rejilla-alojamientos { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: .6rem; margin-top: 1rem; }
+.aloj {
+  background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px;
+  padding: .7rem; font: inherit; font-weight: 600; cursor: pointer; color: var(--texto);
+  display: flex; flex-direction: column; gap: .15rem;
+}
+.aloj:hover { border-color: var(--azul); }
+.aloj.actual { border-color: var(--azul); background: #F2F8FC; }
+.aloj span { font-size: .7rem; font-weight: 400; color: var(--texto-flojo); }
