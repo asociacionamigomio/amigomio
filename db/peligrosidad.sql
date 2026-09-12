@@ -33,7 +33,11 @@ create or replace function perro_peligrosidad_la_marca_admin()
 returns trigger language plpgsql security definer
 set search_path = public as $$
 begin
-  if es_admin() then
+  /* El propio servidor (editor SQL, tareas programadas) es
+     administración: ahí no hay sesión de nadie, current_user
+     es postgres. Sin esto, ni Santiago desde el panel de
+     Supabase podría clasificar un perro. */
+  if es_admin() or current_user in ('postgres', 'supabase_admin') then
     return new;
   end if;
 
@@ -62,19 +66,30 @@ declare
   p uuid;
   quedo boolean;
 begin
-  select id into algun_cliente from cliente where not es_admin limit 1;
+  select id into algun_cliente from cliente limit 1;
   if algun_cliente is null then
-    raise notice 'Peligrosidad: sin clientes normales todavía, se saltan las pruebas.';
+    raise notice 'Peligrosidad: sin clientes todavía, se saltan las pruebas.';
     return;
   end if;
 
+  /* Desde el servidor SÍ se puede clasificar: es administración. */
   insert into perro (cliente_id, chip, nombre, agresivo_con_personas)
        values (algun_cliente, '111000011112222', 'PRUEBA-PELIGRO', true)
     returning id into p;
+  select agresivo_con_personas into quedo from perro where id = p;
+  assert quedo = true, 'administración sí puede clasificar un perro';
+
+  /* Y haciéndose pasar por un cliente cualquiera, NO. */
+  set local role authenticated;
+  begin
+    update perro set agresivo_con_personas = false where id = p;
+  exception when others then null;
+  end;
+  reset role;
 
   select agresivo_con_personas into quedo from perro where id = p;
-  assert quedo = false,
-    'un cliente NO puede declarar peligroso a su propio perro al darlo de alta';
+  assert quedo = true,
+    'un cliente NO puede quitarle a su perro la marca de peligrosidad';
 
   delete from perro where id = p;
   raise notice 'Peligrosidad: la clasificación es de administración. Comprobado.';
