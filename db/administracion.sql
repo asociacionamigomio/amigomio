@@ -1,6 +1,6 @@
 -- ============================================================
 -- Lo que necesitan las pantallas de administración:
--- el cuadro de la semana, la hoja del día y la ficha de la
+-- el cuadrante de la semana, la hoja del día y la ficha de la
 -- estancia.
 --
 -- Aplicar DESPUÉS de crear-reserva.sql.
@@ -43,10 +43,11 @@ create policy incidencia_la_pone_admin on incidencia
   for all using (es_admin()) with check (es_admin());
 
 -- ============================================================
--- EL CUADRO: qué hay en cada alojamiento, día a día.
+-- EL CUADRANTE: qué hay en cada alojamiento, día a día.
 -- Una fila por reserva viva que toque el rango pedido.
 -- ============================================================
-create or replace function cuadro(desde date, hasta date)
+drop function if exists cuadro(date, date);
+create or replace function cuadrante(desde date, hasta date)
 returns jsonb language sql stable
 set search_path = public as $$
   select jsonb_build_object(
@@ -152,9 +153,9 @@ $$;
 do $$
 declare c jsonb; h jsonb;
 begin
-  c := cuadro('2026-08-10', '2026-08-17');
+  c := cuadrante('2026-08-10', '2026-08-17');
   assert jsonb_array_length(c->'alojamientos') = 32,
-         'el cuadro tiene que traer los 32 alojamientos, trajo ' ||
+         'el cuadrante tiene que traer los 32 alojamientos, trajo ' ||
          jsonb_array_length(c->'alojamientos');
   assert (c->'ocupacion') ? '2026-08-10', 'y la ocupación día a día';
 
@@ -162,5 +163,5 @@ begin
   assert h ? 'dentro' and h ? 'entran' and h ? 'salen',
          'la hoja del día trae quién está, quién entra y quién sale';
 
-  raise notice 'Administración: el cuadro y la hoja del día responden.';
+  raise notice 'Administración: el cuadrante y la hoja del día responden.';
 end $$;

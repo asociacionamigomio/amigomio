@@ -41,7 +41,7 @@ const SECCIONES = [
   { id: "perros",      texto: "Mis perros",   render: renderPerros,        icono: "corazon" },
   { id: "clicker",     texto: "Clicker",      render: renderClicker,       icono: "circulo" },
   { id: "ficha",       texto: "Mi ficha",     render: renderMiFicha,       icono: "persona" },
-  { id: "cuadro",      texto: "El cuadro",    render: renderCuadro,        admin: true, icono: "rejilla" },
+  { id: "cuadrante",   texto: "El cuadrante",    render: renderCuadro,        admin: true, icono: "rejilla" },
   { id: "hoja",        texto: "Hoja del día", render: renderHoja,          admin: true, icono: "papel" },
   { id: "estancia",    texto: "Estancia",     render: renderEstancia,      admin: true, icono: "lista", oculta: true },
   { id: "solicitudes", texto: "Solicitudes",  render: renderSolicitudes,   admin: true, icono: "sobre" },

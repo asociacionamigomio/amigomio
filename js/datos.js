@@ -315,8 +315,8 @@ export async function cancelarReserva(id) {
 /* ------------------------------------------------------------
    Administración: el cuadro, la hoja del día y la estancia
    ------------------------------------------------------------ */
-export async function cuadro(desde, hasta) {
-  const { data, error } = await supabase.rpc("cuadro", { desde, hasta });
+export async function cuadrante(desde, hasta) {
+  const { data, error } = await supabase.rpc("cuadrante", { desde, hasta });
   if (error) throw error;
   return data;
 }

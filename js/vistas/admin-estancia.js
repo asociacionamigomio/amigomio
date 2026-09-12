@@ -4,7 +4,7 @@
    Sale al pinchar un perro en el cuadro: cuándo llegó, cuándo
    se va, quién puede recogerlo y qué ha pasado estos días.
    ============================================================ */
-import { unaEstancia, incidenciasDe, anotarIncidencia, cambiarEstado, cuadro,
+import { unaEstancia, incidenciasDe, anotarIncidencia, cambiarEstado, cuadrante,
          moverDeAlojamiento } from "../datos.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
@@ -24,7 +24,7 @@ const ROTULOS = {
 
 export async function render(contenedor, { reservaId } = {}) {
   const id = reservaId || window.__estancia;
-  if (!id) { contenedor.innerHTML = `<div class="aviso">Pincha una reserva en el cuadro.</div>`; return; }
+  if (!id) { contenedor.innerHTML = `<div class="aviso">Pincha una reserva en el cuadrante.</div>`; return; }
 
   await pintar();
 
@@ -43,7 +43,7 @@ export async function render(contenedor, { reservaId } = {}) {
 
     contenedor.innerHTML = `
       <div class="cabecera-seccion">
-        <button class="boton fantasma pequeno" data-ir="cuadro">← Al cuadro</button>
+        <button class="boton fantasma pequeno" data-ir="cuadrante">← Al cuadrante</button>
       </div>
 
       <div class="estancia-cabeza">
@@ -132,7 +132,7 @@ export async function render(contenedor, { reservaId } = {}) {
   }
 
   async function elegirAlojamiento(r) {
-    const datos = await cuadro(r.entrada.slice(0, 10), r.salida.slice(0, 10));
+    const datos = await cuadrante(r.entrada.slice(0, 10), r.salida.slice(0, 10));
     const ocupados = new Set(datos.reservas.filter(x => x.id !== r.id).map(x => x.alojamiento));
     const libres = datos.alojamientos.filter(a => a.activo && !ocupados.has(a.id));
 

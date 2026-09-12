@@ -22,15 +22,15 @@ const app    = aplanar(lee("js/app.js"));
 const datos  = aplanar(lee("js/datos.js"));
 
 /* ---------- El cuadro ---------- */
-test("el cuadro trae alojamientos, reservas y ocupación de una vez", () => {
+test("el cuadrante trae alojamientos, reservas y ocupación de una vez", () => {
   /* Una llamada y no tres: con 32 alojamientos por 30 días, ir a
      buscar cada cosa por separado se nota. */
-  assert.match(sql, /create or replace function cuadro/i);
+  assert.match(sql, /create or replace function cuadrante/i);
   assert.match(sql, /'alojamientos'[\s\S]{0,600}'reservas'[\s\S]{0,900}'ocupacion'/);
-  assert.match(datos, /rpc\("cuadro"/);
+  assert.match(datos, /rpc\("cuadrante"/);
 });
 
-test("el cuadro separa lo que se reserva de lo que se asigna", () => {
+test("el cuadrante separa lo que se reserva de lo que se asigna", () => {
   /* Aislamiento y cachorros no los elige el cliente. */
   assert.match(cuadro, /\["normal", "especial"\]\.includes\(a\.tipo\)/);
   assert.match(cuadro, /No se reservan, se asignan/);
@@ -40,7 +40,7 @@ test("una reserva de varios días es UNA barra, no varias celdas", () => {
   assert.match(cuadro, /grid-column: span \$\{largo\}/);
 });
 
-test("el cuadro marca los perros con manejo de peligrosidad", () => {
+test("el cuadrante marca los perros con manejo de peligrosidad", () => {
   assert.match(sql, /'atencion'[\s\S]{0,200}agresivo_con_personas/);
   assert.match(cuadro, /r\.atencion \? "ojo"/);
 });
@@ -81,10 +81,10 @@ test("el perro con manejo de peligrosidad destaca en la hoja", () => {
 });
 
 /* ---------- La ficha de la estancia ---------- */
-test("se llega a la ficha pinchando en el cuadro", () => {
+test("se llega a la ficha pinchando en el cuadrante", () => {
   assert.match(cuadro, /window\.verEstancia/);
   assert.match(app, /window\.verEstancia = rid/);
-  assert.match(app, /oculta: true/, "y no sale en el menú: se llega desde el cuadro");
+  assert.match(app, /oculta: true/, "y no sale en el menú: se llega desde el cuadrante");
 });
 
 test("la ficha dice quién puede recoger al perro", () => {
@@ -161,4 +161,40 @@ test("la ficha enseña los avisos de caducidad de ese perro", () => {
 test("al terminar de editar se vuelve a la ficha, no a la lista", () => {
   const perros = aplanar(lee("js/vistas/perros.js"));
   assert.match(perros, /acabas de editar ESTE perro/);
+});
+
+/* ---------- La vista de mes ---------- */
+test("el mes es un calendario, no una tira de treinta días", () => {
+  /* Treinta días en horizontal no hay quien los lea. En el mes lo
+     que importa no es qué perro está en qué box, sino qué días
+     aprietan. */
+  assert.match(cuadro, /function mesDe/);
+  assert.match(cuadro, /class="calendario"/);
+  assert.match(cuadro, /no hay quien los lea/);
+});
+
+test("el calendario empieza en lunes y rellena los huecos", () => {
+  assert.match(cuadro, /const antes = \(inicio\.getDay\(\) \+ 6\) % 7/);
+  assert.match(cuadro, /while \(dias\.length % 7\) dias\.push\(null\)/,
+    "y completa la última semana");
+});
+
+test("cada día dice cuánto queda libre y avisa si está completo", () => {
+  assert.match(cuadro, /COMPLETO/);
+  assert.match(cuadro, /libres/);
+  assert.match(cuadro, /apurado/);
+});
+
+test("pinchar un día abre esa semana", () => {
+  assert.match(cuadro, /Pincha un día y se abre esa semana/);
+  assert.match(cuadro, /data-dia/);
+});
+
+test("se llama cuadrante en todas partes, no cuadro", () => {
+  /* Dos nombres para lo mismo es como se pierde uno dentro de su
+     propio proyecto. */
+  const app = aplanar(lee("js/app.js"));
+  assert.match(app, /texto: "El cuadrante"/);
+  assert.match(sql, /function cuadrante/);
+  assert.doesNotMatch(aplanar(lee("js/datos.js")), /rpc\("cuadro"/);
 });
