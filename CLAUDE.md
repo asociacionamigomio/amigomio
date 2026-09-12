@@ -135,7 +135,7 @@ en el repositorio ni en una conversación.
 
 Los ficheros de base de datos, y **en este orden**: `db/schema.sql`, `db/storage.sql`,
 `db/documentos.sql`, `db/tarifas.sql`, `db/reservas.sql`, `db/peligrosidad.sql`,
-`db/crear-reserva.sql`, `db/reloj.sql`, `db/administracion.sql`.
+`db/crear-reserva.sql`, `db/reloj.sql`, `db/administracion.sql`, `db/libros.sql`.
 
 `db/documentos.sql`, `db/tarifas.sql`, `db/reservas.sql`, `db/peligrosidad.sql`,
 `db/crear-reserva.sql` y `db/reloj.sql` **llevan sus propias pruebas dentro**, en bloques `do $$ ... assert ... end $$`. Aplicarlos en Supabase ES

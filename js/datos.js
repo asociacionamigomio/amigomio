@@ -543,3 +543,22 @@ export async function caducarReservas() {
            mensaje: data === 0 ? "No había ninguna por soltar."
              : `${data} reserva${data === 1 ? "" : "s"} sin pagar, soltada${data === 1 ? "" : "s"}.` };
 }
+
+/* ------------------------------------------------------------
+   El libro de registro y las cuentas.
+
+   Los dos llevan DNI y domicilio, así que la base sólo se los
+   da a administración: aquí no hay ninguna comprobación porque
+   no serviría de nada.
+   ------------------------------------------------------------ */
+export async function libroDeEstancias(desde, hasta) {
+  const { data, error } = await supabase.rpc("libro_entradas_salidas", { desde, hasta });
+  if (error) return { ok: false, mensaje: error.message, filas: [] };
+  return { ok: true, filas: data || [] };
+}
+
+export async function ingresosPorMes(anio = null) {
+  const { data, error } = await supabase.rpc("ingresos_por_mes", { el_anio: anio });
+  if (error) return { ok: false, mensaje: error.message, meses: [] };
+  return { ok: true, meses: data || [] };
+}

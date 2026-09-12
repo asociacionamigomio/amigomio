@@ -903,3 +903,71 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
    ve la etiqueta. */
 .aviso .subir { display: inline-block; cursor: pointer; }
 .error-linea { color: var(--rojo, #b4453a); }
+
+/* ============================================================
+   El libro de registro.
+
+   Esto no es una pantalla: es un documento oficial que hay que
+   poder enseñar. Se diseña para salir en papel.
+   ============================================================ */
+.libro-cabecera { display: none; }
+.libro-cabecera h3 { margin: 0 0 .3rem; }
+.libro-cabecera p { margin: .1rem 0; font-size: .85rem; }
+
+/* Veinte columnas no caben en ninguna pantalla: se desplaza. */
+.libro-tabla { overflow-x: auto; margin-top: 1rem; }
+.libro-tabla table { border-collapse: collapse; font-size: .78rem; white-space: nowrap; }
+.libro-tabla th, .libro-tabla td {
+  border: 1px solid var(--borde); padding: .35rem .5rem; text-align: left;
+}
+.libro-tabla th { background: #F1F5F8; font-weight: 600; position: sticky; top: 0; }
+.libro-tabla tbody tr:nth-child(even) { background: #FAFCFD; }
+
+@media print {
+  /* Lo que no es el libro no se imprime: ni menú, ni botones,
+     ni el globo de Zapatilla. */
+  .lateral, .no-imprimir, .zapatilla-boton, .zapatilla-panel { display: none !important; }
+  #app, #app.con-lateral { max-width: none; margin: 0; padding: 0; }
+
+  .libro-cabecera { display: block; margin-bottom: .8rem; }
+  .libro-tabla { overflow: visible; }
+  .libro-tabla table { width: 100%; font-size: 7pt; white-space: normal; }
+  .libro-tabla th { position: static; }
+  /* Que la cabecera se repita en cada hoja: un libro de treinta
+     páginas sin cabecera no se puede leer. */
+  .libro-tabla thead { display: table-header-group; }
+  .libro-tabla tr { break-inside: avoid; }
+  @page { size: A4 landscape; margin: 10mm; }
+}
+
+/* ============================================================
+   Las cuentas.
+   ============================================================ */
+.resumen-cuentas {
+  display: grid; gap: .8rem; margin: 1rem 0;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+.cifra {
+  padding: .9rem; border-radius: 12px; background: #fff;
+  border: 1px solid var(--borde); border-left-width: 4px;
+}
+.cifra .dato { font-size: 1.35rem; font-weight: 700; margin: .2rem 0; }
+.cifra .flojo { font-size: .78rem; }
+.cifra.cobrado      { border-left-color: #6b8f3f; }
+.cifra.comprometido { border-left-color: var(--azul, #4E80A5); }
+.cifra.aire         { border-left-color: var(--amarillo, #E8C547); }
+.cifra.perdido      { border-left-color: var(--rojo, #b4453a); }
+
+.meses { display: grid; gap: .9rem; }
+.mes { display: grid; gap: .3rem; }
+.mes-nombre { display: flex; justify-content: space-between; gap: .8rem; flex-wrap: wrap;
+              font-size: .88rem; }
+.mes-nombre strong { text-transform: capitalize; }
+.mes-barra {
+  display: flex; height: 10px; border-radius: 5px; overflow: hidden;
+  background: #EEF2F5;
+}
+.mes-barra .trozo.cobrado      { background: #6b8f3f; }
+.mes-barra .trozo.comprometido { background: var(--azul, #4E80A5); }
+.mes-cifra { display: flex; justify-content: space-between; gap: .8rem;
+             font-size: .85rem; flex-wrap: wrap; }

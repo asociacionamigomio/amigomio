@@ -13,6 +13,8 @@ import { render as renderMiFicha } from "./vistas/mi-ficha.js";
 import { render as renderSolicitudes } from "./vistas/admin-solicitudes.js";
 import { render as renderAdminClientes } from "./vistas/admin-clientes.js";
 import { render as renderTarifas } from "./vistas/admin-tarifas.js";
+import { render as renderLibro }    from "./vistas/admin-libro.js";
+import { render as renderCuentas }  from "./vistas/admin-cuentas.js";
 import { render as renderCuadro } from "./vistas/admin-cuadro.js";
 import { render as renderHoja } from "./vistas/admin-hoja.js";
 import { render as renderEstancia } from "./vistas/admin-estancia.js";
@@ -47,6 +49,8 @@ const SECCIONES = [
   { id: "solicitudes", texto: "Solicitudes",  render: renderSolicitudes,   admin: true, icono: "sobre" },
   { id: "clientes",    texto: "Clientes",     render: renderAdminClientes, admin: true, icono: "gente" },
   { id: "tarifas",     texto: "Tarifas",      render: renderTarifas,       admin: true, icono: "euro" },
+  { id: "cuentas",     texto: "Las cuentas",  render: renderCuentas,       admin: true, icono: "grafico" },
+  { id: "libro",       texto: "Libro de registro", render: renderLibro,    admin: true, icono: "libro" },
 ];
 
 /* `oculta` no sale en el menú: se llega a ella desde otra
@@ -64,6 +68,8 @@ const ICONOS = {
   sobre:      '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.6 6.5 8.4 6 8.4-6"/>',
   gente:      '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-5.8 6.5-5.8s6.5 2.2 6.5 5.8"/><path d="M16.5 5.2a3.5 3.5 0 0 1 0 6.6M17 14.4c2.7.5 4.5 2.5 4.5 5.6"/>',
   euro:       '<path d="M18 6.5A7 7 0 0 0 7.2 9M7.2 15A7 7 0 0 0 18 17.5M3.5 10.5h9M3.5 13.5h9"/>',
+  grafico:    '<path d="M4 20V4M4 20h16"/><path d="M8 20v-6M12.5 20V8M17 20v-9"/>',
+  libro:      '<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5Z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8 7.5h7M8 11h7"/>',
   rejilla:    '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8.5 9.5V20M14 9.5V20"/>',
   papel:      '<path d="M6 2.5h8l5 5V21a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 6 21V3a.5.5 0 0 1 .5-.5Z"/><path d="M13.5 2.8V8h5M9 12.5h6M9 16h6"/>',
   salida:     '<path d="M14 3.5H6.5A2.5 2.5 0 0 0 4 6v12a2.5 2.5 0 0 0 2.5 2.5H14"/><path d="m16.5 8.5 3.5 3.5-3.5 3.5M20 12H9.5"/>',
