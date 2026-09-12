@@ -37,8 +37,6 @@ export function render(contenedor) {
 
   contenedor.innerHTML = `
     <h2>Clicker</h2>
-    <p class="flojo">Pulsa en el momento exacto en que hace lo que quieres.
-       Ni un segundo después. Y luego premia.</p>
 
     <button class="clicker" id="clic" aria-label="Clic">
       <span class="clicker-dentro">CLIC</span>
