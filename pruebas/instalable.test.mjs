@@ -50,3 +50,40 @@ test("el manifiesto tiene lo que exige el navegador", () => {
   assert.ok(m.icons.some(i => i.sizes === "512x512"));
   assert.ok(m.start_url, "hay que decirle por dónde abre");
 });
+
+/* ------------------------------------------------------------
+   «Esta app está creada para una versión anterior de Android».
+
+   Lo dice Android, no nosotros, y sale cuando lo que se instala
+   NO es un WebAPK —el paquete que Google genera para cada web
+   instalable— sino el acceso directo de repuesto que Chrome
+   monta él mismo, que va firmado contra un Android viejo.
+
+   Chrome cae a ese repuesto cuando el manifiesto no le llega
+   para pedir el WebAPK. Lo que le faltaba: un `id` estable, un
+   `scope` y un icono `maskable`. Con eso pide el WebAPK y el
+   aviso desaparece.
+   ------------------------------------------------------------ */
+test("el manifiesto pide un WebAPK de verdad, no un acceso directo", () => {
+  const m = JSON.parse(lee("manifest.webmanifest"));
+
+  assert.ok(m.id, "sin `id` estable, Android la trata como otra app cada vez");
+  assert.ok(m.scope, "sin `scope`, Chrome no sabe qué es la app y qué es fuera");
+
+  const maskable = m.icons.filter(i => (i.purpose || "").split(/\s+/).includes("maskable"));
+  assert.ok(maskable.length, "sin icono `maskable` no hay WebAPK");
+  assert.ok(maskable.some(i => i.sizes === "512x512"),
+    "el maskable tiene que ser el grande");
+
+  /* Y que siga habiendo uno `any`: el maskable lleva margen y
+     recortado fuera de Android se ve pequeño. */
+  assert.ok(m.icons.some(i => (i.purpose || "any").split(/\s+/).includes("any")));
+});
+
+test("el icono maskable existe y deja margen para el recorte", () => {
+  const m = JSON.parse(lee("manifest.webmanifest"));
+  const icono = m.icons.find(i => (i.purpose || "").includes("maskable"));
+  const bytes = readFileSync(new URL("../" + icono.src, import.meta.url));
+  assert.ok(bytes.length > 1000, "el fichero tiene que estar ahí de verdad");
+  assert.match(icono.src, /maskable/, "que se sepa cuál es sin abrirlo");
+});

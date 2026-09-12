@@ -54,11 +54,12 @@ test("las librerías de fuera van con versión clavada", () => {
 test("el logo y los iconos de la PWA están en su sitio", () => {
   /* Sin iconos, al instalarla en el móvil sale un cuadrado en blanco
      y no parece de nadie. */
-  for (const f of ["assets/logo.png", "assets/icono-192.png", "assets/icono-512.png"])
+  for (const f of ["assets/logo.png", "assets/icono-192.png", "assets/icono-512.png",
+                   "assets/icono-maskable-512.png"])
     assert.ok(existsSync(new URL("../" + f, import.meta.url)), `falta ${f}`);
 
   const manifiesto = JSON.parse(lee("manifest.webmanifest"));
-  assert.equal(manifiesto.icons.length, 2, "el manifiesto tiene que declararlos");
+  assert.equal(manifiesto.icons.length, 3, "el manifiesto tiene que declararlos");
   assert.equal(manifiesto.theme_color, "#4E80A5", "el color de la barra es el azul de la marca");
 });
 

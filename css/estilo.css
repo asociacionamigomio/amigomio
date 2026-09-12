@@ -437,6 +437,16 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 .requisito .dias { width: 68px; text-align: center; padding: .3rem .4rem; }
 .requisito select { margin-top: .15rem; }
 
+/* Cada antiparasitario que lleva puesto, en su cajita, para que
+   no parezcan todos el mismo. */
+.antiparasitario {
+  border-left: 3px solid var(--verde, #6b8f3f);
+  padding: .5rem .7rem; margin: .5rem 0;
+  background: rgba(0, 0, 0, .02); border-radius: 0 8px 8px 0;
+}
+.antiparasitario .mini { margin-top: .3rem; }
+.antiparasitario .quitar-antiparasitario { font-size: .8rem; margin-top: .35rem; }
+
 /* ============================================================
    DIRECCIÓN A — la elegida el 12/09/2026.
 
@@ -723,3 +733,38 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
   .dia-mes { min-height: 58px; padding: .3rem; }
   .dia-mes .perros { display: none; }
 }
+
+/* ============================================================
+   Fuera de horario y WhatsApp.
+
+   El desplegable está cerrado: la mayoría recoge en horario y
+   no le interesa. Pero quien lo abre tiene que salir sabiendo
+   cuánto cuesta, no con un «consúltanos».
+   ============================================================ */
+.fuera-horario {
+  margin-top: .6rem; border: 1px dashed var(--borde, #d6dde4);
+  border-radius: 10px; padding: .5rem .8rem; background: #fff;
+}
+.fuera-horario > summary {
+  cursor: pointer; font-weight: 600; font-size: .9rem;
+  color: var(--azul, #4E80A5); list-style: none;
+}
+.fuera-horario > summary::-webkit-details-marker { display: none; }
+.fuera-horario > summary::before { content: "▸ "; }
+.fuera-horario[open] > summary::before { content: "▾ "; }
+.fuera-horario p { font-size: .88rem; margin: .5rem 0; }
+
+.recargos { list-style: none; margin: .6rem 0; padding: 0; }
+.recargos li {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: .8rem; padding: .35rem 0; border-bottom: 1px solid var(--borde, #eef2f5);
+  font-size: .88rem;
+}
+.recargos li:last-child { border-bottom: none; }
+.recargos strong { white-space: nowrap; }
+
+.boton.whatsapp {
+  display: inline-block; background: #25D366; border-color: #25D366;
+  color: #fff; text-decoration: none;
+}
+.boton.whatsapp:hover { background: #1da851; border-color: #1da851; }

@@ -91,7 +91,11 @@ insert into extra (nombre, importe, por_noche, en_verano, lo_cobra, nota) values
   ('Atención veterinaria',            0, false, true,  'veterinaria', 'Lo factura la clínica'),
   ('Vacunación durante la estancia',  0, false, true,  'veterinaria', 'Lo factura la clínica'),
   ('Desparasitación durante la estancia', 0, false, true, 'veterinaria', 'Lo factura la clínica')
-on conflict do nothing;
+/* Sobre `nombre`, y no a secas: `on conflict do nothing` sin
+   columna no detecta nada, y cada aplicación del fichero volvía
+   a insertar los siete. La marca de unicidad va en
+   db/extras-repetidos.sql. */
+on conflict (nombre) do nothing;
 
 -- ------------------------------------------------------------
 -- Ajustes sueltos.

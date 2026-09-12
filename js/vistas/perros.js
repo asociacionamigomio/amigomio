@@ -209,9 +209,22 @@ async function formulario(contenedor, id) {
     contenedor.querySelector("#luego").addEventListener("click", aMedias);
 
     contenedor.querySelector("#es_ppp")?.addEventListener("change", () => { recoger(); pintar(); });
-    /* Cambiar de producto cambia qué se pregunta debajo. */
-    contenedor.querySelector('[data-sanidad="antiparasitario_externo:producto"]')
-      ?.addEventListener("change", () => { recoger(); pintar(); });
+    /* Añadir y quitar antiparasitarios repinta la lista. */
+    contenedor.querySelector("#anadir-antiparasitario")?.addEventListener("click", () => {
+      recoger();
+      const s = datos.sanidad = datos.sanidad || {};
+      const e = s.antiparasitario_externo = s.antiparasitario_externo || {};
+      e.puestos = [...(e.puestos || []), { producto: "pipeta", fecha: "" }];
+      pintar();
+    });
+    contenedor.querySelectorAll(".quitar-antiparasitario").forEach(b =>
+      b.addEventListener("click", () => {
+        const fuera = Number(b.dataset.quitar);
+        recoger();
+        const e = datos.sanidad?.antiparasitario_externo;
+        if (e?.puestos) e.puestos = e.puestos.filter((_, i) => i !== fuera);
+        pintar();
+      }));
     contenedor.querySelector("#tiene_licencia")
       ?.addEventListener("change", () => { recoger(); pintar(); });
 
@@ -282,12 +295,34 @@ async function formulario(contenedor, id) {
     });
     const sanidad = { ...(datos.sanidad || {}) };
     contenedor.querySelectorAll("[data-sanidad]").forEach(el => {
-      const [id, prop] = el.dataset.sanidad.split(":");
+      const trozos = el.dataset.sanidad.split(":");
+      const valor = el.type === "checkbox" ? el.checked
+                  : el.type === "number"   ? (el.value === "" ? "" : Number(el.value))
+                  : el.value;
+
+      /* Dos formas: "rabia:fecha" y, para los antiparasitarios,
+         que van en lista, "antiparasitario_externo:puestos:0:fecha". */
+      if (trozos.length === 4) {
+        const [id, lista, i, prop] = trozos;
+        sanidad[id] = { ...(sanidad[id] || {}) };
+        sanidad[id][lista] = (sanidad[id][lista] || []).slice();
+        sanidad[id][lista][i] = { ...(sanidad[id][lista][i] || {}), [prop]: valor };
+        return;
+      }
+      const [id, prop] = trozos;
       sanidad[id] = sanidad[id] || {};
-      sanidad[id][prop] = el.type === "checkbox" ? el.checked
-                        : el.type === "number"   ? Number(el.value)
-                        : el.value;
+      sanidad[id][prop] = valor;
     });
+
+    /* Lo que se puso en blanco no se guarda: una lista con una
+       línea vacía haría creer que lleva algo puesto. */
+    const externo = sanidad.antiparasitario_externo;
+    if (externo?.puestos) {
+      externo.puestos = externo.puestos.filter(x => x?.fecha || x?.validoHasta);
+      delete externo.producto;   // resto de cuando era uno solo
+      delete externo.fecha;
+      delete externo.validoHasta;
+    }
     if (Object.keys(sanidad).length) datos.sanidad = sanidad;
   }
 
@@ -383,6 +418,50 @@ function cuerpoPaso0(d, error, esNuevo) {
     </label>`;
 }
 
+/* Un perro puede llevar varias cosas puestas a la vez —el collar
+   para el mosquito y la pipeta para pulgas y garrapatas—, así que
+   esto es una lista y no un hueco. De cada uno se dice cuándo se
+   le puso y, si no es de los de siempre, o cuántos meses dura o
+   hasta cuándo vale. Está protegido mientras le quede alguno. */
+function antiparasitarios(c) {
+  const uno = (x, i) => `
+    <div class="antiparasitario">
+      <select data-sanidad="antiparasitario_externo:puestos:${i}:producto">
+        ${Object.entries(PRODUCTOS_EXTERNOS).map(([id, p]) => `
+          <option value="${id}" ${x.producto === id ? "selected" : ""}>
+            ${esc(p.nombre)}${p.meses ? ` · dura ${p.meses} ${p.meses === 1 ? "mes" : "meses"}` : ""}
+          </option>`).join("")}
+      </select>
+
+      <label class="mini">Se lo puse el
+        <input type="date" data-sanidad="antiparasitario_externo:puestos:${i}:fecha"
+               value="${esc(x.fecha)}"></label>
+
+      <label class="mini">y dura
+        <input type="number" min="1" max="24" class="dias"
+               data-sanidad="antiparasitario_externo:puestos:${i}:duracionMeses"
+               value="${esc(x.duracionMeses)}" placeholder="meses">
+        meses</label>
+
+      <label class="mini">o caduca el
+        <input type="date" data-sanidad="antiparasitario_externo:puestos:${i}:validoHasta"
+               value="${esc(x.validoHasta)}"></label>
+
+      ${c.puestos.length > 1
+        ? `<button type="button" class="enlace quitar-antiparasitario"
+                   data-quitar="${i}">Quitar</button>`
+        : ""}
+    </div>`;
+
+  return `
+    <p class="flojo">Puede llevar varios a la vez. Te avisamos cuando se le
+       acabe el último que le quede.</p>
+    ${c.puestos.map(uno).join("")}
+    <button type="button" class="enlace" id="anadir-antiparasitario">
+      Añadir otro antiparasitario
+    </button>`;
+}
+
 function cuerpoPaso1(d) {
   const campos = camposSanidad(d);
   const guardado = d.sanidad || {};
@@ -394,24 +473,15 @@ function cuerpoPaso1(d) {
     return `
     <div class="requisito ${c.obligatorio ? "" : "recomendado"}">
       <span class="nombre-req">${esc(c.nombre)}${c.obligatorio ? "" : " <em>(recomendada)</em>"}</span>
-      <input type="date" data-sanidad="${c.id}:fecha" value="${esc(c.fecha)}">
+      ${esExterno ? "" : `<input type="date" data-sanidad="${c.id}:fecha" value="${esc(c.fecha)}">`}
 
-      ${esExterno ? `
-        <label class="mini">¿Qué le pones?</label>
-        <select data-sanidad="${c.id}:producto">
-          ${Object.entries(PRODUCTOS_EXTERNOS).map(([id, p]) => `
-            <option value="${id}" ${extra.producto === id ? "selected" : ""}>
-              ${esc(p.nombre)}${p.meses ? ` · dura ${p.meses} ${p.meses === 1 ? "mes" : "meses"}` : ""}
-            </option>`).join("")}
-        </select>
-        ${extra.producto === "otro" ? `
-          <label class="mini">¿Hasta cuándo vale?</label>
-          <input type="date" data-sanidad="${c.id}:validoHasta" value="${esc(extra.validoHasta)}">` : ""}` : ""}
+      ${esExterno ? antiparasitarios(c) : ""}
 
+      ${esExterno ? "" : `
       <label class="casilla pequena">
         <input type="checkbox" data-sanidad="${c.id}:primovacunacion" ${c.primovacunacion ? "checked" : ""}>
         Es la primera vez
-      </label>
+      </label>`}
 
       <label class="mini">Avísame
         <input type="number" min="1" max="365" class="dias"

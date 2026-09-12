@@ -9,8 +9,13 @@
    ============================================================ */
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { chipValido, normalizarChip, edadEnMeses, esCachorro,
          necesitaAlojamientoEspecial, puedenCompartir } from "../js/perro.js";
+import { camposSanidad } from "../js/sanidad.js";
+
+const leer = f => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+const aplanar = t => t.replace(/\s+/g, " ");
 
 test("el chip son 15 dígitos", () => {
   assert.equal(chipValido("941000012345678"), true);
@@ -65,4 +70,42 @@ test("el que no se lleva con ninguno, con ninguno", () => {
   const majo   = { nombre: "Kira",  sexo: "hembra", sociable: "todos",  agresivoConPersonas: false };
   assert.equal(puedenCompartir(arisco, majo).si, false);
   assert.equal(puedenCompartir(majo, arisco).si, false, "la regla vale en los dos sentidos");
+});
+
+/* ---------- El formulario de varios antiparasitarios ---------- */
+test("el formulario reparte un hueco por antiparasitario puesto", () => {
+  const perro = { sanidad: { antiparasitario_externo: { puestos: [
+    { producto: "collar", fecha: "2026-02-01" },
+    { producto: "pipeta", fecha: "2026-08-01" },
+  ]}}};
+  const externo = camposSanidad(perro).find(c => c.id === "antiparasitario_externo");
+  assert.equal(externo.puestos.length, 2);
+  assert.equal(externo.puestos[1].producto, "pipeta");
+});
+
+test("un perro sin nada puesto enseña una línea vacía, no ninguna", () => {
+  const externo = camposSanidad({}).find(c => c.id === "antiparasitario_externo");
+  assert.equal(externo.puestos.length, 1, "si no hay línea, no hay dónde escribir");
+  assert.equal(externo.puestos[0].fecha, "");
+});
+
+test("el perro de siempre, con uno solo, sigue viéndose", () => {
+  const perro = { sanidad: { antiparasitario_externo:
+    { producto: "pipeta", fecha: "2026-08-01" } } };
+  const externo = camposSanidad(perro).find(c => c.id === "antiparasitario_externo");
+  assert.equal(externo.puestos.length, 1);
+  assert.equal(externo.puestos[0].producto, "pipeta");
+  assert.equal(externo.puestos[0].fecha, "2026-08-01");
+});
+
+test("de cada antiparasitario se puede poner o lo que dura o cuándo caduca", () => {
+  const fuente = aplanar(leer("js/vistas/perros.js"));
+  assert.match(fuente, /puestos:\d*:duracionMeses|puestos:\$\{i\}:duracionMeses/,
+    "falta el hueco de cuánto dura");
+  assert.match(fuente, /puestos:\$\{i\}:validoHasta/,
+    "falta el hueco de cuándo caduca");
+  assert.match(fuente, /a-?nadir-antiparasitario|anadirAntiparasitario/i,
+    "tiene que poder añadir otro");
+  assert.match(fuente, /quitar-antiparasitario/i,
+    "y quitarlo si se equivoca");
 });

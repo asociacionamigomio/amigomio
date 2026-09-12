@@ -9,6 +9,7 @@
    Zapatilla y donde están las comprobaciones.
    ============================================================ */
 import { supabase } from "./sesion.js";
+import { TELEFONO_BONITO } from "./contacto.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -146,7 +147,7 @@ async function enviar(e) {
     esperando.remove();
     escribe("zapatilla",
       "Uy, se me ha ido el santo al cielo. Inténtalo otra vez, " +
-      "o llama al 673 229 399 y te atendemos.");
+      `o escríbenos al WhatsApp ${TELEFONO_BONITO} y te atendemos.`);
   } finally {
     hablando = false;
     caja.focus();

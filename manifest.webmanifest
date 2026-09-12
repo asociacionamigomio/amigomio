@@ -1,11 +1,16 @@
 {
+  "id": "/amigomio/",
   "name": "AmigoMío — Residencia canina",
   "short_name": "AmigoMío",
+  "description": "Las reservas, las fichas de tus perros y sus avisos de vacunas, en el móvil.",
   "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "background_color": "#F7FAFC",
   "theme_color": "#4E80A5",
   "lang": "es",
+  "dir": "ltr",
+  "categories": ["lifestyle", "travel"],
   "icons": [
     {
       "src": "assets/icono-192.png",
@@ -18,6 +23,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "assets/icono-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

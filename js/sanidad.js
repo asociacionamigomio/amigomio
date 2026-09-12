@@ -77,6 +77,15 @@ function margenExigido(requisito, registro) {
 }
 
 export function estadoRequisito({ requisito, registro, entrada, salida }) {
+  /* Si lleva varios antiparasitarios, vale el que aguante más:
+     el resto de la función sólo sabe de uno. */
+  if (requisito.id === "antiparasitario_externo" && registro?.puestos) {
+    const manda = elQueMasDura(registro);
+    registro = manda
+      ? { ...manda.puesto, validoHasta: manda.caduca }
+      : { fecha: comoLista(registro)[0]?.fecha };
+  }
+
   if (!registro || !registro.fecha)
     return { estado: "sin-datos", caduca: null,
              mensaje: `Nos falta la fecha de ${requisito.nombre.toLowerCase()}.` };
@@ -150,7 +159,7 @@ export function camposSanidad(perro) {
   const guardado = perro?.sanidad || {};
   const hueco = r => {
     const v = guardado[r.id] || {};
-    return {
+    const campo = {
       id: r.id,
       nombre: r.nombre,
       obligatorio: r.obligatorio,
@@ -158,6 +167,21 @@ export function camposSanidad(perro) {
       validoHasta: v.validoHasta || "",
       primovacunacion: v.primovacunacion === true,
     };
+    /* El antiparasitario externo es el único que va en lista:
+       collar y pipeta a la vez es lo normal. Si no hay ninguno,
+       se devuelve una línea vacía, que si no no hay dónde
+       escribir. */
+    if (r.id === "antiparasitario_externo") {
+      const puestos = comoLista(v).map(x => ({
+        producto: x.producto || "pipeta",
+        fecha: x.fecha || "",
+        duracionMeses: Number.isFinite(x.duracionMeses) ? x.duracionMeses : "",
+        validoHasta: x.validoHasta || "",
+      }));
+      campo.puestos = puestos.length ? puestos
+        : [{ producto: "pipeta", fecha: "", duracionMeses: "", validoHasta: "" }];
+    }
+    return campo;
   };
   return [
     ...REQUISITOS.filter(r => r.obligatorio).map(hueco),
@@ -190,16 +214,52 @@ export const PRODUCTOS_EXTERNOS = {
   otro:   { nombre: "Otro (pongo yo la fecha)", meses: null, aviso: 7 },
 };
 
+/* Un perro puede llevar varias cosas puestas a la vez: el collar
+   para el mosquito y la pipeta para pulgas y garrapatas. Por eso
+   el antiparasitario externo se guarda como una LISTA, `puestos`,
+   y de cada uno se puede decir o cuánto dura o cuándo caduca.
+
+   Está protegido mientras le quede alguno en vigor, así que la
+   caducidad del conjunto es la MÁS TARDÍA de las suyas, no la
+   primera. Los perros dados de alta antes de esto tienen un
+   único producto sin lista; `comoLista()` los mete en una de un
+   solo elemento y así no hay dos caminos que mantener. */
+function comoLista(registro) {
+  if (!registro) return [];
+  if (Array.isArray(registro.puestos)) return registro.puestos.filter(Boolean);
+  return registro.fecha ? [registro] : [];
+}
+
+/** Hasta cuándo vale UN antiparasitario suelto. */
+function caducidadDeUno(puesto) {
+  if (!puesto) return null;
+  if (puesto.validoHasta) return puesto.validoHasta;   // la fecha a mano manda
+  if (!puesto.fecha) return null;
+  if (Number.isFinite(puesto.duracionMeses))
+    return sumarMeses(puesto.fecha, puesto.duracionMeses);
+  const p = PRODUCTOS_EXTERNOS[puesto.producto] || PRODUCTOS_EXTERNOS.pipeta;
+  if (!p.meses) return null;              // "otro" sin duración: no se puede saber
+  return sumarMeses(puesto.fecha, p.meses);
+}
+
+/** El que aguanta más de los que lleva puestos, con su caducidad. */
+function elQueMasDura(registro) {
+  let mejor = null;
+  for (const puesto of comoLista(registro)) {
+    const caduca = caducidadDeUno(puesto);
+    if (!caduca) continue;
+    if (!mejor || caduca > mejor.caduca) mejor = { puesto, caduca };
+  }
+  return mejor;
+}
+
 /** Hasta cuándo vale un registro. La fecha escrita a mano manda. */
 export function caducidadDe(idRequisito, registro) {
+  if (idRequisito === "antiparasitario_externo")
+    return elQueMasDura(registro)?.caduca || null;
+
   if (!registro?.fecha) return null;
   if (registro.validoHasta) return registro.validoHasta;
-
-  if (idRequisito === "antiparasitario_externo") {
-    const p = PRODUCTOS_EXTERNOS[registro.producto] || PRODUCTOS_EXTERNOS.pipeta;
-    if (!p.meses) return null;            // "otro" sin fecha: no se puede saber
-    return sumarMeses(registro.fecha, p.meses);
-  }
 
   const r = REQUISITOS.find(x => x.id === idRequisito);
   if (!r) return null;
@@ -217,7 +277,11 @@ export function caducidadDe(idRequisito, registro) {
 function diasDeAviso(idRequisito, registro) {
   if (Number.isFinite(registro?.avisoDias)) return registro.avisoDias;
   if (idRequisito === "antiparasitario_externo") {
-    const p = PRODUCTOS_EXTERNOS[registro?.producto];
+    /* Lo pone el que más dura, que es el que marca la caducidad:
+       con un collar puesto no tiene sentido avisar a los 7 días
+       de la pipeta. */
+    const manda = elQueMasDura(registro)?.puesto;
+    const p = PRODUCTOS_EXTERNOS[manda?.producto];
     if (p) return p.aviso;
   }
   return AVISO_POR_DEFECTO;
@@ -255,7 +319,7 @@ export function avisosDelPerro(perro, hoy = new Date().toISOString().slice(0, 10
 
   for (const r of REQUISITOS) {
     const registro = guardado[r.id];
-    if (!registro?.fecha) continue;
+    if (!registro?.fecha && !comoLista(registro).length) continue;
 
     const caduca = caducidadDe(r.id, registro);
     if (!caduca) continue;

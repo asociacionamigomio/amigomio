@@ -3,6 +3,7 @@
    historial de estancias.
    ============================================================ */
 import { misReservas, cancelarReserva } from "../datos.js";
+import { enlaceWhatsApp } from "../contacto.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -93,6 +94,8 @@ function tarjeta(r) {
         ? `<button class="enlace" data-cancelar="${r.id}">Cancelar (te devolvemos todo)</button>`
         : ["pendiente","confirmada"].includes(r.estado)
           ? `<p class="flojo">Quedan menos de 7 días: ya no se puede cancelar por aquí.
-               Si ha pasado algo, llámanos.</p>` : ""}
+               Si ha pasado algo, <a target="_blank" rel="noopener"
+               href="${enlaceWhatsApp("Hola, ha pasado algo con una reserva y ya no puedo cancelarla por la app.")}"
+               >háblanos por WhatsApp</a>.</p>` : ""}
     </div>`;
 }

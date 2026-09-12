@@ -156,7 +156,9 @@ test("no hay reglas de negocio en el botón", () => {
 });
 
 test("avisa si algo va mal, sin dejar al cliente colgado", () => {
-  assert.match(widget, /673 229 399/);
+  /* El número no se escribe aquí: sale de js/contacto.js, que es
+     donde vive, para no tener que cambiarlo en seis sitios. */
+  assert.match(widget, /TELEFONO_BONITO/);
   assert.match(widget, /esperando\.remove\(\)/, "y quita el 'está escribiendo'");
 });
 

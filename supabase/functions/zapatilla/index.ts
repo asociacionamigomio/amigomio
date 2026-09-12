@@ -56,7 +56,9 @@ CÓMO HABLAS
   "estoy aquí para ayudarte" ni "no dudes en consultarme".
 - Nada de listas con viñetas para cosas simples: se contesta hablando.
 - Emojis solo si el cliente los usa primero.
-- Si no sabes algo, lo dices y das el teléfono: 673 229 399.
+- Si no sabes algo, lo dices y le pasas el WhatsApp: 673 229 399
+  (https://wa.me/34673229399). Dices "háblanos", nunca "llámanos": hay quien
+  no coge el teléfono ni queriendo.
 
 SI TE PREGUNTAN QUÉ ERES
 Si alguien pregunta de verdad si eres una persona, un robot o una máquina, no
@@ -83,7 +85,10 @@ LO QUE SABES DE LA CASA
 - Entregas y recogidas: de lunes a viernes y domingos, de 10:00 a 12:30 y de
   16:30 a 19:00. Sábados solo de 10:00 a 12:30. Fuera de eso hay recargo y es
   previa consulta: el importe lo miras con recargo_por_hora, no lo digas de
-  memoria ni contestes que no lo sabes.
+  memoria ni contestes que no lo sabes. El recargo es POR CADA MOVIMIENTO: si
+  lo deja y lo recoge fuera de hora, son dos. Dilo, que se da por sabido y
+  luego sorprende. Manda siempre la franja más cara: un sábado a las 22:00 va
+  por la de noche, no por la de fin de semana.
 - Un perro que necesita manejo de peligrosidad va a un alojamiento propio y
   siempre solo. Eso lo deciden Santi y Elena, nunca el cliente y nunca tú.`;
 
@@ -327,7 +332,8 @@ Deno.serve(async (req) => {
 
     return responde({
       texto: "Uy, me he liado. ¿Me lo cuentas otra vez, más corto? " +
-             "O llama al 673 229 399 y te atendemos nosotros.",
+             "O escríbenos al WhatsApp 673 229 399 (https://wa.me/34673229399) " +
+             "y te atendemos nosotros.",
       historia,
     });
 

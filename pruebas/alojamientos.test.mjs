@@ -143,3 +143,22 @@ test("el perro de más es una sola tarifa, repetida", () => {
     "se multiplica por los perros de más");
   assert.match(sql, /con tres perros son 70: 10 por cada perro de más/);
 });
+
+test("los extras no se pueden duplicar al reaplicar el fichero", () => {
+  /* Fallo real: `on conflict do nothing` SIN columna no detecta
+     nada, y la tabla no tenía restricción de unicidad. Cada vez
+     que se aplicaba tarifas.sql entraban los siete extras otra
+     vez. Santiago los vio repetidos en su pantalla. */
+  assert.match(sql, /on conflict \(nombre\) do nothing/,
+    "hay que decir SOBRE QUÉ columna");
+  /* Mirando el SQL de verdad, no los comentarios: el único
+     «on conflict do nothing» que queda es el que EXPLICA el
+     fallo. */
+  const soloCodigo = sql.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*--.*$/gm, "");
+  assert.doesNotMatch(soloCodigo, /on conflict do nothing/,
+    "nunca `on conflict do nothing` a secas");
+
+  const limpieza = readFileSync(new URL("../db/extras-repetidos.sql", import.meta.url), "utf8");
+  assert.match(limpieza, /unique \(nombre\)/, "y poner la marca de unicidad");
+  assert.match(limpieza, /delete from extra e/, "y limpiar los que ya se colaron");
+});

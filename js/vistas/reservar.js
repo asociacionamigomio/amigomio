@@ -6,8 +6,10 @@
    de datos no coinciden, es que alguien ha hecho cuentas donde
    no debía.
    ============================================================ */
-import { misPerros, presupuesto, haySitio, crearReserva, reservasAbiertas } from "../datos.js";
+import { misPerros, presupuesto, haySitio, crearReserva, reservasAbiertas,
+         tarifas } from "../datos.js";
 import { puedenCompartir } from "../perro.js";
+import { enlaceWhatsApp } from "../contacto.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -20,10 +22,54 @@ const euros = n => Number(n).toLocaleString("es-ES",
    querer. */
 const HORAS = ["10:00", "11:00", "12:00", "16:30", "17:30", "18:30"];
 
+
+/* Qué se cobra por traerlo o recogerlo fuera de hora.
+
+   Antes ponía «fuera de estos horarios hay recargo: llámanos y
+   lo vemos», y eso deja al cliente sin saber si son diez euros
+   o cien. No se pregunta: se abandona la reserva. Así que se
+   dicen las tres cifras y las franjas.
+
+   Los importes NO están escritos aquí: se leen de la tabla
+   `tarifa`, que es donde se editan desde el panel. Si se
+   copiaran, el día que Santiago los cambie la pantalla mentiría.
+   Y si no se pueden leer, se dice que hay recargo sin inventar
+   ninguna cifra. */
+function fueraDeHorario(precios) {
+  const cuanto = clave => precios?.find(t => t.clave === clave)?.importe;
+  const noche  = cuanto("fuera_horario_noche");
+  const finde  = cuanto("fuera_horario_finde");
+  const semana = cuanto("fuera_horario_semana");
+
+  const hablar = enlaceWhatsApp(
+    "Hola, quiero dejar o recoger a mi perro fuera del horario. ¿Lo vemos?");
+
+  return `
+    <details class="fuera-horario">
+      <summary>¿Y si no puedo a esas horas?</summary>
+      <p>Se puede, avisando antes. Se cobra <strong>por cada movimiento</strong>:
+         si lo dejas y lo recoges fuera de hora, son dos recargos.</p>
+      ${noche && finde && semana ? `
+        <ul class="recargos">
+          <li><span>De 21:00 a 7:30, cualquier día</span> <strong>${euros(noche)}</strong></li>
+          <li><span>Sábados y domingos, el resto del día</span> <strong>${euros(finde)}</strong></li>
+          <li><span>De lunes a viernes, el resto del día</span> <strong>${euros(semana)}</strong></li>
+        </ul>
+        <p class="flojo">Manda la franja más cara: un sábado a las 22:00 son
+           ${euros(noche)}, no ${euros(finde)}.</p>` : `
+        <p class="flojo">Ahora mismo no podemos enseñarte los importes.
+           Pregúntanos y te los decimos.</p>`}
+      <p><a class="boton whatsapp" target="_blank" rel="noopener"
+            href="${hablar}">Háblanos por WhatsApp</a></p>
+    </details>`;
+}
+
 export async function render(contenedor, { ficha } = {}) {
   contenedor.innerHTML = `<p class="cargando">Un momento…</p>`;
 
-  const [perros, abiertas] = await Promise.all([misPerros(), reservasAbiertas()]);
+  const [perros, abiertas, precios] = await Promise.all([
+    misPerros(), reservasAbiertas(), tarifas(),
+  ]);
   const disponibles = perros.filter(p => !p.borrador);
 
   const elegidos = new Set();
@@ -86,8 +132,8 @@ export async function render(contenedor, { ficha } = {}) {
               `<option ${h === horaSalida ? "selected" : ""}>${h}</option>`).join("")}</select>
           </div>
         </div>
-        <p class="flojo">Mínimo dos noches. Fuera de estos horarios hay recargo:
-           llámanos y lo vemos.</p>
+        <p class="flojo">Mínimo dos noches.</p>
+        ${fueraDeHorario(precios)}
       </div>
 
       ${calculando ? `<p class="cargando">Mirando si hay sitio…</p>` : ""}

@@ -127,16 +127,18 @@ test("un fallo cargando los perros no deja el inicio en blanco", () => {
 
 test("la ficha del perro deja elegir producto y plazo de aviso", () => {
   const vista = lee("js/vistas/perros.js");
-  assert.match(vista, /antiparasitario_externo:producto/);
+  assert.match(vista, /antiparasitario_externo:puestos:\$\{i\}:producto/);
   assert.match(vista, /:avisoDias/);
   assert.match(vista, /La pipeta y el collar\s+no duran lo mismo/);
 });
 
 test("los días de aviso se guardan como número, no como texto", () => {
   /* Un "7" de texto rompería la comparación con los días que
-     faltan, y el aviso no saltaría nunca. */
+     faltan, y el aviso no saltaría nunca. Y un hueco en blanco
+     tiene que quedarse en blanco: Number("") es 0, y 0 meses de
+     duración caducaría el mismo día. */
   const vista = lee("js/vistas/perros.js");
-  assert.match(vista, /el\.type === "number"\s+\? Number\(el\.value\)/);
+  assert.match(vista, /el\.type === "number"\s+\? \(el\.value === "" \? "" : Number\(el\.value\)\)/);
 });
 
 /* ---------- Papeles con fecha de caducidad ---------- */
@@ -188,4 +190,56 @@ test("papeles y vacunas salen en la misma lista, por urgencia", () => {
   const l = avisos2(perro, "2026-08-10");
   assert.equal(l.length, 2);
   assert.equal(l[0].id, "rabia", "la rabia vence antes: va primero");
+});
+
+/* ---------- Varios antiparasitarios a la vez ---------- */
+test("se pueden llevar dos antiparasitarios puestos", () => {
+  /* Collar y pipeta a la vez es lo normal en zona de flebotomos:
+     el collar para el mosquito y la pipeta para pulgas y
+     garrapatas. */
+  const perro = { nombre: "Luna", sanidad: { antiparasitario_externo: { puestos: [
+    { producto: "collar", fecha: "2026-02-01" },
+    { producto: "pipeta", fecha: "2026-08-01" },
+  ]}}};
+  /* El collar de febrero dura 7 meses: hasta el 1 de septiembre.
+     La pipeta, un mes: hasta el 1 de septiembre también. */
+  assert.equal(caducidadDe("antiparasitario_externo",
+    perro.sanidad.antiparasitario_externo), "2026-09-01");
+});
+
+test("protegido hasta que caduca el ÚLTIMO, no el primero", () => {
+  const perro = { sanidad: { antiparasitario_externo: { puestos: [
+    { producto: "pipeta", fecha: "2026-08-01" },   // hasta el 1 de septiembre
+    { producto: "collar", fecha: "2026-08-01" },   // hasta el 1 de marzo
+  ]}}};
+  assert.equal(caducidadDe("antiparasitario_externo",
+    perro.sanidad.antiparasitario_externo), "2027-03-01");
+});
+
+test("de cada uno se puede decir cuánto dura O cuándo caduca", () => {
+  const porDuracion = { puestos: [{ producto: "otro", fecha: "2026-08-01", duracionMeses: 3 }] };
+  assert.equal(caducidadDe("antiparasitario_externo", porDuracion), "2026-11-01");
+
+  const porFecha = { puestos: [{ producto: "otro", fecha: "2026-08-01", validoHasta: "2026-12-20" }] };
+  assert.equal(caducidadDe("antiparasitario_externo", porFecha), "2026-12-20");
+
+  const lasDos = { puestos: [{ producto: "collar", fecha: "2026-08-01",
+                              duracionMeses: 3, validoHasta: "2026-10-05" }] };
+  assert.equal(caducidadDe("antiparasitario_externo", lasDos), "2026-10-05",
+    "la fecha escrita a mano manda sobre la duración");
+});
+
+test("sigue valiendo la forma antigua, de uno solo", () => {
+  /* Los perros dados de alta antes de esto tienen un único
+     producto sin lista. No se les puede romper la ficha. */
+  assert.equal(caducidadDe("antiparasitario_externo",
+    { producto: "pipeta", fecha: "2026-08-01" }), "2026-09-01");
+});
+
+test("avisa por el que caduca antes de los que quedan", () => {
+  const perro = { nombre: "Kira", sanidad: { antiparasitario_externo: { puestos: [
+    { producto: "pipeta", fecha: "2026-07-16" },   // vence el 16 de agosto
+  ], avisoDias: 7 }}};
+  const a = avisosDelPerro(perro, "2026-08-10").find(x => x.id === "antiparasitario_externo");
+  assert.ok(a, "quedan 6 días: tiene que avisar");
 });
