@@ -145,19 +145,19 @@ en el repositorio ni en una conversación.
 
 ## Cómo se aplica un cambio de base de datos
 
-Los ficheros de base de datos, y **en este orden**: `db/schema.sql`, `db/storage.sql`,
-`db/documentos.sql`, `db/tarifas.sql`, `db/reservas.sql`, `db/peligrosidad.sql`,
-`db/crear-reserva.sql`, `db/reloj.sql`, `db/avisos.sql`,
-`db/administracion.sql`, `db/libros.sql`.
+**`npm run sql`** junta todos los ficheros de `db/` en el orden correcto y los deja en el
+portapapeles. El orden vive en **`db/orden.txt`**, y hay una prueba que salta si algún fichero
+`.sql` no está en esa lista: uno que no esté no se aplica nunca, y eso no se nota hasta que
+falla en producción.
 
-`db/documentos.sql`, `db/tarifas.sql`, `db/reservas.sql`, `db/peligrosidad.sql`,
-`db/crear-reserva.sql` y `db/reloj.sql` **llevan sus propias pruebas dentro**, en bloques `do $$ ... assert ... end $$`. Aplicarlos en Supabase ES
-ejecutar esas pruebas contra Postgres de verdad: si un precio o una regla falla, la instalación
-aborta en vez de quedarse callada.
+Varios ficheros **llevan sus propias pruebas dentro**, en bloques `do $$ ... assert ... end $$`.
+Aplicarlos en Supabase ES ejecutar esas pruebas contra Postgres de verdad: si un precio o una
+regla falla, la instalación aborta en vez de quedarse callada.
 
-1. Editar el fichero que toque.
+1. Editar el fichero que toque (y añadirlo a `db/orden.txt` si es nuevo).
 2. `npm test` — las pruebas leen el SQL y comprueban que todas las tablas tienen RLS y políticas.
-3. Pegarlo entero en **SQL Editor → New query** de Supabase y ejecutarlo. Es idempotente: todo va
-   con `if not exists` / `or replace` / `drop ... if exists`.
-4. Comprobar **en la base real** lo que acabas de escribir. Que el SQL no dé error no significa que
-   la regla funcione.
+3. `npm run sql`, pegar en **SQL Editor → New query** de Supabase y ejecutarlo. Es idempotente:
+   todo va con `if not exists` / `or replace` / `drop ... if exists`.
+4. Comprobar **en la base real** lo que acabas de escribir. Que el SQL no dé error no significa
+   que la regla funcione.
+

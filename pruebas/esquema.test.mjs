@@ -5,7 +5,7 @@
    ============================================================ */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 
 const sql = readFileSync(new URL("../db/schema.sql", import.meta.url), "utf8");
 
@@ -95,4 +95,28 @@ test("ninguna variable de plpgsql se llama como una columna", () => {
     assert.ok(!columnas.has(v),
       `la variable "${v}" se llama igual que una columna: Postgres no sabrá a cuál te refieres`);
   }
+});
+
+/* ---------- El orden de aplicación ---------- */
+test("todos los ficheros de base de datos están en el orden", () => {
+  /* Un fichero que no está en `db/orden.txt` no se aplica nunca,
+     y eso no se nota hasta que algo falla en producción. */
+  const orden = readFileSync(new URL("../db/orden.txt", import.meta.url), "utf8")
+    .split("\n").map(l => l.trim()).filter(Boolean);
+
+  const hay = readdirSync(new URL("../db", import.meta.url))
+    .filter(f => f.endsWith(".sql") && !f.endsWith(".local.sql"));
+
+  for (const f of hay)
+    assert.ok(orden.includes(f), `${f} no está en db/orden.txt: no se aplicaría nunca`);
+});
+
+test("el esquema va antes que todo lo que usa es_admin()", () => {
+  const orden = readFileSync(new URL("../db/orden.txt", import.meta.url), "utf8")
+    .split("\n").map(l => l.trim()).filter(Boolean);
+  assert.equal(orden[0], "schema.sql", "es_admin() nace aquí");
+  assert.ok(orden.indexOf("reservas.sql") < orden.indexOf("reloj.sql"),
+    "el reloj toca la tabla reserva");
+  assert.ok(orden.indexOf("reloj.sql") < orden.indexOf("avisos.sql"),
+    "los avisos hablan del estado `revisando`, que nace en el reloj");
 });
