@@ -9,7 +9,7 @@
    ============================================================ */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { REQUISITOS, estadoRequisito, revisarPerro } from "../js/sanidad.js";
+import { REQUISITOS, estadoRequisito, revisarPerro, camposSanidad } from "../js/sanidad.js";
 
 const rabia = REQUISITOS.find(r => r.id === "rabia");
 const tos   = REQUISITOS.find(r => r.id === "traqueobronquitis");
@@ -126,4 +126,26 @@ test("un perro con todo en regla es apto", () => {
   const r = revisarPerro(perro, "2026-08-07", "2026-08-11");
   assert.equal(r.apto, true);
   assert.equal(r.problemas.length, 0);
+});
+
+test("hay un hueco por requisito para rellenar en el formulario", () => {
+  const campos = camposSanidad({ sanidad: { rabia: { fecha: "2026-03-01" } } });
+  const ids = campos.map(c => c.id);
+  for (const id of ["rabia", "polivalente", "leptospirosis", "traqueobronquitis",
+                    "desparasitacion_interna", "antiparasitario_externo", "leishmaniosis"])
+    assert.ok(ids.includes(id), `falta el hueco de ${id}`);
+
+  const rabia = campos.find(c => c.id === "rabia");
+  assert.equal(rabia.fecha, "2026-03-01", "lo ya guardado viene relleno");
+  assert.equal(rabia.obligatorio, true);
+
+  const leish = campos.find(c => c.id === "leishmaniosis");
+  assert.equal(leish.obligatorio, false, "la leishmaniosis se recomienda, no se exige");
+  assert.equal(leish.fecha, "", "lo que no hay, vacío, no undefined");
+});
+
+test("los obligatorios van antes que los recomendados", () => {
+  const campos = camposSanidad({});
+  const ultimo = campos[campos.length - 1];
+  assert.equal(ultimo.obligatorio, false, "lo recomendado va al final, no mezclado");
 });

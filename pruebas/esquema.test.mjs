@@ -67,3 +67,32 @@ test("no hay ni rastro de la clave de servicio ni del IBAN", () => {
   assert.doesNotMatch(sql, /service_role\s*=|ES\d{2}\s*\d{4}/i,
     "el repositorio es público: ahí no van secretos");
 });
+
+test("ninguna variable de plpgsql se llama como una columna", () => {
+  /* Fallo real, 12/09/2026: el trigger que marca a los
+     administradores declaraba `correo`, y admin_autorizado tiene una
+     columna `correo`. Postgres respondía «column reference "correo"
+     is ambiguous» y la ficha del cliente no se creaba nunca.
+
+     Se tardó en ver porque el error se tragaba en el navegador. */
+  /* Las columnas se buscan SOLO dentro de los create table, no en
+     todo el fichero: si no, la propia declaración de la variable
+     cuenta como columna y la prueba se muerde la cola. */
+  const columnas = new Set();
+  for (const tabla of sql.matchAll(/create\s+table[^(]*\(([\s\S]*?)\n\);/gi))
+    for (const m of tabla[1].matchAll(/^\s+(\w+)\s+(text|uuid|boolean|date|timestamptz|jsonb|integer)\b/gm))
+      columnas.add(m[1].toLowerCase());
+
+  const declaradas = [];
+  for (const bloque of sql.matchAll(/\bdeclare\b([\s\S]*?)\bbegin\b/gi))
+    for (const v of bloque[1].matchAll(/^\s*(\w+)\s+\w/gm))
+      declaradas.push(v[1].toLowerCase());
+
+  assert.ok(columnas.size > 10, "el patrón de columnas no está encontrando nada");
+  assert.ok(declaradas.length > 0, "el patrón de variables no está encontrando nada");
+
+  for (const v of declaradas) {
+    assert.ok(!columnas.has(v),
+      `la variable "${v}" se llama igual que una columna: Postgres no sabrá a cuál te refieres`);
+  }
+});

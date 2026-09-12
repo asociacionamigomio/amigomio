@@ -1,0 +1,121 @@
+/* ============================================================
+   Todo lo que habla con Supabase pasa por aquí. Así, el día que
+   haya que cambiar cómo se guardan las cosas, se toca un fichero
+   y no doce.
+
+   Los mensajes de error que salen de aquí se le enseñan tal cual
+   al cliente: están escritos para que los entienda.
+   ============================================================ */
+import { supabase } from "./sesion.js";
+import { normalizarChip } from "./perro.js";
+
+/* ------------------------------------------------------------
+   Mi ficha de cliente
+   ------------------------------------------------------------ */
+export async function miFicha() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  let { data } = await supabase.from("cliente").select("*").eq("id", user.id).maybeSingle();
+
+  if (!data) {
+    /* Primera vez que entra: se crea su ficha sola. Si su correo
+       está en admin_autorizado, el trigger la marca de
+       administración sin que nadie toque nada.
+
+       El error NO se traga: callarlo costó una tarde de buscar por
+       qué nadie era administrador. */
+    const { data: nueva, error } = await supabase.from("cliente")
+      .insert({ id: user.id }).select().single();
+    if (error) {
+      console.error("[AmigoMío] no se pudo crear la ficha de cliente:", error);
+      throw error;
+    }
+    data = nueva;
+  }
+  return data;
+}
+
+export async function guardarMiFicha(datos) {
+  const { data: { user } } = await supabase.auth.getUser();
+  /* es_admin y paga_en_persona no se mandan nunca desde aquí: los
+     devuelve a su sitio el trigger cliente_no_se_asciende, pero
+     mejor ni intentarlo. */
+  const { es_admin, paga_en_persona, id, creado, ...resto } = datos;
+  const { error } = await supabase.from("cliente").update(resto).eq("id", user.id);
+  if (error) return { ok: false, mensaje: "No hemos podido guardar tus datos." };
+  return { ok: true, mensaje: "Guardado." };
+}
+
+/* ------------------------------------------------------------
+   Perros
+   ------------------------------------------------------------ */
+export async function misPerros() {
+  const { data, error } = await supabase.from("perro").select("*").order("nombre");
+  if (error) throw error;
+  return data || [];
+}
+
+export async function unPerro(id) {
+  const { data, error } = await supabase.from("perro").select("*").eq("id", id).single();
+  if (error) return null;
+  return data;
+}
+
+export async function guardarPerro(datos, { borrador = false } = {}) {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (datos.id) {
+    /* Chip y nombre no se mandan en las modificaciones: los rechaza
+       el trigger y además no queremos ni intentarlo. Para cambiarlos
+       está pedirCambio(). */
+    const { id, chip, nombre, cliente_id, creado, ...resto } = datos;
+    const { error } = await supabase.from("perro")
+      .update({ ...resto, borrador }).eq("id", datos.id);
+    if (error) return { ok: false, mensaje: mensajeDeError(error) };
+    return { ok: true, id: datos.id, mensaje: "Guardado." };
+  }
+
+  const fila = { ...datos, cliente_id: user.id, borrador,
+                 chip: normalizarChip(datos.chip || "") };
+  delete fila.id;
+
+  const { data, error } = await supabase.from("perro").insert(fila).select("id").single();
+  if (error) return { ok: false, mensaje: mensajeDeError(error) };
+  return { ok: true, id: data.id, mensaje: "" };
+}
+
+export async function borrarPerro(id) {
+  const { error } = await supabase.from("perro").delete().eq("id", id);
+  return { ok: !error };
+}
+
+function mensajeDeError(error) {
+  const m = error?.message || "";
+  if (/duplicate key.*perro_chip/i.test(m) || /duplicate key/i.test(m) && /chip/i.test(m))
+    return "Ese chip ya está dado de alta. Si es tu perro y no lo ves aquí, avísanos.";
+  if (/chip solo se cambia|nombre solo se cambia/i.test(m))
+    return m;  // ya viene escrito para el cliente, desde el trigger
+  if (/row-level security|violates row-level/i.test(m))
+    return "Eso no lo puedes tocar desde aquí.";
+  return "No hemos podido guardarlo. Inténtalo en un momento.";
+}
+
+/* ------------------------------------------------------------
+   Solicitudes de cambio de chip o nombre
+   ------------------------------------------------------------ */
+export async function pedirCambio({ perroId, campo, valorActual, valorNuevo, motivo }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase.from("solicitud_cambio").insert({
+    perro_id: perroId, cliente_id: user.id, campo,
+    valor_actual: valorActual, valor_nuevo: valorNuevo, motivo: motivo || "",
+  });
+  if (error) return { ok: false, mensaje: "No hemos podido enviar la solicitud." };
+  return { ok: true, mensaje: "Recibido. Lo miramos y te decimos algo." };
+}
+
+export async function misSolicitudes(perroId) {
+  const { data } = await supabase.from("solicitud_cambio")
+    .select("*").eq("perro_id", perroId).order("creada", { ascending: false });
+  return data || [];
+}

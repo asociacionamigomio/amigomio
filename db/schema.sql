@@ -168,12 +168,12 @@ create or replace function cliente_admin_por_correo()
 returns trigger language plpgsql security definer
 set search_path = public, auth as $$
 declare
-  correo text;
+  correo_usuario text;   -- NO llamarla `correo`: choca con admin_autorizado.correo
 begin
-  select email into correo from auth.users where id = new.id;
-  if correo is not null
+  select u.email into correo_usuario from auth.users u where u.id = new.id;
+  if correo_usuario is not null
      and exists (select 1 from admin_autorizado a
-                  where lower(a.correo) = lower(correo)) then
+                  where lower(a.correo) = lower(correo_usuario)) then
     new.es_admin := true;
   end if;
   return new;

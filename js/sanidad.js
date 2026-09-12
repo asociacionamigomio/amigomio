@@ -129,3 +129,28 @@ export function revisarPerro(perro, entrada, salida) {
   }
   return { apto: problemas.length === 0, problemas };
 }
+
+/**
+ * Un hueco por requisito para pintar el formulario, con lo ya
+ * guardado relleno. Los obligatorios primero y los recomendados
+ * al final, para que no se mezclen y nadie crea que la
+ * leishmaniosis le impide reservar.
+ */
+export function camposSanidad(perro) {
+  const guardado = perro?.sanidad || {};
+  const hueco = r => {
+    const v = guardado[r.id] || {};
+    return {
+      id: r.id,
+      nombre: r.nombre,
+      obligatorio: r.obligatorio,
+      fecha: v.fecha || "",
+      validoHasta: v.validoHasta || "",
+      primovacunacion: v.primovacunacion === true,
+    };
+  };
+  return [
+    ...REQUISITOS.filter(r => r.obligatorio).map(hueco),
+    ...REQUISITOS.filter(r => !r.obligatorio).map(hueco),
+  ];
+}

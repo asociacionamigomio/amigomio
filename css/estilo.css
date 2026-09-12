@@ -80,8 +80,10 @@ label {
   color: var(--texto-flojo);
 }
 
-input[type="email"], input[type="password"], input[type="text"],
-input[type="date"], input[type="number"], select, textarea {
+/* Todo input menos las casillas y los radios: así no hay que acordarse
+   de escribir type="text", que es justo lo que se olvida. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+select, textarea {
   width: 100%;
   font: inherit;
   padding: .7rem .9rem;
@@ -102,3 +104,99 @@ input:focus, select:focus, textarea:focus {
 .cambiar a { color: var(--azul); font-weight: 600; }
 
 .aviso, .error { border-radius: 8px; margin-bottom: .5rem; font-size: .93rem; }
+
+/* ------------------------------------------------------------
+   Barra de navegación
+   ------------------------------------------------------------ */
+.barra {
+  display: flex; align-items: center; gap: 1rem;
+  padding: .75rem 0 1rem; border-bottom: 1px solid var(--borde); margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+.logo-barra { height: 42px; width: auto; }
+.barra nav { display: flex; gap: .35rem; flex: 1; }
+
+.pestana {
+  font: inherit; font-weight: 600; font-size: .92rem;
+  border: 0; background: transparent; color: var(--texto-flojo);
+  padding: .45rem .85rem; border-radius: 999px; cursor: pointer;
+}
+.pestana:hover { background: #EDF3F8; }
+.pestana.activa { background: var(--azul); color: #fff; }
+
+.enlace {
+  font: inherit; font-size: .9rem; border: 0; background: none;
+  color: var(--azul); cursor: pointer; text-decoration: underline; padding: .4rem;
+}
+
+/* ------------------------------------------------------------
+   Lista de perros
+   ------------------------------------------------------------ */
+.cabecera-seccion {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;
+}
+.cabecera-seccion h2 { margin: 0; }
+.cabecera-seccion .boton { margin: 0; width: auto; }
+
+.lista-perros { display: grid; gap: .75rem; }
+.tarjeta.perro { display: flex; gap: 1rem; align-items: center; cursor: pointer; }
+.tarjeta.perro:hover { border-color: var(--azul-claro); }
+.tarjeta.perro h3 { margin: 0 0 .15rem; font-size: 1.05rem; }
+.tarjeta.perro p { margin: 0; font-size: .88rem; }
+
+.avatar {
+  width: 56px; height: 56px; flex: none; border-radius: 50%;
+  background: #EDF3F8; display: grid; place-items: center;
+  font-size: 1.6rem; overflow: hidden;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.flojo { color: var(--texto-flojo); }
+.chip { font-variant-numeric: tabular-nums; font-size: .82rem !important; }
+.vacio { text-align: center; }
+.cargando { color: var(--texto-flojo); text-align: center; padding: 2rem 0; }
+
+.etiqueta {
+  font-size: .7rem; font-weight: 600; vertical-align: middle;
+  background: var(--amarillo); color: #6B5B00;
+  padding: .12rem .5rem; border-radius: 999px;
+}
+
+/* ------------------------------------------------------------
+   Formulario en pasos
+   ------------------------------------------------------------ */
+.pasos { display: flex; gap: .5rem; justify-content: center; margin-bottom: 1rem; }
+.pasos span {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: #EDF3F8; color: var(--texto-flojo); font-weight: 600; font-size: .85rem;
+}
+.pasos span.activo { background: var(--azul); color: #fff; }
+
+.botonera { display: flex; gap: .6rem; }
+.botonera .boton { flex: 1; }
+.boton.fantasma { background: transparent; color: var(--azul); box-shadow: inset 0 0 0 2px var(--azul); }
+.boton.fantasma:hover { background: #EDF3F8; }
+
+.error-campo { color: var(--rojo); font-size: .85rem; margin: .3rem 0 0; }
+
+.casilla {
+  display: flex; gap: .6rem; align-items: flex-start;
+  font-weight: 400; color: var(--texto); margin: .9rem 0 0; cursor: pointer;
+}
+.casilla input { width: auto; margin-top: .25rem; flex: none; }
+.casilla.pequena { font-size: .85rem; margin: .25rem 0 0; }
+
+h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
+
+.requisitos { display: grid; gap: .9rem; margin-top: .75rem; }
+.requisito {
+  display: grid; gap: .3rem;
+  padding: .75rem; border: 1px solid var(--borde); border-radius: 10px; background: #FBFDFE;
+}
+.requisito.recomendado { background: #fff; border-style: dashed; }
+.nombre-req { font-weight: 600; font-size: .9rem; }
+.nombre-req em { font-weight: 400; color: var(--texto-flojo); font-style: normal; }
+
+#luego { display: block; margin: .8rem auto 0; }

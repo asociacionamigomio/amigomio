@@ -66,3 +66,11 @@ test("la portada enseña el logo, no solo el nombre escrito", () => {
   assert.match(entrada, /assets\/logo\.png/, "la puerta de entrada lleva el logo");
   assert.match(entrada, /alt="AmigoMío"/, "y con texto alternativo, que hay gente que no ve");
 });
+
+test("los campos se estilan sin depender de que lleven type escrito", () => {
+  /* Fallo real: el CSS apuntaba a input[type="text"] y los campos sin
+     type —que son text por defecto— salían estrechos y sin estilo. */
+  const css = lee("css/estilo.css");
+  assert.match(css, /input:not\(\[type="checkbox"\]\)/,
+    "el selector tiene que cubrir los inputs sin type");
+});
