@@ -15,6 +15,7 @@ import { render as renderTarifas } from "./vistas/admin-tarifas.js";
 import { render as renderReservar } from "./vistas/reservar.js";
 import { render as renderMisReservas } from "./vistas/mis-reservas.js";
 import { render as renderClicker } from "./vistas/clicker.js";
+import { montar as montarZapatilla } from "./zapatilla.js";
 
 const app = document.getElementById("app");
 let ficha = null;
@@ -103,6 +104,13 @@ function pintarMarco(seccionId, sesion) {
 
   /* Para que una vista pueda mandar a otra sin conocerla. */
   window.irA = id => pintarMarco(id, sesion);
+  /* Y para que Zapatilla pueda refrescar lo que haya debajo
+     cuando cree una reserva o dé de alta un perro. */
+  window.refrescar = () => pintarMarco(seccion.id, sesion);
+
+  /* Zapatilla, en todas las pantallas. Solo para quien ha
+     entrado: habla con la base de datos usando su sesión. */
+  montarZapatilla();
 
   seccion.render(app.querySelector("#hueco"), { sesion, ficha });
 }

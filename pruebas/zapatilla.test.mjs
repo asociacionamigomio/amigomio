@@ -58,7 +58,7 @@ test("las reservas que crea quedan marcadas como suyas", () => {
 });
 
 test("tiene prohibido reservar sin enseñar el desglose y sin un sí", () => {
-  assert.match(fn, /NUNCA crees una reserva sin haberle enseñado antes el desglose/);
+  assert.match(fn, /NUNCA reserves sin haber enseñado antes el\s+desglose/);
   assert.match(fn, /Un "vale" a otra cosa no cuenta/);
 });
 
@@ -66,8 +66,8 @@ test("repite los rechazos tal cual, sin adornarlos", () => {
   /* Los mensajes de la base de datos están escritos para el
      cliente. Si Zapatilla los suaviza, el cliente no entiende
      qué tiene que arreglar. */
-  assert.match(fn, /repite su motivo tal cual/);
-  assert.match(fn, /No lo suavices/);
+  assert.match(fn, /repites su motivo tal cual/);
+  assert.match(fn, /no lo suavices/i);
 });
 
 test("el bucle de herramientas tiene tope", () => {
@@ -83,13 +83,72 @@ test("los errores no se le enseñan crudos al cliente", () => {
 });
 
 test("habla como Zapatilla, no como un robot", () => {
-  assert.match(fn, /labrador chocolate/);
-  assert.match(fn, /perro de\s+asistencia y terapia/i);
-  assert.match(fn, /Ni vendedor ni gracioso forzado/);
+  assert.match(fn, /labradora chocolate/);
+  assert.match(fn, /perra de terapia/i);
   assert.match(fn, /673 229 399/, "y sabe dar el teléfono cuando no llega");
+});
+
+test("no suelta coletillas de sistema", () => {
+  /* "Como asistente", "estoy aquí para ayudarte" y "no dudes en
+     consultarme" rompen el personaje en la primera frase. */
+  assert.match(fn, /No dices "como asistente"/);
+  assert.match(fn, /no dudes en consultarme/);
+});
+
+test("si le preguntan qué es, no lo niega", () => {
+  /* La línea que no se cruza. Está comprometiendo dinero de la
+     gente: un cliente engañado ahí es un problema de AmigoMío, y
+     en la UE hay obligación de decirlo si preguntan.
+
+     Pero tampoco va avisando sin venir a cuento: eso rompería el
+     personaje sin que nadie lo haya pedido. */
+  assert.match(fn, /no\s+lo niegas/i);
+  assert.match(fn, /Perra de verdad no soy/);
+  assert.match(fn, /No lo sueltes si no te lo preguntan/);
 });
 
 test("el sistema va cacheado: es el texto que se repite en cada vuelta", () => {
   assert.match(fn, /cache_control: \{ type: "ephemeral" \}/,
     "sin caché, cada vuelta del bucle paga el prompt entero otra vez");
+});
+
+/* ---------- El botón flotante ---------- */
+const widget = lee("js/zapatilla.js");
+const app = lee("js/app.js");
+
+test("está en todas las pantallas, no es una sección", () => {
+  assert.match(app, /montarZapatilla\(\)/);
+  assert.match(widget, /position: fixed|zapatilla-boton/);
+  assert.doesNotMatch(app, /id: "zapatilla",\s*texto:/,
+    "no puede ser una pestaña más del menú");
+});
+
+test("el botón no aparece si no has entrado", () => {
+  /* Habla con la base de datos usando la sesión del cliente:
+     sin sesión no tendría con qué. */
+  const i = app.indexOf("montarZapatilla()");
+  const antes = app.slice(0, i);
+  assert.match(antes, /if \(!sesion\.usuario\)/,
+    "se monta después de comprobar que hay sesión");
+});
+
+test("lo que escribe Zapatilla no se interpreta como HTML", () => {
+  /* Viene de un modelo de IA, que a su vez ha leído datos que
+     escriben los clientes. Si se pintara tal cual, un nombre de
+     perro con etiquetas dentro se ejecutaría en la página. */
+  assert.match(widget, /const esc = /);
+  assert.match(widget, /esc\(t\)/, "se escapa antes de pintar");
+  assert.match(widget, /no se interpreta HTML venga de donde venga/);
+});
+
+test("no hay reglas de negocio en el botón", () => {
+  /* Todo lo que decide vive en la función y en la base de datos.
+     Si aquí hubiera un precio, habría dos verdades. */
+  assert.doesNotMatch(widget, /\b1[58]\b|\b25\b|\bprecio\s*=/,
+    "aquí no se calcula ni se sabe nada de tarifas");
+});
+
+test("avisa si algo va mal, sin dejar al cliente colgado", () => {
+  assert.match(widget, /673 229 399/);
+  assert.match(widget, /esperando\.remove\(\)/, "y quita el 'está escribiendo'");
 });
