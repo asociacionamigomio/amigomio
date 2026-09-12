@@ -16,14 +16,26 @@ datos. Trabaja también en `~/ceppb-libro-de-cria`, que usa esta misma pila y la
 
 **Fase 0 terminada**: entrada con correo y contraseña, fichas de cliente y de perro con su
 cuestionario y sus fechas sanitarias, solicitudes de cambio de chip y nombre, y panel de
-administración. 68 pruebas en verde.
+administración.
 
-**Todavía no existe**: reservas, alojamientos, tarifas, festivos, disponibilidad, justificantes,
-correos automáticos, el cuadro de ocupación, la hoja del día, los libros de registro ni Zapatilla.
-Eso son las fases 1 a 4.
+**Fase 1 terminada (el motor)**: 32 alojamientos, tarifas y festivos editables desde el panel,
+precio de cada noche, presupuesto completo con desglose, disponibilidad con dos topes y
+`crear_reserva`. Todo dentro de Postgres.
 
-Lee `2026-09-12-amigomio-reservas-design.md` (el diseño) y `2026-09-12-plan-fase-0.md` (el plan)
-antes de tocar nada.
+**También hecho**: pantalla de reservar, mis reservas, clicker virtual, instalación en el móvil,
+y **Zapatilla** publicado como Edge Function.
+
+**135 pruebas en verde** (`npm test`).
+
+**Todavía no existe**: el reloj que caduca las reservas a las 24 h, los correos y las push, el
+justificante subido, el cuadro de ocupación, la hoja del día, los libros de registro, los tips de
+educación canina, las clases de adiestramiento y las pruebas oficiales.
+
+**Pendiente de Santiago**: contrastar el motor con reservas reales ya cobradas (fase 1, tarea 6);
+el contenido de los tips; y decidir si el tope de perros son 90 o 92.
+
+Lee `2026-09-12-amigomio-reservas-design.md` (el diseño), `2026-09-12-plan-fase-0.md` y
+`2026-09-12-plan-fase-1.md` antes de tocar nada.
 
 ## Pila técnica
 
@@ -86,10 +98,44 @@ antes de tocar nada.
   donde no hay navegador.
 - **El CSS de los campos no puede depender de `type="text"`**, porque es justo lo que se olvida
   escribir.
+- **Un `const` no se puede usar antes de su línea.** Una vista se quedaba en «Un momento…» para
+  siempre porque el atajo `panel` estaba declarado debajo de donde se usaba. Las funciones
+  declaradas con `function` sí valen antes; las flechas asignadas a `const`, no.
+- **Chrome no ofrece instalar una PWA cuyo service worker no intercepta peticiones**, aunque el
+  manifiesto y los iconos sean perfectos. Y no avisa: el botón no aparece y no sabes por qué.
+- **El service worker sirve versiones viejas mientras desarrollas.** Si un cambio no se ve,
+  `Cmd+Shift+R`. Lo de Supabase no se cachea nunca, a propósito.
+- **Las funciones `security definer` se saltan RLS**, así que la puerta la vigilan ellas mismas.
+  Con `auth.uid()` nulo, un visitante sin identificar pasaría las comprobaciones de «¿es tuyo?».
+  Hay que distinguir al servidor (`current_user in ('postgres','supabase_admin')`) de internet.
+
+## Zapatilla
+
+El asistente vive en `supabase/functions/zapatilla/`. Dos cosas que no se tocan:
+
+1. **Habla con la base de datos usando la sesión del cliente, nunca `service_role`.** No puede
+   hacer nada que ese cliente no pudiera hacer solo. La protección no es lo que le pidamos en el
+   texto —un modelo puede ignorar cualquier instrucción— sino que la base de datos le dice que no.
+2. **No calcula nada.** Precio, disponibilidad y creación de reserva se preguntan al motor. Si
+   Zapatilla sumara por su cuenta, comprometería a AmigoMío con tarifas que no existen.
+
+Se publica desde **Edge Functions → Deploy a new function → Via Editor**, en el navegador. No hace
+falta la CLI de Supabase ni Homebrew, que no están instalados en el Mac de Santiago.
+
+La clave de Claude vive en **Edge Functions → Secrets** como `ANTHROPIC_API_KEY`. No entra nunca
+en el repositorio ni en una conversación.
 
 ## Cómo se aplica un cambio de base de datos
 
-1. Editar `db/schema.sql` (y `db/storage.sql` si toca).
+Los ficheros de base de datos, y **en este orden**: `db/schema.sql`, `db/storage.sql`,
+`db/tarifas.sql`, `db/reservas.sql`, `db/peligrosidad.sql`, `db/crear-reserva.sql`.
+
+`db/tarifas.sql`, `db/reservas.sql`, `db/peligrosidad.sql` y `db/crear-reserva.sql` **llevan sus
+propias pruebas dentro**, en bloques `do $$ ... assert ... end $$`. Aplicarlos en Supabase ES
+ejecutar esas pruebas contra Postgres de verdad: si un precio o una regla falla, la instalación
+aborta en vez de quedarse callada.
+
+1. Editar el fichero que toque.
 2. `npm test` — las pruebas leen el SQL y comprueban que todas las tablas tienen RLS y políticas.
 3. Pegarlo entero en **SQL Editor → New query** de Supabase y ejecutarlo. Es idempotente: todo va
    con `if not exists` / `or replace` / `drop ... if exists`.
