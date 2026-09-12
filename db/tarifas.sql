@@ -165,3 +165,101 @@ set search_path = public as $$
    where clave = la_clave
      and clave in ('reservas_abiertas','dias_cancelacion_gratis','tope_perros_simultaneos');
 $$;
+
+-- ============================================================
+-- EL PRECIO DE UNA NOCHE
+--
+-- La escalera del diseño §6.1. Gana la PRIMERA regla que encaje:
+--
+--   1. ¿24, 25 o 31 de diciembre, o 1 de enero?  -> base_navidad
+--   2. ¿festivo en Puerto Real, o su víspera?    -> base_festivo
+--   3. ¿viernes, sábado o domingo?               -> base_finde
+--   4. cualquier otra                            -> base_entre_semana
+--
+-- El alojamiento especial no entra en la escalera: es una tarifa
+-- plana, sin recargo de fin de semana ni de festivo.
+--
+-- "Víspera" es la noche anterior al día festivo.
+-- ============================================================
+create or replace function precio_noche(la_fecha date, el_tipo text default 'normal')
+returns numeric language plpgsql stable
+set search_path = public as $$
+declare
+  importe numeric;
+begin
+  if el_tipo = 'especial' then
+    select t.importe into importe from tarifa t where t.clave = 'especial_dia';
+    return importe;
+  end if;
+
+  -- 1. Las cuatro noches de Navidad
+  if (extract(month from la_fecha), extract(day from la_fecha))
+     in ((12,24),(12,25),(12,31),(1,1)) then
+    select t.importe into importe from tarifa t where t.clave = 'base_navidad';
+    return importe;
+  end if;
+
+  -- 2. Festivo, o víspera de festivo
+  if exists (select 1 from festivo f
+              where f.fecha = la_fecha or f.fecha = la_fecha + 1) then
+    select t.importe into importe from tarifa t where t.clave = 'base_festivo';
+    return importe;
+  end if;
+
+  -- 3. Viernes (5), sábado (6) o domingo (0)
+  if extract(dow from la_fecha) in (0, 5, 6) then
+    select t.importe into importe from tarifa t where t.clave = 'base_finde';
+    return importe;
+  end if;
+
+  -- 4. El resto
+  select t.importe into importe from tarifa t where t.clave = 'base_entre_semana';
+  return importe;
+end $$;
+
+-- ============================================================
+-- PRUEBAS DEL PRECIO DE LA NOCHE.
+--
+-- Esto no es adorno: si un cálculo sale mal, la instalación
+-- ABORTA y este fichero no se aplica. Pegarlo en Supabase es
+-- ejecutar las pruebas contra Postgres de verdad.
+-- ============================================================
+do $$
+declare
+  habia_festivo boolean;
+begin
+  -- Días corrientes de agosto de 2026
+  assert precio_noche('2026-08-10','normal') = 15, 'un lunes deberían ser 15';
+  assert precio_noche('2026-08-11','normal') = 15, 'un martes deberían ser 15';
+  assert precio_noche('2026-08-13','normal') = 15, 'un jueves deberían ser 15';
+
+  -- Viernes, sábado y domingo
+  assert precio_noche('2026-08-07','normal') = 18, 'un viernes deberían ser 18';
+  assert precio_noche('2026-08-08','normal') = 18, 'un sábado deberían ser 18';
+  assert precio_noche('2026-08-09','normal') = 18, 'un domingo deberían ser 18';
+
+  -- Las cuatro de Navidad, aunque caigan entre semana
+  assert precio_noche('2026-12-24','normal') = 25, 'Nochebuena son 25';
+  assert precio_noche('2026-12-25','normal') = 25, 'Navidad son 25';
+  assert precio_noche('2026-12-31','normal') = 25, 'Nochevieja son 25';
+  assert precio_noche('2027-01-01','normal') = 25, 'Año Nuevo son 25';
+
+  -- El alojamiento especial es plano: ni finde ni Navidad lo mueven
+  assert precio_noche('2026-08-11','especial') = 35, 'el especial son 35 un martes';
+  assert precio_noche('2026-08-08','especial') = 35, 'el especial son 35 un sábado';
+  assert precio_noche('2026-12-25','especial') = 35, 'el especial no sube en Navidad';
+
+  -- Festivos y vísperas, con una fila de prueba que se borra al salir.
+  -- Se usa un miércoles cualquiera para que no lo tape la regla del finde.
+  select exists(select 1 from festivo where fecha = '2026-10-14') into habia_festivo;
+  insert into festivo (fecha, nombre, ambito)
+       values ('2026-10-14','PRUEBA','local') on conflict (fecha) do nothing;
+
+  assert precio_noche('2026-10-14','normal') = 18, 'un festivo son 18';
+  assert precio_noche('2026-10-13','normal') = 18, 'la víspera de un festivo son 18';
+  assert precio_noche('2026-10-12','normal') = 15, 'dos días antes ya no es víspera';
+
+  if not habia_festivo then delete from festivo where fecha = '2026-10-14'; end if;
+
+  raise notice 'Precios: las 19 comprobaciones pasan.';
+end $$;
