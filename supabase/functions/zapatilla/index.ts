@@ -1,0 +1,287 @@
+/* ============================================================
+   ZAPATILLA — el asistente de AmigoMío.
+
+   Vive aquí y no en el navegador por una razón: la clave de la
+   API de Claude no puede ir dentro de la página, porque
+   cualquiera la leería y gastaría tu dinero.
+
+   LO IMPORTANTE DE CÓMO ESTÁ MONTADO:
+
+   Zapatilla habla con la base de datos USANDO LA SESIÓN DEL
+   CLIENTE, no con una llave maestra. Eso significa que no puede
+   hacer nada que ese cliente no pudiera hacer por su cuenta:
+   ver perros ajenos, reservar a nombre de otro o saltarse el
+   precio. No porque se lo pidamos por favor en el texto —un
+   modelo de IA puede ignorar cualquier instrucción— sino porque
+   la base de datos le dice que no.
+   ============================================================ */
+import Anthropic from "npm:@anthropic-ai/sdk";
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const MODELO = "claude-opus-5";
+
+const COMO_ES = `Eres Zapatilla, el asistente de AmigoMío, el hotel y residencia
+canina de El Marquesado, en Puerto Real (Cádiz).
+
+Eres un labrador chocolate de verdad que vive y trabaja en la casa: perro de
+asistencia y terapia, con chaleco azul. Eso marca cómo hablas. Eres el que
+acompaña: tranquilo, paciente, sin prisa. Cercano y familiar, tuteando siempre.
+Ni vendedor ni gracioso forzado.
+
+CÓMO HABLAS
+- Frases cortas. Como quien atiende el teléfono, no como quien escribe un folleto.
+- Puedes hacer alguna broma de perro, con medida. No en cada mensaje.
+- Nada de emojis salvo que el cliente los use primero.
+- Si no sabes algo, lo dices y ofreces que llamen: 673 229 399.
+
+LO QUE NUNCA HACES
+- NUNCA te inventes un precio, una fecha libre ni una norma. Pregúntalo con las
+  herramientas. Si no tienes la herramienta para algo, dilo.
+- NUNCA crees una reserva sin haberle enseñado antes el desglose completo y sin
+  que el cliente te haya dicho que sí, claramente. Un "vale" a otra cosa no cuenta.
+- NUNCA prometas una plaza antes de comprobarla.
+- Si una herramienta te dice que no, repite su motivo tal cual. Está escrito para
+  el cliente. No lo suavices ni lo adornes.
+
+LO QUE CONVIENE SABER
+- Se reserva un alojamiento entero, y dentro caben de 1 a 3 perros del mismo dueño.
+- La reserva mínima son dos noches.
+- Se paga por adelantado, por transferencia, y hay 24 horas para subir el
+  justificante. Si no, la reserva se suelta.
+- Se cancela sin coste hasta 7 días antes. Después ya no se puede.
+- Horario de entrega y recogida: de lunes a viernes y domingos, de 10:00 a 12:30
+  y de 16:30 a 19:00. Sábados solo de 10:00 a 12:30. Fuera de eso, previa
+  consulta y con recargo.
+- Un perro que necesita manejo de peligrosidad va a un alojamiento propio y
+  siempre solo. Eso lo decide AmigoMío, nunca el cliente y nunca tú.`;
+
+/* ------------------------------------------------------------
+   Las herramientas. Cada una llama a la base de datos; ninguna
+   calcula nada por su cuenta.
+   ------------------------------------------------------------ */
+const HERRAMIENTAS: Anthropic.Tool[] = [
+  {
+    name: "cuanto_cuesta",
+    description:
+      "Calcula el precio de una estancia, con su desglose línea a línea. " +
+      "Úsala SIEMPRE antes de decir un importe. No calcules tú.",
+    input_schema: {
+      type: "object",
+      properties: {
+        entrada: { type: "string", description: "Fecha y hora de entrada, 'AAAA-MM-DD HH:MM'" },
+        salida:  { type: "string", description: "Fecha y hora de recogida, 'AAAA-MM-DD HH:MM'" },
+        perros:  { type: "integer", description: "Cuántos perros van en el mismo alojamiento (1 a 3)" },
+      },
+      required: ["entrada", "salida", "perros"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    name: "hay_sitio",
+    description:
+      "Comprueba si queda alojamiento libre para esas fechas. Úsala SIEMPRE antes " +
+      "de decir que hay sitio. Devuelve el motivo si no lo hay.",
+    input_schema: {
+      type: "object",
+      properties: {
+        entrada: { type: "string" },
+        salida:  { type: "string" },
+        perros:  { type: "integer" },
+      },
+      required: ["entrada", "salida", "perros"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    name: "sus_perros",
+    description:
+      "Los perros que este cliente tiene dados de alta, con su nombre, chip y " +
+      "fechas de vacunas. Úsala antes de reservar, para saber a quién se refiere.",
+    input_schema: { type: "object", properties: {}, required: [], additionalProperties: false },
+    strict: true,
+  },
+  {
+    name: "dar_de_alta_perro",
+    description:
+      "Da de alta un perro nuevo en la ficha del cliente. Pregúntale todo antes: " +
+      "nombre, número de chip (15 dígitos), fecha de nacimiento y sexo. " +
+      "La raza, la comida y los cuidados son opcionales pero ayudan mucho.",
+    input_schema: {
+      type: "object",
+      properties: {
+        nombre:           { type: "string" },
+        chip:             { type: "string", description: "15 dígitos" },
+        fecha_nacimiento: { type: "string", description: "AAAA-MM-DD" },
+        sexo:             { type: "string", enum: ["macho", "hembra"] },
+        raza:             { type: "string" },
+        pautas_alimentacion: { type: "string" },
+        cuidados:         { type: "string" },
+      },
+      required: ["nombre", "chip", "fecha_nacimiento", "sexo", "raza",
+                 "pautas_alimentacion", "cuidados"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    name: "crear_reserva",
+    description:
+      "Crea la reserva. SOLO después de enseñar el desglose de cuanto_cuesta y de " +
+      "que el cliente diga que sí claramente. Si la base de datos la rechaza, " +
+      "cuéntale el motivo tal cual.",
+    input_schema: {
+      type: "object",
+      properties: {
+        perros:  { type: "array", items: { type: "string" },
+                   description: "Los identificadores de los perros, de sus_perros" },
+        entrada: { type: "string" },
+        salida:  { type: "string" },
+      },
+      required: ["perros", "entrada", "salida"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+];
+
+/* ------------------------------------------------------------
+   Ejecutar una herramienta. Todo pasa por la base de datos con
+   la sesión del cliente: sus reglas se aplican solas.
+   ------------------------------------------------------------ */
+async function ejecutar(nombre: string, args: any, db: any, quienEs: string) {
+  try {
+    switch (nombre) {
+      case "cuanto_cuesta": {
+        const { data, error } = await db.rpc("presupuesto", {
+          la_entrada: args.entrada, la_salida: args.salida,
+          el_tipo: "normal", los_perros: args.perros, con_curas: 0, los_extras: [],
+        });
+        if (error) return { error: error.message };
+        return data;
+      }
+      case "hay_sitio": {
+        const { data, error } = await db.rpc("hay_sitio", {
+          la_entrada: args.entrada, la_salida: args.salida,
+          el_tipo: "normal", los_perros: args.perros,
+        });
+        if (error) return { error: error.message };
+        return data;
+      }
+      case "sus_perros": {
+        const { data, error } = await db.from("perro")
+          .select("id, nombre, chip, fecha_nacimiento, sexo, raza, sanidad, agresivo_con_personas");
+        if (error) return { error: error.message };
+        return data;
+      }
+      case "dar_de_alta_perro": {
+        const { data, error } = await db.from("perro").insert({
+          cliente_id: quienEs,
+          nombre: args.nombre,
+          chip: String(args.chip).replace(/[\s-]/g, ""),
+          fecha_nacimiento: args.fecha_nacimiento,
+          sexo: args.sexo,
+          raza: args.raza ?? "",
+          pautas_alimentacion: args.pautas_alimentacion ?? "",
+          cuidados: args.cuidados ?? "",
+        }).select("id, nombre").single();
+        if (error) return { error: error.message };
+        return data;
+      }
+      case "crear_reserva": {
+        const { data, error } = await db.rpc("crear_reserva", {
+          el_cliente: quienEs, los_perros: args.perros,
+          la_entrada: args.entrada, la_salida: args.salida,
+          los_extras: [], quien: "zapatilla",
+        });
+        if (error) return { error: error.message };
+        return data;
+      }
+      default:
+        return { error: "Esa herramienta no existe." };
+    }
+  } catch (e) {
+    return { error: String(e?.message ?? e) };
+  }
+}
+
+/* ------------------------------------------------------------ */
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cabeceras() });
+
+  try {
+    const jwt = req.headers.get("Authorization");
+    if (!jwt) return responde({ error: "Hay que entrar con tu cuenta para hablar conmigo." }, 401);
+
+    /* La sesión del cliente, no una llave maestra: las reglas de
+       la base de datos se aplican igual que si reservara él. */
+    const db = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: jwt } } },
+    );
+
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return responde({ error: "No hemos podido comprobar tu cuenta." }, 401);
+
+    const { mensajes } = await req.json();
+    if (!Array.isArray(mensajes)) return responde({ error: "Faltan los mensajes." }, 400);
+
+    const claude = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY")! });
+    const historia: Anthropic.MessageParam[] = [...mensajes];
+
+    /* El bucle: Claude pide herramientas, se las damos, sigue.
+       El tope evita que una conversación se vaya de madre y de
+       factura. */
+    for (let vuelta = 0; vuelta < 8; vuelta++) {
+      const respuesta = await claude.messages.create({
+        model: MODELO,
+        max_tokens: 4096,
+        system: [{ type: "text", text: COMO_ES, cache_control: { type: "ephemeral" } }],
+        tools: HERRAMIENTAS,
+        messages: historia,
+      });
+
+      historia.push({ role: "assistant", content: respuesta.content });
+
+      if (respuesta.stop_reason !== "tool_use") {
+        const texto = respuesta.content
+          .filter((b) => b.type === "text").map((b: any) => b.text).join("\n");
+        return responde({ texto, historia });
+      }
+
+      const resultados: Anthropic.ToolResultBlockParam[] = [];
+      for (const bloque of respuesta.content) {
+        if (bloque.type !== "tool_use") continue;
+        const salida = await ejecutar(bloque.name, bloque.input, db, user.id);
+        resultados.push({
+          type: "tool_result",
+          tool_use_id: bloque.id,
+          content: JSON.stringify(salida),
+          is_error: !!(salida as any)?.error,
+        });
+      }
+      historia.push({ role: "user", content: resultados });
+    }
+
+    return responde({
+      texto: "Uy, me he liado. ¿Me lo cuentas otra vez, más corto? " +
+             "O llama al 673 229 399 y te atendemos nosotros.",
+      historia,
+    });
+
+  } catch (e) {
+    console.error("[Zapatilla]", e);
+    return responde({ error: "Se nos ha atragantado algo. Inténtalo en un momento." }, 500);
+  }
+});
+
+const cabeceras = () => ({
+  "Content-Type": "application/json",
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, content-type",
+});
+
+const responde = (cuerpo: unknown, estado = 200) =>
+  new Response(JSON.stringify(cuerpo), { status: estado, headers: cabeceras() });
