@@ -37,24 +37,34 @@ function sumarMeses(iso, meses) {
   return aTexto(d);
 }
 
+/* Qué se exige y qué se recomienda. Decisión de Santiago, 12/09/2026:
+   sólo la rabia y las dos desparasitaciones impiden entrar; el resto
+   se pide pero no bloquea.
+
+   Ojo: el Programa de manejo, higiene y profilaxis del núcleo dice
+   que no se admite ningún animal sin la pauta vacunal completa, y
+   marca la tos de las perreras como exigida. Aquí se sigue el
+   criterio de Santiago, que es quien lleva la residencia. Si algún
+   día hay que volver al del informe, se cambia `obligatorio` y ya:
+   toda la lógica que hay debajo no se entera. */
 export const REQUISITOS = [
   { id: "rabia", nombre: "Rabia",
     vigenciaMeses: 12, obligatorio: true },
-
-  { id: "polivalente", nombre: "Polivalente (moquillo, parvovirosis, hepatitis y parainfluenza)",
-    vigenciaMeses: 12, obligatorio: true },
-
-  { id: "leptospirosis", nombre: "Leptospirosis",
-    vigenciaMeses: 12, obligatorio: true },
-
-  { id: "traqueobronquitis", nombre: "Tos de las perreras",
-    vigenciaMeses: 12, diasMinimosAntes: 15, obligatorio: true },
 
   { id: "desparasitacion_interna", nombre: "Desparasitación interna",
     maximoDiasAntes: 30, obligatorio: true },
 
   { id: "antiparasitario_externo", nombre: "Antiparasitario externo",
     vigenciaMeses: 1, obligatorio: true },
+
+  { id: "polivalente", nombre: "Polivalente (moquillo, parvovirosis, hepatitis y parainfluenza)",
+    vigenciaMeses: 12, obligatorio: false },
+
+  { id: "leptospirosis", nombre: "Leptospirosis",
+    vigenciaMeses: 12, obligatorio: false },
+
+  { id: "traqueobronquitis", nombre: "Tos de las perreras",
+    vigenciaMeses: 12, diasMinimosAntes: 15, obligatorio: false },
 
   { id: "leishmaniosis", nombre: "Leishmaniosis",
     vigenciaMeses: 12, obligatorio: false },

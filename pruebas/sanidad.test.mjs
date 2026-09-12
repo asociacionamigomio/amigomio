@@ -21,8 +21,14 @@ test("el catálogo trae los requisitos del programa sanitario", () => {
                     "desparasitacion_interna", "antiparasitario_externo", "leishmaniosis"]) {
     assert.ok(ids.includes(id), `falta el requisito ${id}`);
   }
-  assert.equal(REQUISITOS.find(r => r.id === "leishmaniosis").obligatorio, false,
-    "la leishmaniosis se recomienda, no se exige");
+});
+
+test("solo la rabia y las dos desparasitaciones impiden entrar", () => {
+  /* Decisión de Santiago, 12/09/2026. El resto se pide en la ficha
+     pero no bloquea. */
+  const obligatorios = REQUISITOS.filter(r => r.obligatorio).map(r => r.id).sort();
+  assert.deepEqual(obligatorios,
+    ["antiparasitario_externo", "desparasitacion_interna", "rabia"]);
 });
 
 test("sin fecha, no hay nada que comprobar", () => {
@@ -96,24 +102,37 @@ test("revisar el perro entero devuelve sólo lo que falla", () => {
   const perro = {
     nombre: "Luna",
     sanidad: {
-      rabia:                   { fecha: "2026-03-01" },
-      polivalente:             { fecha: "2026-03-01" },
-      leptospirosis:           { fecha: "2025-08-09" },
-      traqueobronquitis:       { fecha: "2026-06-01" },
+      rabia:                   { fecha: "2025-08-09" },   // vence en mitad
       desparasitacion_interna: { fecha: "2026-07-20" },
       antiparasitario_externo: { fecha: "2026-08-01" },
     },
   };
   const r = revisarPerro(perro, "2026-08-07", "2026-08-11");
   assert.equal(r.apto, false);
-  assert.equal(r.problemas.length, 1, "solo falla la leptospirosis");
-  assert.equal(r.problemas[0].id, "leptospirosis");
+  assert.equal(r.problemas.length, 1, "solo falla la rabia");
+  assert.equal(r.problemas[0].id, "rabia");
   assert.match(r.problemas[0].mensaje, /Luna/, "el mensaje nombra al perro");
+});
+
+test("lo recomendado no impide entrar, aunque falte del todo", () => {
+  /* Un perro sin polivalente, sin leptospirosis y sin tos de las
+     perreras entra igual: solo se le pide, no se le exige. */
+  const perro = {
+    nombre: "Toby",
+    sanidad: {
+      rabia:                   { fecha: "2026-03-01" },
+      desparasitacion_interna: { fecha: "2026-07-20" },
+      antiparasitario_externo: { fecha: "2026-08-01" },
+    },
+  };
+  const r = revisarPerro(perro, "2026-08-07", "2026-08-11");
+  assert.equal(r.apto, true);
+  assert.equal(r.problemas.length, 0);
 });
 
 test("un perro con todo en regla es apto", () => {
   const perro = {
-    nombre: "Toby",
+    nombre: "Kira",
     sanidad: {
       rabia:                   { fecha: "2026-03-01" },
       polivalente:             { fecha: "2026-03-01" },

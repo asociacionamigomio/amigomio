@@ -544,22 +544,40 @@ Dominios: `amigomio.org` y `asociacionamigomio.es`.
 
 ## 13. Control sanitario de admisión
 
-Todo lo de esta sección sale del *Programa de manejo, higiene y profilaxis* firmado por la
-veterinaria responsable el 01/09/2026. **Son exigencias, no recomendaciones.** El programa dice
-literalmente que no se admite ningún animal sin pauta vacunal completa y en vigor.
+Las fechas y los plazos de esta sección salen del *Programa de manejo, higiene y profilaxis*
+firmado por la veterinaria responsable el 01/09/2026.
+
+**Qué bloquea y qué no lo decide Santiago, y no coincide con el informe.** Decisión de
+12/09/2026: **sólo la rabia y las dos desparasitaciones —interna y externa— impiden entrar.**
+Todo lo demás se pide en la ficha y se avisa si está caducado, pero no bloquea nada.
+
+> El informe veterinario dice literalmente que no se admite ningún animal sin pauta vacunal
+> completa y en vigor, y marca la tos de las perreras como **exigida por el núcleo**. Queda
+> constancia de que apartarse de eso es una decisión consciente de Santiago, no un descuido del
+> diseño. Volver al criterio del informe es cambiar un `obligatorio` en `js/sanidad.js`: la
+> lógica que hay debajo no se entera.
 
 ### 13.1 Fechas que guarda la ficha del perro
 
+**Impiden entrar:**
+
 | Requisito | Regla | Plazo antes del ingreso |
 |---|---|---|
-| Rabia | Obligatoria en Andalucía. Primovacunación desde los 3 meses, revacunación anual | En vigor |
+| **Rabia** | Obligatoria en Andalucía. Primovacunación desde los 3 meses, revacunación anual | En vigor |
+| **Desparasitación interna** | Praziquantel + pirantel + febantel, o milbemicina + praziquantel | **30 días** |
+| **Antiparasitario externo** | Acreditado documentalmente | En vigor |
+
+**Se piden y se avisan, pero no bloquean:**
+
+| Requisito | Regla | Plazo antes del ingreso |
+|---|---|---|
 | Polivalente (moquillo, parvovirosis, hepatitis, parainfluenza) | Según ficha técnica (1–3 años) | En vigor |
 | Leptospirosis | Anual; recomendable semestral por presión ambiental | En vigor |
-| **Traqueobronquitis infecciosa** (tos de las perreras) | **Exigida por el núcleo**, revacunación anual o semestral | **15 días** |
-| Primovacunación o revacunación reciente | — | **21 días** |
-| **Desparasitación interna** | Praziquantel + pirantel + febantel, o milbemicina + praziquantel | **30 días** |
-| **Antiparasitario externo** en vigor | Acreditado documentalmente | En vigor |
-| Leishmaniosis | **Recomendada**, zona endémica, previo test serológico negativo | — |
+| Traqueobronquitis (tos de las perreras) | Revacunación anual o semestral | **15 días** |
+| Leishmaniosis | Zona endémica, previo test serológico negativo | — |
+
+En cualquiera de los dos grupos, una **primovacunación o revacunación reciente** necesita **21
+días** de margen antes de la entrada.
 
 El cliente introduce las fechas y puede adjuntar foto de la cartilla o del pasaporte europeo.
 
@@ -573,9 +591,7 @@ vence antes o durante:
 - Le da tiempo para resolverlo antes de venir, en vez de descubrirlo en la puerta.
 - Administración ve el estado sanitario de cada reserva en su panel y decide.
 
-**Decisión pendiente de Santiago:** si un requisito caducado **bloquea** la reserva o sólo
-**avisa**. El programa sanitario dice que no se admite; el sistema puede ser igual de estricto o
-dejarlo en aviso y que decida administración.
+**Resuelto el 12/09/2026:** los tres obligatorios **bloquean**; los recomendados sólo **avisan**.
 
 ### 13.3 Perros potencialmente peligrosos
 
@@ -738,8 +754,9 @@ pruebas oficiales · tips de educación canina · clicker virtual.
 5. **Push en iPhone** sólo funciona si el cliente instala la PWA. El correo cubre al resto.
 6. **Falta el tope de perros simultáneos** (§5.5 bis). Mientras esté en blanco, el motor sólo
    controla que queden alojamientos libres.
-7. **Bloquear o avisar.** Falta decidir si un requisito sanitario caducado impide reservar o sólo
-   avisa (§13.2). El programa sanitario dice que no se admite.
+7. **El criterio de admisión se aparta del informe veterinario** (§13). Sólo rabia y
+   desparasitaciones bloquean; el informe exige la pauta completa. Decisión consciente de
+   Santiago, anotada por si algún día hay inspección.
 8. **Nº de núcleo zoológico / REGA en trámite.** Hará falta en los libros de registro (§14).
 9. **Correo de contacto contradictorio:** `info@amigomio.com` en el informe, `info@amigomio.org`
    en la web.
