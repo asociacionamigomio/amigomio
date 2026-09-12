@@ -6,9 +6,12 @@ Explicarle todo en español, sin jerga, diciéndole siempre qué tiene que hacer
 **Estado:** diseño aprobado en conversación. Pendiente de su lectura completa antes de programar.
 
 **Revisión 2 (12/09/2026):** incorporado el *Programa de manejo, higiene y profilaxis del núcleo
-zoológico* firmado por la veterinaria responsable el 01/09/2026. Ese documento es la norma que
-rige la residencia y **manda sobre este diseño**. Cambia capacidad, requisitos de admisión y
-añade el módulo de libros de registro (§14).
+zoológico* de 01/09/2026. Santiago lo aportó **como fuente de los libros de registro que necesita
+y de los requisitos sanitarios**, no como documento de referencia para la capacidad. De ahí salen
+el control sanitario de admisión (§13) y el módulo de libros (§14).
+
+**Los números de capacidad los da Santiago: 30 alojamientos normales y 2 especiales.** Las cifras
+del informe (24 boxes, 30 perros) son anteriores y no son la referencia.
 
 ---
 
@@ -184,17 +187,17 @@ cuando hacen falta— pero **sí cuentan para el tope legal de perros**.
 - Interruptor **fuera de servicio**, para sacarlo del cuadro si está en obras o con la
   refrigeración averiada, sin que el sistema lo siga vendiendo
 
-> **Pendiente, y no es cosa de programación.** El informe veterinario de 01/09/2026 declara
-> **24 boxes y capacidad máxima de 30 perros**. Santiago confirma que hoy son **30 + 2** y que
-> el informe está desfasado. **Hay que actualizarlo con la veterinaria responsable antes de la
-> autorización del núcleo zoológico**, porque el documento no describe la instalación real.
-> Hasta entonces, el tope legal queda como ajuste sin valor definitivo.
+> **Cifras buenas: 30 + 2**, según Santiago. El informe de 01/09/2026 habla de 24 boxes y 30
+> perros, pero es anterior y no se usa como referencia de capacidad.
 
-### 5.5 bis — Tope legal de perros simultáneos
+### 5.5 bis — Tope de perros simultáneos
 
-Ajuste editable desde el panel. Es el número máximo de perros que pueden estar dentro a la vez
-según la autorización del núcleo, **contando todos los alojamientos**, incluidos aislamiento y
-cachorros. El motor lo hace cumplir (§7.2).
+Ajuste editable desde el panel: número máximo de perros dentro a la vez, **contando todos los
+alojamientos**, incluidos aislamiento y cachorros.
+
+**Si se deja en blanco, el motor no aplica este tope** y sólo controla que queden alojamientos
+libres. Se rellena cuando Santiago tenga el número bueno. Sigue haciendo falta porque 32
+alojamientos a 3 perros darían cabida a 96 perros, que no es un número real de nada.
 
 ### 5.6 Reserva
 
@@ -733,11 +736,8 @@ pruebas oficiales · tips de educación canina · clicker virtual.
    cobrará 15 € noches que deberían ser 18 €. Conviene un aviso en el panel cada diciembre.
 4. **Precios de extras sin definir** (§6.4). No bloquea: el catálogo es editable.
 5. **Push en iPhone** sólo funciona si el cliente instala la PWA. El correo cubre al resto.
-6. **El informe veterinario no describe la instalación real.** Declara 24 boxes y 30 perros;
-   Santiago confirma 30 + 2. **Hay que actualizarlo con la veterinaria responsable antes de la autorización
-   del núcleo zoológico.** No se arregla desde la app. Mientras tanto, el tope legal de perros
-   simultáneos queda sin valor definitivo y el motor no puede hacerlo cumplir con un número
-   fiable.
+6. **Falta el tope de perros simultáneos** (§5.5 bis). Mientras esté en blanco, el motor sólo
+   controla que queden alojamientos libres.
 7. **Bloquear o avisar.** Falta decidir si un requisito sanitario caducado impide reservar o sólo
    avisa (§13.2). El programa sanitario dice que no se admite.
 8. **Nº de núcleo zoológico / REGA en trámite.** Hará falta en los libros de registro (§14).
