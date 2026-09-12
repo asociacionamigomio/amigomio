@@ -9,6 +9,7 @@
 import { misPerros, presupuesto, haySitio, crearReserva, reservasAbiertas,
          tarifas } from "../datos.js";
 import { puedenCompartir } from "../perro.js";
+import { t } from "../idioma.js";
 import { enlaceWhatsApp } from "../contacto.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
@@ -46,7 +47,7 @@ function fueraDeHorario(precios) {
 
   return `
     <details class="fuera-horario">
-      <summary>¿Y si no puedo a esas horas?</summary>
+      <summary>${t("¿Y si no puedo a esas horas?")}</summary>
       <p>Se puede, avisando antes. Se cobra <strong>por cada movimiento</strong>:
          si lo dejas y lo recoges fuera de hora, son dos recargos.</p>
       ${noche && finde && semana ? `
@@ -60,7 +61,7 @@ function fueraDeHorario(precios) {
         <p class="flojo">Ahora mismo no podemos enseñarte los importes.
            Pregúntanos y te los decimos.</p>`}
       <p><a class="boton whatsapp" target="_blank" rel="noopener"
-            href="${hablar}">Háblanos por WhatsApp</a></p>
+            href="${hablar}">${t("Háblanos por WhatsApp")}</a></p>
     </details>`;
 }
 
@@ -83,7 +84,7 @@ export async function render(contenedor, { ficha } = {}) {
       contenedor.innerHTML = `
         <h2>Reservar</h2>
         <div class="tarjeta vacio">
-          <p>Antes de reservar tenemos que conocer a tu perro.</p>
+          <p>${t("Antes de reservar tenemos que conocer a tu perro.")}</p>
           <button class="boton" data-ir="perros">Dar de alta un perro</button>
         </div>`;
       enganchar();
@@ -100,7 +101,7 @@ export async function render(contenedor, { ficha } = {}) {
       ${aviso ? `<div class="${clase}">${esc(aviso)}</div>` : ""}
 
       <div class="tarjeta">
-        <h3>¿Quién viene?</h3>
+        <h3>${t("¿Quién viene?")}</h3>
         <p class="flojo">Si vienen varios, comparten alojamiento. Hasta tres.</p>
         <div class="lista-elegir">
           ${disponibles.map(p => `
@@ -117,31 +118,31 @@ export async function render(contenedor, { ficha } = {}) {
       </div>
 
       <div class="tarjeta">
-        <h3>¿Qué días?</h3>
+        <h3>${t("¿Qué días?")}</h3>
         <div class="fechas">
           <div>
-            <label for="e">Lo dejas el</label>
+            <label for="e">${t("Lo dejas el")}</label>
             <input type="date" id="e" value="${entrada}" min="${hoy()}">
             <select id="he">${HORAS.map(h =>
               `<option ${h === horaEntrada ? "selected" : ""}>${h}</option>`).join("")}</select>
           </div>
           <div>
-            <label for="s">Lo recoges el</label>
+            <label for="s">${t("Lo recoges el")}</label>
             <input type="date" id="s" value="${salida}" min="${entrada || hoy()}">
             <select id="hs">${HORAS.map(h =>
               `<option ${h === horaSalida ? "selected" : ""}>${h}</option>`).join("")}</select>
           </div>
         </div>
-        <p class="flojo">Mínimo dos noches.</p>
+        <p class="flojo">${t("Mínimo dos noches.")}</p>
         ${fueraDeHorario(precios)}
       </div>
 
-      ${calculando ? `<p class="cargando">Mirando si hay sitio…</p>` : ""}
+      ${calculando ? `<p class="cargando">${t("Mirando si hay sitio…")}</p>` : ""}
       ${sitio && !sitio.hay ? `<div class="error">${esc(sitio.motivo)}</div>` : ""}
 
       ${cuentas && sitio?.hay ? `
         <div class="tarjeta presupuesto">
-          <h3>Esto es lo que costaría</h3>
+          <h3>${t("Esto es lo que costaría")}</h3>
           <div class="tabla-tarifas">
             ${cuentas.lineas.map(l => `
               <div class="fila-tarifa">

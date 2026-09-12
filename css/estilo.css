@@ -986,3 +986,18 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
                        color: var(--texto-flojo); }
 .aviso-cliente textarea { margin-top: .5rem; }
 .aviso-cliente .boton { margin-top: .5rem; }
+
+/* El cambio de idioma, al pie del menú: se busca una vez en la
+   vida y luego estorba. */
+.lateral-idioma {
+  display: flex; gap: .3rem; margin: 0 .9rem .5rem;
+}
+.lateral-idioma button {
+  flex: 1; padding: .35rem 0; font-size: .75rem; font-weight: 700;
+  letter-spacing: .04em;
+  border: 1px solid var(--borde); border-radius: 8px;
+  background: transparent; color: var(--texto-flojo); cursor: pointer;
+}
+.lateral-idioma button.activa {
+  background: var(--azul, #4E80A5); border-color: var(--azul, #4E80A5); color: #fff;
+}

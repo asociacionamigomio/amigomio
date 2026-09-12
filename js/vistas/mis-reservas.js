@@ -3,6 +3,7 @@
    historial de estancias.
    ============================================================ */
 import { misReservas, cancelarReserva, subirJustificante } from "../datos.js";
+import { t } from "../idioma.js";
 import { enlaceWhatsApp } from "../contacto.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
@@ -88,7 +89,11 @@ export async function render(contenedor) {
 }
 
 function tarjeta(r) {
-  const rotulo = ROTULOS[r.estado] || { texto: r.estado, clase: "" };
+  const crudo = ROTULOS[r.estado] || { texto: r.estado, clase: "" };
+  /* Se traduce AQUÍ y no en la tabla: la tabla se lee una vez al
+     cargar el módulo, y el idioma se puede cambiar después sin
+     recargar la página. */
+  const rotulo = { ...crudo, texto: t(crudo.texto) };
   const perros = (r.reserva_perro || []).map(x => x.perro?.nombre).filter(Boolean);
   const quedan = Math.ceil((new Date(r.entrada) - Date.now()) / 86400000);
   const sePuedeCancelar = ["pendiente","confirmada"].includes(r.estado) && quedan >= 7;
@@ -103,7 +108,7 @@ function tarjeta(r) {
 
       ${r.estado === "pendiente" ? `
         <div class="aviso">
-          <strong>Nos falta el justificante de la transferencia.</strong>
+          <strong>${t("Nos falta el justificante de la transferencia.")}</strong>
           ${r.expira ? `<br>Tienes hasta el ${dia(r.expira)} a las
             ${new Date(r.expira).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})}.` : ""}
           ${r.justificante_nota ? `
@@ -114,7 +119,7 @@ function tarjeta(r) {
           >WhatsApp</a>.
 
           <label class="boton pequeno subir" style="margin-top:.6rem">
-            Subir el justificante
+            ${t("Subir el justificante")}
             <input type="file" accept="image/*,application/pdf"
                    data-justificante="${r.id}" hidden>
           </label>
@@ -122,7 +127,7 @@ function tarjeta(r) {
 
       ${r.estado === "revisando" ? `
         <div class="aviso">
-          <strong>Lo hemos recibido.</strong> Lo miramos y te confirmamos.
+          <strong>${t("Lo hemos recibido.")}</strong> Lo miramos y te confirmamos.
           No tienes que hacer nada más.
         </div>` : ""}
 

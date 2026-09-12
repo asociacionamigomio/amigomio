@@ -207,3 +207,27 @@ test("la conversación va con esfuerzo bajo", () => {
      eternos, y además cuesta más. */
   assert.match(fn, /effort: "low"/);
 });
+
+/* ---------- Lo que le faltaba saber ---------- */
+test("Zapatilla sabe si al perro le caduca algo", () => {
+  /* Sin esto contestaba precios y fechas como un folleto que
+     habla. Sabiendo que a Kira le vence la rabia el martes,
+     resuelve. */
+  assert.match(fn, /caduca|avisos_del_perro/i);
+  assert.match(fn, /avisos_de_sus_perros/);
+});
+
+test("y si ya subió la cartilla, no se la pide otra vez", () => {
+  assert.match(fn, /papeles_del_perro|documento_perro/);
+});
+
+test("no inventa ni una fecha sanitaria", () => {
+  /* Decirle a un cliente que su perro está al día cuando no lo
+     está es peor que no saberlo: se presenta el día de la
+     entrada y no puede dejarlo. */
+  assert.match(fn, /no te las inventes|pregunta.*herramienta|nunca de memoria/i);
+});
+
+test("contesta en el idioma en que le hablan", () => {
+  assert.match(fn, /English|idioma/i);
+});

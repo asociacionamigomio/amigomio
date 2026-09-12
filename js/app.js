@@ -5,6 +5,7 @@
    vista u otra dentro del mismo hueco.
    ============================================================ */
 import { sesionActual, salir, puedeReservar } from "./sesion.js";
+import { t, arrancarIdioma, idiomaActual, ponerIdioma, IDIOMAS } from "./idioma.js";
 import { miFicha, misPerros } from "./datos.js";
 import { avisosDeTodos } from "./sanidad.js";
 import { render as renderEntrada } from "./vistas/entrada.js";
@@ -83,6 +84,11 @@ const icono = n => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
   stroke-linejoin="round">${ICONOS[n] || ""}</svg>`;
 
 async function arrancar() {
+  /* Lo primero: el idioma. De él depende hasta el `lang` del
+     documento, que es lo que usan el corrector del teclado y
+     los lectores de pantalla. */
+  arrancarIdioma();
+
   if (!window.CONFIG?.configurado) {
     app.innerHTML = `
       <h1>AmigoMío</h1>
@@ -124,6 +130,14 @@ function pintarSinConfirmar(sesion) {
       <button class="boton" id="salir">Salir</button>
     </div>`;
   app.querySelector("#salir").addEventListener("click", async () => { await salir(); arrancar(); });
+
+  /* Cambiar de idioma repinta lo que hay: no hace falta
+     recargar ni perder lo que se estuviera haciendo. */
+  app.querySelectorAll("[data-idioma]").forEach(b =>
+    b.addEventListener("click", () => {
+      ponerIdioma(b.dataset.idioma);
+      pintarMarco(seccion.id, sesion);
+    }));
 }
 
 function pintarMarco(seccionId, sesion) {
@@ -133,7 +147,7 @@ function pintarMarco(seccionId, sesion) {
 
   const boton = s => `
     <button class="lateral-op ${s.id === seccion.id ? "activa" : ""}" data-ir="${s.id}">
-      ${icono(s.icono)}<span>${s.texto}</span>
+      ${icono(s.icono)}<span>${s.admin ? s.texto : t(s.texto)}</span>
     </button>`;
 
   /* Con menú lateral la página ocupa todo el ancho; sin él
@@ -147,8 +161,15 @@ function pintarMarco(seccionId, sesion) {
         ${mias.map(boton).join("")}
         ${suyas.length ? `<p class="lateral-grupo">Administración</p>${suyas.map(boton).join("")}` : ""}
       </nav>
+      <div class="lateral-idioma" role="group" aria-label="Idioma">
+        ${IDIOMAS.map(i => `
+          <button class="${i.id === idiomaActual() ? "activa" : ""}"
+                  data-idioma="${i.id}" lang="${i.id}"
+                  title="${i.nombre}">${i.bandera}</button>`).join("")}
+      </div>
+
       <button class="lateral-salir" id="salir">
-        ${icono("salida")}<span>Salir</span>
+        ${icono("salida")}<span>${t("Salir")}</span>
       </button>
     </aside>
 

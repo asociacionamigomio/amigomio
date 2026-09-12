@@ -59,6 +59,25 @@ CÓMO HABLAS
 - Si no sabes algo, lo dices y le pasas el WhatsApp: 673 229 399
   (https://wa.me/34673229399). Dices "háblanos", nunca "llámanos": hay quien
   no coge el teléfono ni queriendo.
+- EN EL IDIOMA EN QUE TE HABLEN. Si te escriben en inglés, contestas en inglés,
+  con el mismo tono de siempre: cercana, de tú, sin sonar a folleto. Aquí viene
+  mucho guiri y no tienen por qué saber español. Si cambian de idioma a mitad,
+  cambias tú también.
+
+FECHAS DE VACUNAS Y DESPARASITACIONES
+Esto NUNCA de memoria y NUNCA a ojo: lo miras con avisos_de_sus_perros. Decirle
+a alguien que su perro está al día cuando no lo está es peor que no saberlo,
+porque se planta aquí el día de la entrada y no puede dejarlo. Si te preguntan
+y la herramienta no dice nada, dices que no te consta y que lo mire en la
+aplicación.
+
+Si ves que le caduca algo antes de la estancia que está pidiendo, lo dices ahí
+mismo, sin dramatismo: "oye, que a Kira le vence la rabia el 3, y entráis el 5
+— renuévala antes y ya está". Eso es lo que hace una perra de la casa; un
+folleto que habla no lo hace.
+
+Y si ya tiene la cartilla subida (papeles_del_perro), NO se la vuelvas a pedir.
+Pedir dos veces lo mismo es lo que más cansa de hablar con una máquina.
 
 SI TE PREGUNTAN QUÉ ERES
 Si alguien pregunta de verdad si eres una persona, un robot o una máquina, no
@@ -158,6 +177,28 @@ const HERRAMIENTAS: Anthropic.Tool[] = [
     strict: true,
   },
   {
+    name: "avisos_de_sus_perros",
+    description:
+      "Qué se le caduca pronto a cada perro de este cliente: vacunas, " +
+      "desparasitaciones, antiparasitarios, licencias. Úsala SIEMPRE que hablen " +
+      "de vacunas o de si el perro puede entrar. Nunca contestes de memoria.",
+    input_schema: { type: "object", properties: {}, required: [], additionalProperties: false },
+    strict: true,
+  },
+  {
+    name: "papeles_del_perro",
+    description:
+      "Qué fotos de la cartilla tiene ya subidas un perro. Mírala antes de " +
+      "pedirle nada: pedir dos veces lo mismo es lo que más cansa.",
+    input_schema: {
+      type: "object",
+      properties: { perro: { type: "string", description: "El identificador, de sus_perros" } },
+      required: ["perro"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
     name: "dar_de_alta_perro",
     description:
       "Da de alta un perro nuevo en la ficha del cliente. Pregúntale todo antes: " +
@@ -234,6 +275,37 @@ async function ejecutar(nombre: string, args: any, db: any, quienEs: string) {
           .select("id, nombre, chip, fecha_nacimiento, sexo, raza, sanidad, agresivo_con_personas");
         if (error) return { error: error.message };
         return data;
+      }
+      case "avisos_de_sus_perros": {
+        /* La cuenta de cuándo caduca cada cosa vive en
+           js/sanidad.js, del lado del navegador, y aquí no se
+           puede importar. Así que se traen las fechas crudas y
+           se dice cuáles son: quien decide qué significa cada
+           una es el modelo, con lo que le hemos contado, no una
+           segunda copia de la regla que se quedaría vieja. */
+        const { data, error } = await db.from("perro")
+          .select("id, nombre, sanidad, licencia_deportiva_hasta, ppp_licencia_hasta, ppp_seguro_hasta")
+          .eq("borrador", false);
+        if (error) return { error: error.message };
+        return {
+          hoy: new Date().toISOString().slice(0, 10),
+          como_se_cuenta: {
+            rabia: "vale 12 meses desde la fecha",
+            polivalente: "12 meses",
+            leptospirosis: "12 meses",
+            traqueobronquitis: "12 meses, y tiene que estar puesta 15 días antes de entrar",
+            leishmaniosis: "12 meses",
+            desparasitacion_interna: "tiene que ser de los 30 días ANTERIORES a la entrada",
+            antiparasitario_externo: "pipeta 1 mes, collar 7 meses; puede llevar varios y vale mientras le quede alguno",
+          },
+          perros: data,
+        };
+      }
+      case "papeles_del_perro": {
+        const { data, error } = await db.from("documento_perro")
+          .select("tipo, subido").eq("perro_id", args.perro);
+        if (error) return { error: error.message };
+        return { subidos: data?.map((d) => d.tipo) ?? [] };
       }
       case "dar_de_alta_perro": {
         const { data, error } = await db.from("perro").insert({
