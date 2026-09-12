@@ -6,7 +6,8 @@
    ============================================================ */
 import { PASOS, validarPaso } from "../formularios.js";
 import { misPerros, guardarPerro, unPerro, borrarPerro, pedirCambio, misSolicitudes } from "../datos.js";
-import { camposSanidad, PRODUCTOS_EXTERNOS, AVISO_POR_DEFECTO } from "../sanidad.js";
+import { camposSanidad, PRODUCTOS_EXTERNOS, AVISO_POR_DEFECTO,
+         avisosDelPerro, caducidadDe, enCristiano } from "../sanidad.js";
 import { chipValido } from "../perro.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
@@ -38,7 +39,7 @@ export async function render(contenedor) {
     () => formulario(contenedor, null));
 
   contenedor.querySelectorAll("[data-abrir]").forEach(el =>
-    el.addEventListener("click", () => formulario(contenedor, el.dataset.abrir)));
+    el.addEventListener("click", () => ficha(contenedor, el.dataset.abrir)));
 }
 
 function tarjetaPerro(p) {
@@ -53,6 +54,114 @@ function tarjetaPerro(p) {
         <p class="flojo chip">Chip ${esc(p.chip)}</p>
       </div>
     </div>`;
+}
+
+/* ------------------------------------------------------------
+   LA FICHA DEL PERRO
+
+   Lo que se ve al pinchar en la lista: cómo está, qué le caduca
+   y qué hay que saber de él. Editar es otra cosa y va detrás de
+   un botón: entrar a mirar cómo está tu perro y que te salte un
+   formulario de tres pasos es agresivo.
+   ------------------------------------------------------------ */
+async function ficha(contenedor, id) {
+  contenedor.innerHTML = `<p class="cargando">Un momento…</p>`;
+
+  const d = await unPerro(id);
+  if (!d) { contenedor.innerHTML = `<div class="error">No encontramos ese perro.</div>`; return; }
+
+  const avisos = avisosDelPerro(d);
+  const campos = camposSanidad(d);
+  const hoy = new Date().toISOString().slice(0, 10);
+
+  const edad = d.fecha_nacimiento
+    ? Math.floor((Date.now() - new Date(d.fecha_nacimiento)) / (365.25 * 86400000)) : null;
+
+  const rasgos = [
+    d.sexo === "hembra" ? "hembra" : d.sexo === "macho" ? "macho" : null,
+    d.castrado ? "castrado" : null,
+    { todos: "bien con todos los perros", machos: "solo con machos",
+      hembras: "solo con hembras", ninguno: "mejor solo" }[d.sociable],
+    { activo: "muy activo", sedentario: "tranquilo" }[d.actividad],
+    d.timido ? "tímido" : null,
+    d.comilon ? "comilón" : null,
+    d.polidipsia ? "bebe muchísima agua" : null,
+    d.destroyer ? "destroza cosas" : null,
+  ].filter(Boolean);
+
+  const filaSanidad = c => {
+    const caduca = caducidadDe(c.id, (d.sanidad || {})[c.id]);
+    const aviso = avisos.find(a => a.id === c.id);
+    return `
+      <div class="fila-sanidad ${aviso ? (aviso.estado === "caducado" ? "vencida" : "pronto") : ""}">
+        <span>${esc(c.nombre)}${c.obligatorio ? "" : ' <em class="flojo">recomendada</em>'}</span>
+        <strong>${c.fecha ? (caduca ? `hasta el ${enCristiano(caduca)}` : "puesta") : "sin fecha"}</strong>
+      </div>`;
+  };
+
+  contenedor.innerHTML = `
+    <div class="cabecera-seccion">
+      <button class="boton fantasma pequeno" id="volver">← Mis perros</button>
+      <button class="boton pequeno" id="editar">Editar</button>
+    </div>
+
+    <div class="ficha-perro">
+      <div class="avatar grande">${d.foto ? `<img src="${esc(d.foto)}" alt="">` : "🐕"}</div>
+      <div>
+        <h2>${esc(d.nombre)}</h2>
+        <p class="flojo">${esc(d.raza) || "sin raza anotada"}${edad !== null ? ` · ${edad} ${edad === 1 ? "año" : "años"}` : ""}</p>
+        <p class="flojo chip">Chip ${esc(d.chip)}</p>
+      </div>
+    </div>
+
+    ${d.agresivo_con_personas ? `
+      <div class="error" style="margin-top:1rem">
+        <strong>Manejo de peligrosidad.</strong> Va a alojamiento propio y siempre solo.
+      </div>` : ""}
+
+    ${avisos.length ? `
+      <div class="tarjeta avisos-sanidad" style="margin-top:1rem">
+        <h3>${avisos.length === 1 ? "Una cosa que caduca" : "Cosas que caducan"}</h3>
+        <div class="lista-avisos">
+          ${avisos.map(a => `
+            <div class="aviso-linea ${a.estado === "caducado" ? "vencido" : ""}">
+              <span class="punto"></span>
+              <div><p>${esc(a.mensaje.replace(d.nombre + ": ", ""))}</p>
+                   <span class="cuando">${a.dias < 0 ? "ya venció" : a.dias === 0 ? "vence hoy"
+                     : a.dias === 1 ? "vence mañana" : `quedan ${a.dias} días`}</span></div>
+            </div>`).join("")}
+        </div>
+      </div>` : `
+      <div class="tarjeta" style="margin-top:1rem">
+        <p class="flojo">Todo al día. No le caduca nada por ahora.</p>
+      </div>`}
+
+    ${rasgos.length ? `<div class="rasgos">${rasgos.map(r => `<span class="marca">${esc(r)}</span>`).join("")}</div>` : ""}
+
+    <div class="atajos" style="grid-template-columns: 1fr">
+      ${d.pautas_alimentacion ? `<div class="tarjeta"><p class="rotulo">Cómo come</p>
+        <p>${esc(d.pautas_alimentacion)}</p></div>` : ""}
+      ${d.cuidados ? `<div class="tarjeta"><p class="rotulo">Cuidados</p>
+        <p>${esc(d.cuidados)}</p></div>` : ""}
+    </div>
+
+    <div class="tarjeta" style="margin-top:1rem">
+      <p class="rotulo">Vacunas y desparasitaciones</p>
+      <div class="tabla-sanidad">${campos.map(filaSanidad).join("")}</div>
+    </div>
+
+    ${(d.licencia_deportiva || d.es_ppp) ? `
+      <div class="tarjeta" style="margin-top:1rem">
+        <p class="rotulo">Papeles</p>
+        ${d.licencia_deportiva ? `<p>Licencia deportiva <strong>${esc(d.licencia_deportiva)}</strong>${
+          d.licencia_deportiva_hasta ? ` · hasta el ${enCristiano(d.licencia_deportiva_hasta)}` : ""}</p>` : ""}
+        ${d.es_ppp ? `<p>Perro potencialmente peligroso${
+          d.ppp_licencia_hasta ? ` · licencia hasta el ${enCristiano(d.ppp_licencia_hasta)}` : ""}${
+          d.ppp_seguro_hasta ? ` · seguro hasta el ${enCristiano(d.ppp_seguro_hasta)}` : ""}</p>` : ""}
+      </div>` : ""}`;
+
+  contenedor.querySelector("#volver").addEventListener("click", () => render(contenedor));
+  contenedor.querySelector("#editar").addEventListener("click", () => formulario(contenedor, id));
 }
 
 /* ------------------------------------------------------------
@@ -191,7 +300,9 @@ async function formulario(contenedor, id) {
 
     const g = await guardarPerro(limpiar(datos), { borrador: false });
     if (!g.ok) return pintar([], g.mensaje);
-    render(contenedor);
+    /* De vuelta a su ficha, no a la lista: acabas de editar ESTE
+       perro y lo que quieres es ver cómo ha quedado. */
+    if (g.id) ficha(contenedor, g.id); else render(contenedor);
   }
 
   async function aMedias() {

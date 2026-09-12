@@ -141,3 +141,24 @@ test("lo urgente va arriba, no enterrado en su párrafo", () => {
   assert.match(hoja, /const conCuidados = h\.dentro\.filter/);
   assert.match(hoja, /eso no puede quedar enterrado/);
 });
+
+/* ---------- La ficha del perro ---------- */
+test("pinchar un perro lleva a su ficha, no al formulario", () => {
+  /* Entrar a mirar cómo está tu perro y que te salte un
+     formulario de tres pasos es agresivo. */
+  const perros = aplanar(lee("js/vistas/perros.js"));
+  assert.match(perros, /el\.addEventListener\("click", \(\) => ficha\(contenedor, el\.dataset\.abrir\)\)/);
+  assert.match(perros, /Editar es otra cosa y va detrás de un botón/);
+});
+
+test("la ficha enseña los avisos de caducidad de ese perro", () => {
+  const perros = aplanar(lee("js/vistas/perros.js"));
+  assert.match(perros, /avisosDelPerro\(d\)/);
+  assert.match(perros, /Todo al día\. No le caduca nada por ahora/,
+    "y lo dice también cuando no hay nada que avisar");
+});
+
+test("al terminar de editar se vuelve a la ficha, no a la lista", () => {
+  const perros = aplanar(lee("js/vistas/perros.js"));
+  assert.match(perros, /acabas de editar ESTE perro/);
+});
