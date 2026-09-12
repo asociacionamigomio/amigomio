@@ -1,0 +1,3 @@
+# Ficheros con datos reales que NO van al repositorio público:
+# correos de administración, teléfonos, IBAN.
+*.local.sql

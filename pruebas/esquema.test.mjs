@@ -24,11 +24,34 @@ test("todas las tablas tienen RLS activado", () => {
   }
 });
 
-test("todas las tablas tienen al menos una política", () => {
+/* Tablas a las que la aplicación NO debe llegar nunca. Con RLS
+   activado y cero políticas, Postgres lo niega todo: es la forma
+   más fuerte de cerrar una tabla, no un descuido. Cada una aquí
+   con su motivo. */
+const SIN_POLITICAS = {
+  admin_autorizado: "lista de correos de administración; sólo la leen " +
+                    "funciones security definer y Santiago desde el panel",
+};
+
+test("toda tabla tiene políticas, o está cerrada a propósito", () => {
   for (const t of tablas) {
     const re = new RegExp(`create\\s+policy[\\s\\S]{0,200}?on\\s+${t}\\b`, "i");
-    assert.match(sql, re, `la tabla ${t} no tiene ninguna política`);
+    if (SIN_POLITICAS[t]) {
+      assert.doesNotMatch(sql, re,
+        `${t} está declarada como cerrada (${SIN_POLITICAS[t]}) pero tiene políticas`);
+    } else {
+      assert.match(sql, re, `la tabla ${t} no tiene ninguna política`);
+    }
   }
+});
+
+test("la lista de administradores va vacía en el repositorio", () => {
+  /* Son datos personales y el repositorio es público. Se cargan
+     directamente en la base de datos. */
+  assert.doesNotMatch(sql, /insert\s+into\s+admin_autorizado/i,
+    "los correos de administración no se escriben aquí");
+  assert.doesNotMatch(sql, /[\w.+-]+@[\w-]+\.[a-z]{2,}/i,
+    "no puede haber ninguna dirección de correo en el esquema");
 });
 
 test("el chip y el nombre están protegidos por trigger, no por el navegador", () => {

@@ -26,7 +26,7 @@ async function arrancar() {
 
   const nombre = sesion.usuario.email.split("@")[0];
   app.innerHTML = `
-    <div class="portada"><h1>AmigoMío</h1></div>
+    <div class="portada"><img src="assets/logo.png" alt="AmigoMío" class="logo"></div>
     <div class="tarjeta">
       <h2>¡Hola, ${nombre}!</h2>
       ${puedeReservar(sesion)

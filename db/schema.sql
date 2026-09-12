@@ -99,6 +99,25 @@ create table if not exists solicitud_cambio (
 create index if not exists solicitudes_pendientes
   on solicitud_cambio (estado) where estado = 'pendiente';
 
+-- ------------------------------------------------------------
+-- Quién puede ser administración.
+--
+-- La tabla va VACÍA en el repositorio, que es público: las
+-- direcciones son datos personales y se cargan directamente en
+-- la base de datos (ver db/administradores.local.sql, que no se
+-- sube). Quien se dé de alta con una de ellas queda administrador
+-- solo, sin que nadie tenga que tocar nada a mano.
+-- ------------------------------------------------------------
+create table if not exists admin_autorizado (
+  correo text primary key
+);
+
+-- Sin políticas a propósito: con RLS activado y ninguna política,
+-- nadie puede leerla ni escribirla desde la aplicación. Sólo la
+-- tocan las funciones de más abajo, que son security definer, y
+-- Santiago desde el panel de Supabase.
+alter table admin_autorizado enable row level security;
+
 -- ============================================================
 -- ¿Quién es administración? Se usa en triggers y políticas.
 -- security definer para que pueda leer cliente sin chocar con RLS.
@@ -140,6 +159,48 @@ drop trigger if exists perro_chip_y_nombre_inmutables on perro;
 create trigger perro_chip_y_nombre_inmutables
   before update on perro
   for each row execute function perro_chip_y_nombre_inmutables();
+
+-- ============================================================
+-- Al crearse la ficha, si el correo está en la lista de
+-- administración, queda administrador automáticamente.
+-- ============================================================
+create or replace function cliente_admin_por_correo()
+returns trigger language plpgsql security definer
+set search_path = public, auth as $$
+declare
+  correo text;
+begin
+  select email into correo from auth.users where id = new.id;
+  if correo is not null
+     and exists (select 1 from admin_autorizado a
+                  where lower(a.correo) = lower(correo)) then
+    new.es_admin := true;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists cliente_admin_por_correo on cliente;
+create trigger cliente_admin_por_correo
+  before insert on cliente
+  for each row execute function cliente_admin_por_correo();
+
+-- Para cuando se añade a alguien a la lista DESPUÉS de que ya se
+-- haya dado de alta: el trigger de arriba sólo salta al crearse.
+create or replace function sincronizar_administradores()
+returns integer language plpgsql security definer
+set search_path = public, auth as $$
+declare
+  tocados integer;
+begin
+  update cliente c set es_admin = true
+    from auth.users u
+   where u.id = c.id
+     and not c.es_admin
+     and exists (select 1 from admin_autorizado a
+                  where lower(a.correo) = lower(u.email));
+  get diagnostics tocados = row_count;
+  return tocados;
+end $$;
 
 -- ============================================================
 -- Nadie se asciende a sí mismo.

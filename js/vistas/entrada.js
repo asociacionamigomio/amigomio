@@ -14,7 +14,7 @@ export function render(contenedor, { alEntrar }) {
     const esAlta = modo === "alta";
     contenedor.innerHTML = `
       <div class="portada">
-        <h1>AmigoMío</h1>
+        <img src="assets/logo.png" alt="AmigoMío" class="logo">
         <p class="lema">Tu mejor amig@ también se va de vacaciones</p>
       </div>
 
