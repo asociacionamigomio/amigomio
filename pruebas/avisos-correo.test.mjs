@@ -140,3 +140,22 @@ test("la contraseña no se escribe en el repositorio", () => {
      administración. Es donde ya vive el IBAN. */
   assert.match(sql, /'cron_secret', ''/, "se crea vacía, se rellena en el panel");
 });
+
+test("la llamada lleva las DOS llaves", () => {
+  /* Fallo real al probarlo: la puerta de Supabase tiene «Verify
+     JWT» encendida y rechazaba la llamada antes de llegar a la
+     función — «401 UNAUTHORIZED_NO_AUTH_HEADER: Missing
+     authorization header».
+
+     Son dos puertas seguidas, no una repetida: la de Supabase
+     deja pasar a cualquiera con la llave pública —que llega
+     hasta el navegador— y la nuestra sólo al servidor. */
+  assert.match(sql, /'Authorization', *'Bearer ' \|\| \(select valor from ajuste where clave = 'anon_key'\)/);
+  assert.match(sql, /'x-cron-secret'/);
+});
+
+test("la llave pública se dice que es pública", () => {
+  /* Para que nadie la borre de un ajuste creyendo que se le ha
+     colado un secreto en el repositorio. */
+  assert.match(sql, /llave PÚBLICA|No es un secreto/);
+});

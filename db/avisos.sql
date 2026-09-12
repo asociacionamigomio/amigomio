@@ -341,14 +341,15 @@ insert into ajuste (clave, valor, nota) values
   ('cron_secret', '',
    'Contraseña que dispara el envío de correos. La misma que el secreto CRON_SECRET de Edge Functions. VACÍO = los correos no salen solos'),
   ('url_avisos', 'https://sovzbrrpcbmnevrdwaej.supabase.co/functions/v1/avisos',
-   'Dónde vive la función que entrega los correos')
+   'Dónde vive la función que entrega los correos'),
+  ('anon_key', 'sb_publishable_1eNdsYkpqefEIwJU7aakrw_UwzFu9kP',
+   'La llave PÚBLICA de Supabase, la misma que lleva el navegador. No es un secreto: sin ella la puerta de Supabase rechaza la llamada antes de llegar a la función')
 on conflict (clave) do nothing;
 
 do $$
 declare
   secreto text;
   url     text;
-  anon    text;
 begin
   select valor into secreto from ajuste where clave = 'cron_secret';
   select valor into url     from ajuste where clave = 'url_avisos';
@@ -364,12 +365,25 @@ begin
   perform cron.unschedule('mandar-avisos')
     where exists (select 1 from cron.job where jobname = 'mandar-avisos');
 
+  /* DOS llaves, y hacen falta las dos.
+   *
+   * `Authorization` con la llave PÚBLICA es lo que exige la
+   * puerta de Supabase, que tiene «Verify JWT» encendido. Sin
+   * ella la llamada se rechaza ANTES de llegar a la función:
+   *
+   *   401 UNAUTHORIZED_NO_AUTH_HEADER — Missing authorization header
+   *
+   * `x-cron-secret` con la contraseña es lo que exige nuestra
+   * función. Son dos puertas seguidas, no una repetida: la de
+   * Supabase deja pasar a cualquiera con la llave pública —que
+   * lleva hasta el navegador— y la nuestra sólo al servidor. */
   perform cron.schedule('mandar-avisos', '*/5 * * * *', format($f$
     select net.http_post(
       url     := %L,
       headers := jsonb_build_object(
-                   'Content-Type',  'application/json',
-                   'x-cron-secret', (select valor from ajuste where clave = 'cron_secret')),
+                   'Content-Type',   'application/json',
+                   'Authorization',  'Bearer ' || (select valor from ajuste where clave = 'anon_key'),
+                   'x-cron-secret',  (select valor from ajuste where clave = 'cron_secret')),
       body    := '{}'::jsonb
     );
   $f$, url));
