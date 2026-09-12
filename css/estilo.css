@@ -398,3 +398,35 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 
 /* El botón de instalar no puede taparla. */
 .boton.instalar { left: 1rem; transform: none; right: auto; }
+
+/* ------------------------------------------------------------
+   Avisos de caducidad
+   ------------------------------------------------------------ */
+.avisos-sanidad { margin-top: 1rem; }
+.avisos-sanidad h3 { margin-top: 0; font-size: 1.05rem; }
+.avisos-sanidad .boton { width: auto; margin-top: 1rem; }
+
+.lista-avisos { display: grid; gap: .1rem; }
+.aviso-linea {
+  display: flex; gap: .7rem; align-items: flex-start;
+  padding: .6rem 0; border-bottom: 1px solid var(--borde);
+}
+.aviso-linea:last-child { border-bottom: 0; }
+.aviso-linea p { margin: 0; font-size: .92rem; }
+.aviso-linea .punto {
+  width: 9px; height: 9px; border-radius: 50%; flex: none;
+  background: var(--amarillo); margin-top: .42rem;
+}
+.aviso-linea.vencido .punto { background: var(--rojo); }
+.aviso-linea .cuando {
+  font-size: .8rem; color: var(--texto-flojo);
+  font-variant-numeric: tabular-nums;
+}
+.aviso-linea.vencido .cuando { color: var(--rojo); font-weight: 600; }
+
+.requisito .mini {
+  display: flex; align-items: center; gap: .4rem; flex-wrap: wrap;
+  margin: .4rem 0 0; font-size: .82rem; font-weight: 400; color: var(--texto-flojo);
+}
+.requisito .dias { width: 68px; text-align: center; padding: .3rem .4rem; }
+.requisito select { margin-top: .15rem; }

@@ -164,3 +164,105 @@ export function camposSanidad(perro) {
     ...REQUISITOS.filter(r => !r.obligatorio).map(hueco),
   ];
 }
+
+/* ============================================================
+   AVISOS: decirlo ANTES de que caduque.
+
+   Esto responde a una pregunta distinta de estadoRequisito():
+   aquella mira si algo vale durante una estancia concreta; ésta
+   mira si algo se le va a caducar pronto al perro, sin que haya
+   ninguna reserva de por medio.
+   ============================================================ */
+
+/* Días de antelación por defecto. Una semana, como pidió Santiago. */
+export const AVISO_POR_DEFECTO = 7;
+
+/* El antiparasitario externo no se puede tratar como los demás:
+   una pipeta dura un mes y un collar seis o siete. Con un plazo
+   único, o avisas tarde de la pipeta o das la lata con el collar.
+
+   El propietario elige producto al meter la fecha, y puede poner
+   sus propios días de aviso si quiere enterarse con más tiempo. */
+export const PRODUCTOS_EXTERNOS = {
+  pipeta: { nombre: "Pipeta", meses: 1,  aviso: 7 },
+  collar: { nombre: "Collar", meses: 7,  aviso: 21 },
+  spray:  { nombre: "Spray",  meses: 1,  aviso: 7 },
+  otro:   { nombre: "Otro (pongo yo la fecha)", meses: null, aviso: 7 },
+};
+
+/** Hasta cuándo vale un registro. La fecha escrita a mano manda. */
+export function caducidadDe(idRequisito, registro) {
+  if (!registro?.fecha) return null;
+  if (registro.validoHasta) return registro.validoHasta;
+
+  if (idRequisito === "antiparasitario_externo") {
+    const p = PRODUCTOS_EXTERNOS[registro.producto] || PRODUCTOS_EXTERNOS.pipeta;
+    if (!p.meses) return null;            // "otro" sin fecha: no se puede saber
+    return sumarMeses(registro.fecha, p.meses);
+  }
+
+  const r = REQUISITOS.find(x => x.id === idRequisito);
+  if (!r) return null;
+  if (r.maximoDiasAntes) {
+    /* No caduca: tiene que ser reciente. El "vence" es el día en
+       que deja de servir para entrar. */
+    const d = aFecha(registro.fecha);
+    d.setDate(d.getDate() + r.maximoDiasAntes);
+    return aTexto(d);
+  }
+  return sumarMeses(registro.fecha, r.vigenciaMeses);
+}
+
+/** Cuántos días antes quiere avisarse de esto. */
+function diasDeAviso(idRequisito, registro) {
+  if (Number.isFinite(registro?.avisoDias)) return registro.avisoDias;
+  if (idRequisito === "antiparasitario_externo") {
+    const p = PRODUCTOS_EXTERNOS[registro?.producto];
+    if (p) return p.aviso;
+  }
+  return AVISO_POR_DEFECTO;
+}
+
+/**
+ * Lo que se le va a caducar pronto a este perro, de lo más
+ * urgente a lo menos. Lo que no tiene fecha NO se avisa aquí:
+ * eso es cosa del alta, y si no, un perro recién dado de alta
+ * soltaría siete avisos de golpe.
+ */
+export function avisosDelPerro(perro, hoy = new Date().toISOString().slice(0, 10)) {
+  const guardado = perro?.sanidad || {};
+  const avisos = [];
+
+  for (const r of REQUISITOS) {
+    const registro = guardado[r.id];
+    if (!registro?.fecha) continue;
+
+    const caduca = caducidadDe(r.id, registro);
+    if (!caduca) continue;
+
+    const dias = Math.round((aFecha(caduca) - aFecha(hoy)) / DIA);
+    if (dias > diasDeAviso(r.id, registro)) continue;
+
+    const quien = perro?.nombre ? `${perro.nombre}: ` : "";
+    const mensaje = dias < 0
+      ? `${quien}${r.nombre} venció el ${enCristiano(caduca)}.`
+      : r.maximoDiasAntes
+        ? `${quien}${r.nombre.toLowerCase()} deja de valer el ${enCristiano(caduca)}: ` +
+          `tiene que ser de los ${r.maximoDiasAntes} días anteriores a la entrada.`
+        : `${quien}${r.nombre} vence el ${enCristiano(caduca)}.`;
+
+    avisos.push({
+      id: r.id, nombre: r.nombre, obligatorio: r.obligatorio,
+      caduca, dias,
+      estado: dias < 0 ? "caducado" : "caduca-pronto",
+      mensaje,
+    });
+  }
+
+  return avisos.sort((a, b) => a.dias - b.dias);
+}
+
+/** Los avisos de todos sus perros, juntos y ordenados. */
+export function avisosDeTodos(perros, hoy) {
+  return perros.flatMap(p => avisosDelPerro(p, hoy)).sort((a, b) => a.dias - b.dias);
+}

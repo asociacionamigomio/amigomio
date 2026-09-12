@@ -5,7 +5,8 @@
    vista u otra dentro del mismo hueco.
    ============================================================ */
 import { sesionActual, salir, puedeReservar } from "./sesion.js";
-import { miFicha } from "./datos.js";
+import { miFicha, misPerros } from "./datos.js";
+import { avisosDeTodos } from "./sanidad.js";
 import { render as renderEntrada } from "./vistas/entrada.js";
 import { render as renderPerros }  from "./vistas/perros.js";
 import { render as renderMiFicha } from "./vistas/mi-ficha.js";
@@ -115,9 +116,21 @@ function pintarMarco(seccionId, sesion) {
   seccion.render(app.querySelector("#hueco"), { sesion, ficha });
 }
 
-function renderInicio(contenedor, { sesion }) {
+async function renderInicio(contenedor, { sesion }) {
   const nombre = ficha?.nombre || sesion.usuario.email.split("@")[0];
   const fichaAMedias = !ficha?.dni || !ficha?.consiente_datos;
+
+  /* Lo que se le caduca pronto a sus perros. Se mira al entrar,
+     sin que haga falta ninguna reserva de por medio: de nada
+     sirve enterarse el día que quiere reservar. */
+  let avisos = [];
+  try { avisos = avisosDeTodos(await misPerros()); } catch { /* ya se verá */ }
+
+  const enCristianoDias = d =>
+    d < 0  ? "ya venció"
+    : d === 0 ? "vence hoy"
+    : d === 1 ? "vence mañana"
+    : `quedan ${d} días`;
 
   contenedor.innerHTML = `
     <div class="tarjeta">
@@ -125,6 +138,23 @@ function renderInicio(contenedor, { sesion }) {
       <p>Aquí irán tus estancias. De momento, lo primero es presentarnos a tu perro.</p>
       ${ficha?.es_admin ? `<p class="flojo">Entras como administración.</p>` : ""}
     </div>
+
+    ${avisos.length ? `
+      <div class="tarjeta avisos-sanidad">
+        <h3>${avisos.length === 1 ? "Una cosa que caduca" : "Cosas que caducan"}</h3>
+        <div class="lista-avisos">
+          ${avisos.slice(0, 4).map(a => `
+            <div class="aviso-linea ${a.estado === "caducado" ? "vencido" : ""}">
+              <span class="punto"></span>
+              <div>
+                <p>${esc(a.mensaje)}</p>
+                <span class="cuando">${enCristianoDias(a.dias)}</span>
+              </div>
+            </div>`).join("")}
+        </div>
+        ${avisos.length > 4 ? `<p class="flojo">Y ${avisos.length - 4} más en la ficha de cada perro.</p>` : ""}
+        <button class="boton fantasma" data-ir="perros">Apuntar las fechas nuevas</button>
+      </div>` : ""}
 
     ${fichaAMedias ? `
       <div class="tarjeta aviso-tarjeta">

@@ -6,7 +6,7 @@
    ============================================================ */
 import { PASOS, validarPaso } from "../formularios.js";
 import { misPerros, guardarPerro, unPerro, borrarPerro, pedirCambio, misSolicitudes } from "../datos.js";
-import { camposSanidad } from "../sanidad.js";
+import { camposSanidad, PRODUCTOS_EXTERNOS, AVISO_POR_DEFECTO } from "../sanidad.js";
 import { chipValido } from "../perro.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
@@ -100,6 +100,9 @@ async function formulario(contenedor, id) {
     contenedor.querySelector("#luego").addEventListener("click", aMedias);
 
     contenedor.querySelector("#es_ppp")?.addEventListener("change", () => { recoger(); pintar(); });
+    /* Cambiar de producto cambia qué se pregunta debajo. */
+    contenedor.querySelector('[data-sanidad="antiparasitario_externo:producto"]')
+      ?.addEventListener("change", () => { recoger(); pintar(); });
 
     contenedor.querySelectorAll("[data-pedir]").forEach(b =>
       b.addEventListener("click", () => pedirCambioDe(b.dataset.pedir)));
@@ -170,7 +173,9 @@ async function formulario(contenedor, id) {
     contenedor.querySelectorAll("[data-sanidad]").forEach(el => {
       const [id, prop] = el.dataset.sanidad.split(":");
       sanidad[id] = sanidad[id] || {};
-      sanidad[id][prop] = el.type === "checkbox" ? el.checked : el.value;
+      sanidad[id][prop] = el.type === "checkbox" ? el.checked
+                        : el.type === "number"   ? Number(el.value)
+                        : el.value;
     });
     if (Object.keys(sanidad).length) datos.sanidad = sanidad;
   }
@@ -264,15 +269,41 @@ function cuerpoPaso0(d, error, esNuevo) {
 
 function cuerpoPaso1(d) {
   const campos = camposSanidad(d);
-  const fila = c => `
+  const guardado = d.sanidad || {};
+
+  const fila = c => {
+    const extra = guardado[c.id] || {};
+    const esExterno = c.id === "antiparasitario_externo";
+
+    return `
     <div class="requisito ${c.obligatorio ? "" : "recomendado"}">
       <span class="nombre-req">${esc(c.nombre)}${c.obligatorio ? "" : " <em>(recomendada)</em>"}</span>
       <input type="date" data-sanidad="${c.id}:fecha" value="${esc(c.fecha)}">
+
+      ${esExterno ? `
+        <label class="mini">¿Qué le pones?</label>
+        <select data-sanidad="${c.id}:producto">
+          ${Object.entries(PRODUCTOS_EXTERNOS).map(([id, p]) => `
+            <option value="${id}" ${extra.producto === id ? "selected" : ""}>
+              ${esc(p.nombre)}${p.meses ? ` · dura ${p.meses} ${p.meses === 1 ? "mes" : "meses"}` : ""}
+            </option>`).join("")}
+        </select>
+        ${extra.producto === "otro" ? `
+          <label class="mini">¿Hasta cuándo vale?</label>
+          <input type="date" data-sanidad="${c.id}:validoHasta" value="${esc(extra.validoHasta)}">` : ""}` : ""}
+
       <label class="casilla pequena">
         <input type="checkbox" data-sanidad="${c.id}:primovacunacion" ${c.primovacunacion ? "checked" : ""}>
         Es la primera vez
       </label>
+
+      <label class="mini">Avísame
+        <input type="number" min="1" max="365" class="dias"
+               data-sanidad="${c.id}:avisoDias"
+               value="${extra.avisoDias ?? (esExterno && PRODUCTOS_EXTERNOS[extra.producto]?.aviso) ?? AVISO_POR_DEFECTO}">
+        días antes</label>
     </div>`;
+  };
 
   return `
     <label for="pautas">¿Cómo come?</label>
@@ -284,8 +315,9 @@ function cuerpoPaso1(d) {
       placeholder="Pastilla para la artrosis con la cena. Le cuesta subir escalones.">${esc(d.cuidados)}</textarea>
 
     <h4>Vacunas y desparasitaciones</h4>
-    <p class="flojo">Las fechas de la cartilla. Si algo caduca antes de una estancia,
-       te avisamos con tiempo para que lo tengas listo.</p>
+    <p class="flojo">Las fechas de la cartilla. <strong>Te avisamos una semana antes</strong>
+       de que algo caduque, y puedes cambiar ese plazo en cada línea. La pipeta y el collar
+       no duran lo mismo, así que dinos cuál le pones.</p>
     <div class="requisitos">${campos.map(fila).join("")}</div>`;
 }
 
