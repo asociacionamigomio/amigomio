@@ -1,0 +1,9 @@
+{
+  "name": "amigomio",
+  "private": true,
+  "description": "App de reservas de la residencia canina AmigoMío",
+  "scripts": {
+    "test": "node --test \"pruebas/*.test.mjs\"",
+    "servir": "python3 -m http.server 8777"
+  }
+}
