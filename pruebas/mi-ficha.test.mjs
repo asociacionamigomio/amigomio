@@ -11,9 +11,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { validarFichaCliente, dniValido } from "../js/ficha.js";
 
+/* Datos inventados a propósito. En un repositorio público no se
+   usan direcciones, nombres ni teléfonos de verdad, ni siquiera
+   como ejemplo en una prueba. */
 const completa = {
-  nombre: "Santiago", apellidos: "Díaz Fandiño", dni: "12345678Z",
-  domicilio: "Carril Tórtola 43, Puerto Real", telefono: "600000000",
+  nombre: "Fulanito", apellidos: "de Tal", dni: "12345678Z",
+  domicilio: "Calle de Ejemplo 1, Puerto Real", telefono: "600000000",
   consiente_datos: true,
 };
 

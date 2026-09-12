@@ -6,6 +6,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
+import { execSync } from "node:child_process";
 
 const lee = f => readFileSync(new URL("../" + f, import.meta.url), "utf8");
 
@@ -73,4 +74,26 @@ test("los campos se estilan sin depender de que lleven type escrito", () => {
   const css = lee("css/estilo.css");
   assert.match(css, /input:not\(\[type="checkbox"\]\)/,
     "el selector tiene que cubrir los inputs sin type");
+});
+
+test("no hay datos reales de nadie en el repositorio", () => {
+  /* Fallo real: la dirección de la nave se coló como dato de ejemplo
+     en una prueba, y de ahí a GitHub. El repositorio es público.
+     Esta prueba mira TODOS los ficheros que se publican. */
+  const prohibido = [
+    [/Carril\s+T[óo]rtola/i, "la dirección exacta del núcleo"],
+    [/Brea\s+Higuero|Jim[ée]nez\s+Pastrana/i, "nombres de terceros"],
+    [/660\s?677\s?775/, "el teléfono de urgencias de la veterinaria"],
+    [/ES\d{2}\s?\d{4}\s?\d{4}/, "un IBAN"],
+    [/@gmail\.com/i, "correos personales"],
+  ];
+  const raiz = new URL("../", import.meta.url);
+  const ficheros = execSync("git ls-files", { cwd: raiz, encoding: "utf8" })
+    .split("\n").filter(f => f && /\.(js|mjs|css|html|sql|md|json|webmanifest)$/.test(f));
+
+  for (const f of ficheros) {
+    const texto = lee(f);
+    for (const [re, que] of prohibido)
+      assert.doesNotMatch(texto, re, `${f} lleva ${que}`);
+  }
 });
