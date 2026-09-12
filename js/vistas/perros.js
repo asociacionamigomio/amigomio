@@ -12,6 +12,12 @@ import { camposSanidad, PRODUCTOS_EXTERNOS, diasDeAvisoDe,
          avisosDelPerro, caducidadDe, enCristiano } from "../sanidad.js";
 import { chipValido } from "../perro.js";
 
+/* Tope de todas las fechas del formulario. En la base hay un
+   «20206-12-01» —un año de cinco cifras— porque un
+   `<input type="date"` sin tope lo acepta tan tranquilo, y de
+   ahí salían avisos que decían «vence el NaN de undefined». */
+const TOPE_FECHA = "2100-12-31";
+
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
@@ -297,6 +303,22 @@ async function formulario(contenedor, id) {
       e.puestos = [...(e.puestos || []), { producto: "pipeta", fecha: "" }];
       pintar();
     });
+    /* Cambiar «cómo sé cuándo caduca» cambia lo que se pregunta
+       debajo, y borra la respuesta de la otra forma: si se
+       quedara guardada, volvería a haber dos respuestas para la
+       misma pregunta, que es justo lo que se venía a arreglar. */
+    contenedor.querySelectorAll("[data-como]").forEach(sel =>
+      sel.addEventListener("change", () => {
+        const i = Number(sel.dataset.como);
+        recoger();
+        const puesto = datos.sanidad?.antiparasitario_externo?.puestos?.[i];
+        if (puesto) {
+          if (sel.value === "fecha") { puesto.duracionMeses = ""; puesto.validoHasta ||= ""; }
+          else                       { delete puesto.validoHasta; }
+        }
+        pintar();
+      }));
+
     contenedor.querySelectorAll(".quitar-antiparasitario").forEach(b =>
       b.addEventListener("click", () => {
         const fuera = Number(b.dataset.quitar);
@@ -399,6 +421,11 @@ async function formulario(contenedor, id) {
     const externo = sanidad.antiparasitario_externo;
     if (externo?.puestos) {
       externo.puestos = externo.puestos.filter(x => x?.fecha || x?.validoHasta);
+      /* Una fecha de caducidad en blanco no se guarda: si se
+         guardara como "", el formulario creería que el dueño
+         eligió «lo pone en la caja» y le seguiría preguntando
+         por una fecha que no tiene. */
+      for (const x of externo.puestos) if (x.validoHasta === "") delete x.validoHasta;
       delete externo.producto;   // resto de cuando era uno solo
       delete externo.fecha;
       delete externo.validoHasta;
@@ -504,7 +531,20 @@ function cuerpoPaso0(d, error, esNuevo) {
    le puso y, si no es de los de siempre, o cuántos meses dura o
    hasta cuándo vale. Está protegido mientras le quede alguno. */
 function antiparasitarios(c) {
-  const uno = (x, i) => `
+  const uno = (x, i) => {
+    /* CÓMO se sabe cuándo caduca: una cosa O la otra.
+
+       Antes se preguntaban las dos —«y dura ___ meses» y «o
+       caduca el ___»— sin decir cuál manda. En la ficha real de
+       Santiago acabó habiendo un collar puesto el 13/09 que
+       «dura 2 meses» Y «caduca el 20/09»: dos respuestas
+       distintas para la misma pregunta, y sólo vale una.
+       Preguntar dos cosas para quedarse con una es una trampa. */
+    const porFecha = !!x.validoHasta;
+    const suyo = PRODUCTOS_EXTERNOS[x.producto];
+    const caduca = caducidadDe("antiparasitario_externo", { puestos: [x] });
+
+    return `
     <div class="antiparasitario">
       <select data-sanidad="antiparasitario_externo:puestos:${i}:producto">
         ${Object.entries(PRODUCTOS_EXTERNOS).map(([id, p]) => `
@@ -514,24 +554,38 @@ function antiparasitarios(c) {
       </select>
 
       <label class="mini">Se lo puse el
-        <input type="date" data-sanidad="antiparasitario_externo:puestos:${i}:fecha"
+        <input type="date" max="${TOPE_FECHA}"
+               data-sanidad="antiparasitario_externo:puestos:${i}:fecha"
                value="${esc(x.fecha)}"></label>
 
-      <label class="mini">y dura
-        <input type="number" min="1" max="24" class="dias"
-               data-sanidad="antiparasitario_externo:puestos:${i}:duracionMeses"
-               value="${esc(x.duracionMeses)}">
-        meses</label>
+      <label class="mini">y sé cuándo caduca
+        <select class="como-caduca" data-como="${i}">
+          <option value="dura" ${porFecha ? "" : "selected"}>porque dura un tiempo</option>
+          <option value="fecha" ${porFecha ? "selected" : ""}>porque lo pone en la caja</option>
+        </select>
+      </label>
 
-      <label class="mini">o caduca el
-        <input type="date" data-sanidad="antiparasitario_externo:puestos:${i}:validoHasta"
-               value="${esc(x.validoHasta)}"></label>
+      ${porFecha ? `
+        <label class="mini">Caduca el
+          <input type="date" max="${TOPE_FECHA}"
+                 data-sanidad="antiparasitario_externo:puestos:${i}:validoHasta"
+                 value="${esc(x.validoHasta)}"></label>` : `
+        <label class="mini">Dura
+          <input type="number" min="1" max="24" class="dias"
+                 data-sanidad="antiparasitario_externo:puestos:${i}:duracionMeses"
+                 value="${esc(x.duracionMeses)}"
+                 placeholder="${suyo?.meses ?? ""}">
+          meses${suyo?.meses ? ` <span class="flojo">(en blanco, ${suyo.meses})</span>` : ""}</label>`}
+
+      ${caduca ? `<p class="calculado">Le caduca el <strong>${enCristiano(caduca)}</strong>.</p>`
+               : x.fecha ? `<p class="calculado flojo">Nos falta saber cuánto dura.</p>` : ""}
 
       ${c.puestos.length > 1
         ? `<button type="button" class="enlace quitar-antiparasitario"
                    data-quitar="${i}">Quitar</button>`
         : ""}
     </div>`;
+  };
 
   return `
     <p class="flojo">Puede llevar varios a la vez. Te avisamos cuando se le
@@ -553,7 +607,8 @@ function cuerpoPaso1(d) {
     return `
     <div class="requisito ${c.obligatorio ? "" : "recomendado"}">
       <span class="nombre-req">${esc(c.nombre)}${c.obligatorio ? "" : " <em>(recomendada)</em>"}</span>
-      ${esExterno ? "" : `<input type="date" data-sanidad="${c.id}:fecha" value="${esc(c.fecha)}">`}
+      ${esExterno ? "" : `<input type="date" max="${TOPE_FECHA}"
+            data-sanidad="${c.id}:fecha" value="${esc(c.fecha)}">`}
 
       ${esExterno ? antiparasitarios(c) : ""}
 

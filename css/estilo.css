@@ -1001,3 +1001,34 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 .lateral-idioma button.activa {
   background: var(--azul, #4E80A5); border-color: var(--azul, #4E80A5); color: #fff;
 }
+
+/* La fecha que sale de lo que acaba de escribir. Verla mientras
+   la escribe es lo que evita el «caduca el 20/09» de un collar
+   puesto el 13/09 que dura dos meses. */
+.antiparasitario .calculado {
+  margin: .4rem 0 0; font-size: .82rem; color: var(--azul, #4E80A5);
+}
+.antiparasitario .calculado.flojo { color: var(--texto-flojo); }
+.antiparasitario .como-caduca { width: auto; min-width: 11rem; }
+
+/* ============================================================
+   Los sonidos del clicker.
+
+   Debajo del botón grande y con menos peso: se eligen una vez y
+   luego estorban.
+   ============================================================ */
+.sonidos { margin-top: 1.5rem; }
+.sonidos .rotulo { margin-bottom: .5rem; }
+.sonido {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  padding: .6rem .8rem; margin-bottom: .4rem;
+  border: 1px solid var(--borde); border-radius: 10px; background: #fff;
+  font: inherit; color: var(--texto);
+}
+.sonido strong { display: block; font-size: .92rem; }
+.sonido .flojo { font-size: .8rem; line-height: 1.35; }
+.sonido.elegido {
+  border-color: var(--azul, #4E80A5); border-width: 2px;
+  background: #F3F8FB;
+}
+.sonido.elegido strong::after { content: " ✓"; color: var(--azul, #4E80A5); }

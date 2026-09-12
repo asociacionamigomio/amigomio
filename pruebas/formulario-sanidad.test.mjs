@@ -90,3 +90,42 @@ test("en pantalla estrecha la ficha apila nombre y fecha", () => {
   assert.match(aplanar(css), /@media \(max-width: *4\d\dpx\)[^}]*\.fila-sanidad/,
     "falta apilarlas cuando no hay sitio");
 });
+
+/* ---------- Una cosa o la otra, no las dos ---------- */
+test("de cada antiparasitario se elige CÓMO se sabe cuándo caduca", () => {
+  /* Fallo de diseño mío, visto en los datos reales de Santiago:
+     el formulario ofrecía «y dura ___ meses» Y «o caduca el
+     ___», los dos rellenables a la vez y sin decir cuál manda.
+     Resultado, en su propia ficha:
+
+       Tara: collar puesto el 13/09, «dura 2 meses» Y «caduca el
+             20/09». Son dos respuestas distintas —13 de
+             noviembre o 20 de septiembre— y sólo vale una.
+
+     Preguntar dos cosas para quedarse con una es una trampa. Se
+     elige primero cómo se sabe, y se pregunta SÓLO eso. */
+  const vista = aplanar(leer("js/vistas/perros.js"));
+  assert.match(vista, /como-caduca|comoCaduca/,
+    "hace falta elegir entre duración y fecha");
+});
+
+test("y se le enseña la fecha que sale de lo que ha puesto", () => {
+  /* Si no ve el resultado, no sabe que se ha equivocado hasta
+     que le llega un aviso raro. */
+  const vista = aplanar(leer("js/vistas/perros.js"));
+  assert.match(vista, /caducidadDe|Caduca el/,
+    "hay que enseñar la fecha calculada debajo");
+});
+
+test("no se cuela un año de cinco cifras", () => {
+  /* «20206-12-01» está en la base, en la ficha de un perro real.
+     Un <input type=date> lo acepta tan tranquilo si no se le
+     pone tope. */
+  /* Sin los comentarios: uno de ellos cita el fallo. */
+  const vista = leer("js/vistas/perros.js")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+  const fechas = vista.match(/<input type="date"[^>]*>/g) || [];
+  assert.ok(fechas.length, "debería haber campos de fecha");
+  for (const f of fechas)
+    assert.match(f, /max=/, `este campo de fecha no tiene tope: ${f.slice(0, 70)}`);
+});
