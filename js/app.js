@@ -25,6 +25,7 @@ import { render as renderHoja } from "./vistas/admin-hoja.js";
 import { render as renderEstancia } from "./vistas/admin-estancia.js";
 import { render as renderReservar } from "./vistas/reservar.js";
 import { render as renderMisReservas } from "./vistas/mis-reservas.js";
+import { render as renderVecinos } from "./vistas/vecinos.js";
 import { render as renderClicker } from "./vistas/clicker.js";
 import { montar as montarZapatilla } from "./zapatilla.js";
 
@@ -46,6 +47,7 @@ const SECCIONES = [
   { id: "reservar",    texto: "Reservar",     render: renderReservar,      icono: "calendario" },
   { id: "reservas",    texto: "Mis reservas", render: renderMisReservas,   icono: "lista" },
   { id: "perros",      texto: "Mis perros",   render: renderPerros,        icono: "corazon" },
+  { id: "vecinos",     texto: "Los vecinos",  render: renderVecinos,       icono: "gente" },
   { id: "clicker",     texto: "Clicker",      render: renderClicker,       icono: "circulo" },
   { id: "ficha",       texto: "Mi ficha",     render: renderMiFicha,       icono: "persona" },
   { id: "cuadrante",   texto: "El cuadrante",    render: renderCuadro,        admin: true, icono: "rejilla" },

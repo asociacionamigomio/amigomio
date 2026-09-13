@@ -1110,3 +1110,26 @@ button.perro-mini {
 button.perro-mini:hover { border-color: var(--azul-medio, #6199C8); }
 .perro-mini .abrir { display: block; margin-top: .25rem; font-size: .78rem;
                      color: var(--azul, #4E80A5); }
+
+/* ============================================================
+   Fotos y vecinos.
+   ============================================================ */
+.foto-perfil { display: flex; align-items: center; gap: 1rem; margin: .6rem 0; }
+.avatar.grande.con-foto { cursor: pointer; position: relative; }
+.avatar.grande.con-foto::after {
+  content: "✎"; position: absolute; right: -2px; bottom: -2px;
+  width: 1.5rem; height: 1.5rem; display: grid; place-items: center;
+  border-radius: 50%; background: var(--azul, #4E80A5); color: #fff; font-size: .8rem;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+
+.vecinos { display: grid; gap: .8rem; }
+.vecino .fila-cliente { align-items: center; }
+.perros-vecino {
+  display: grid; gap: .5rem; margin-top: .8rem;
+  padding-top: .8rem; border-top: 1px solid var(--borde);
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+}
+.perro-vecino { display: flex; align-items: center; gap: .6rem; }
+.perro-vecino strong { font-size: .9rem; }
+.perro-vecino p { margin: .1rem 0 0; font-size: .78rem; }

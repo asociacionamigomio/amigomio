@@ -57,6 +57,11 @@ export function tiposPara(perro) {
    sobra, incluso las fechas escritas a mano. */
 export const LADO_MAXIMO = 1600;
 
+/* Para una foto de perfil o de un perro, 1600 px es un cartel.
+   Con 600 se ve perfectamente en un móvil y pesa una cuarta
+   parte — y estas fotos se cargan en listas, varias a la vez. */
+export const LADO_FOTO = 600;
+
 /* Lo que no se deja subir ni encogido. Un PDF de 20 MB es un
    escaneo mal hecho, y decirlo antes es mejor que fallar a la
    mitad. */

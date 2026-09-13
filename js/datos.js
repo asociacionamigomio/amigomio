@@ -8,7 +8,7 @@
    ============================================================ */
 import { supabase } from "./sesion.js";
 import { normalizarChip } from "./perro.js";
-import { rutaDocumento, encoger, queLePasa } from "./documentos.js";
+import { rutaDocumento, encoger, queLePasa, LADO_FOTO } from "./documentos.js";
 
 /* ------------------------------------------------------------
    Mi ficha de cliente
@@ -42,6 +42,10 @@ export async function guardarMiFicha(datos) {
   /* es_admin y paga_en_persona no se mandan nunca desde aquí: los
      devuelve a su sitio el trigger cliente_no_se_asciende, pero
      mejor ni intentarlo. */
+  /* `foto` y `perfil_visible` SÍ se mandan: son del cliente y
+     los decide él. Los que se quitan son los que pone
+     administración, y el trigger los devolvería a su sitio de
+     todos modos — pero mejor ni intentarlo. */
   const { es_admin, paga_en_persona, descuento_pct, descuento_nota,
           id, creado, ...resto } = datos;
 
@@ -56,7 +60,7 @@ export async function guardarMiFicha(datos) {
      intentar. Lo que se pierde es la casilla nueva; lo que se
      salva es la ficha entera. */
   if (error?.code === "PGRST204") {
-    const todavia_no = ["quiere_correos"];
+    const todavia_no = ["quiere_correos", "foto", "perfil_visible"];
     const seguro = Object.fromEntries(
       Object.entries(resto).filter(([campo]) => !todavia_no.includes(campo)));
     ({ error } = await supabase.from("cliente").update(seguro).eq("id", user.id));
@@ -730,4 +734,82 @@ export async function bloquearFechas(alojamientos, desde, hasta, motivo = "") {
 export async function quitarBloqueo(id) {
   const { error } = await supabase.from("bloqueo").delete().eq("id", id);
   return { ok: !error, mensaje: error ? "No hemos podido quitarlo." : "Quitado." };
+}
+
+/* ------------------------------------------------------------
+   Las fotos: la del cliente y la de cada perro.
+
+   Van al cubo `fotos-perros`, que es privado igual que los
+   demás: una foto es un dato personal, y la de un perro con su
+   nombre al lado también.
+
+   Se guardan más pequeñas que las cartillas: en una cartilla hay
+   que leer fechas escritas a mano; en una cara o un perro, no. Y
+   éstas se cargan en listas, varias a la vez.
+   ------------------------------------------------------------ */
+const CUBO_FOTOS = "fotos-perros";
+
+/**
+ * Sube una foto y devuelve su ruta.
+ *
+ * `de` es "perfil" o el identificador del perro: sirve para
+ * saber de quién es sin abrirla.
+ */
+export async function subirFoto(fichero, de = "perfil") {
+  const pega = queLePasa(fichero);
+  if (pega) return { ok: false, mensaje: pega };
+  if (!fichero.type?.startsWith("image/"))
+    return { ok: false, mensaje: "Eso tiene que ser una foto." };
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, mensaje: "Vuelve a entrar, que se ha caído la sesión." };
+
+  const encogida = await encoger(fichero, LADO_FOTO);
+  const ruta = rutaDocumento(user.id, de, "foto", encogida.name || fichero.name);
+
+  const { error } = await supabase.storage.from(CUBO_FOTOS)
+    .upload(ruta, encogida, { contentType: encogida.type, upsert: false });
+  if (error) return { ok: false, mensaje: "No hemos podido subirla. Inténtalo otra vez." };
+
+  return { ok: true, ruta, mensaje: "Foto guardada." };
+}
+
+/** Un enlace para verla. El cubo es privado, así que va firmado. */
+export async function verFoto(ruta, segundos = 3600) {
+  if (!ruta) return null;
+  const { data, error } = await supabase.storage.from(CUBO_FOTOS)
+    .createSignedUrl(ruta, segundos);
+  return error ? null : data.signedUrl;
+}
+
+/** Varias de una vez: una lista de perros pide muchas a la vez. */
+export async function verFotos(rutas) {
+  const limpias = rutas.filter(Boolean);
+  if (!limpias.length) return {};
+  const { data } = await supabase.storage.from(CUBO_FOTOS)
+    .createSignedUrls(limpias, 3600);
+  const mapa = {};
+  for (const f of data || []) if (f.signedUrl) mapa[f.path] = f.signedUrl;
+  return mapa;
+}
+
+/* ------------------------------------------------------------
+   Los perfiles que otros clientes pueden ver.
+
+   Se pregunta por las VISTAS, no por las tablas: las vistas
+   sólo tienen las columnas que se pueden enseñar. Preguntar por
+   `cliente` devolvería el DNI y el domicilio.
+   ------------------------------------------------------------ */
+export async function perfilesVisibles() {
+  const { data, error } = await supabase
+    .from("perfiles_publicos").select("*").order("nombre");
+  if (error) return [];
+  return data || [];
+}
+
+export async function perrosVisibles() {
+  const { data, error } = await supabase
+    .from("perros_publicos").select("*").order("nombre");
+  if (error) return [];
+  return data || [];
 }

@@ -6,7 +6,7 @@
    obliga a anotar de cada propietario.
    ============================================================ */
 import { validarFichaCliente } from "../ficha.js";
-import { miFicha, guardarMiFicha } from "../datos.js";
+import { miFicha, guardarMiFicha, subirFoto, verFoto } from "../datos.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -36,6 +36,18 @@ export async function render(contenedor) {
     contenedor.innerHTML = `
       <h2>Mi ficha</h2>
       ${aviso ? `<div class="${claseAviso}">${esc(aviso)}</div>` : ""}
+
+      <div class="tarjeta">
+        <p class="rotulo">Tu foto</p>
+        <div class="foto-perfil">
+          <div class="avatar grande" id="mi-avatar">👤</div>
+          <label class="boton fantasma pequeno subir">
+            ${datos.foto ? "Cambiar la foto" : "Poner una foto"}
+            <input type="file" accept="image/*" id="mi-foto" hidden>
+          </label>
+        </div>
+        <p class="flojo">No hace falta, pero ayuda a que os reconozcáis.</p>
+      </div>
 
       <div class="tarjeta">
         <p class="flojo">Estos datos no son curiosidad nuestra: la ley nos obliga a anotarlos
@@ -71,10 +83,48 @@ export async function render(contenedor) {
               las reservas siguen igual.</span></span>
         </label>
 
+        <label class="casilla">
+          <input type="checkbox" data-campo="perfil_visible"
+                 ${datos.perfil_visible ? "checked" : ""}>
+          <span>Que los demás clientes de AmigoMío puedan ver mi perfil.
+            <br><span class="flojo">Verían <strong>tu nombre de pila, tu foto y
+              tus perros</strong> (nombre, raza y foto). No verían tus apellidos,
+              ni tu DNI, ni tu dirección, ni tu teléfono, ni el chip de tus perros,
+              ni sus datos de salud. Puedes quitarlo cuando quieras.</span></span>
+        </label>
+
         <button class="boton" id="guardar">Guardar</button>
       </div>`;
 
     contenedor.querySelector("#guardar").addEventListener("click", guardar);
+
+    /* La foto se sube y se guarda al momento, sin esperar al
+       botón: subirla y que luego se pierda porque se salió de la
+       pantalla sería para tirar el móvil. */
+    const entradaFoto = contenedor.querySelector("#mi-foto");
+    entradaFoto?.addEventListener("change", async () => {
+      const fichero = entradaFoto.files?.[0];
+      if (!fichero) return;
+
+      const etiqueta = entradaFoto.closest("label");
+      etiqueta.textContent = "Subiendo…";
+
+      const r = await subirFoto(fichero, "perfil");
+      if (!r.ok) return pintar(r.mensaje, "error");
+
+      datos.foto = r.ruta;
+      const g = await guardarMiFicha({ ...datos, foto: r.ruta });
+      pintar(g.ok ? "Foto guardada." : g.mensaje, g.ok ? "aviso" : "error");
+    });
+
+    /* Y se pinta la que ya tuviera. El cubo es privado, así que
+       el enlace hay que pedirlo. */
+    if (datos.foto) {
+      verFoto(datos.foto).then(url => {
+        const hueco = contenedor.querySelector("#mi-avatar");
+        if (url && hueco) hueco.innerHTML = `<img src="${url}" alt="">`;
+      });
+    }
   }
 
   async function guardar() {

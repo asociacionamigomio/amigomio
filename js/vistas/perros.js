@@ -6,7 +6,8 @@
    ============================================================ */
 import { PASOS, validarPaso } from "../formularios.js";
 import { misPerros, guardarPerro, unPerro, borrarPerro, pedirCambio, misSolicitudes,
-         documentosDe, subirDocumento, borrarDocumento, verDocumento } from "../datos.js";
+         documentosDe, subirDocumento, borrarDocumento, verDocumento,
+         subirFoto, verFoto } from "../datos.js";
 import { tiposPara, tipoDocumento } from "../documentos.js";
 import { camposSanidad, PRODUCTOS_EXTERNOS, diasDeAvisoDe,
          avisosDelPerro, caducidadDe, enCristiano } from "../sanidad.js";
@@ -116,7 +117,10 @@ async function ficha(contenedor, id, { volverA = null } = {}) {
     </div>
 
     <div class="ficha-perro">
-      <div class="avatar grande">${d.foto ? `<img src="${esc(d.foto)}" alt="">` : "🐕"}</div>
+      <label class="avatar grande con-foto" title="Cambiar la foto">
+        <span id="avatar-perro">🐕</span>
+        <input type="file" accept="image/*" id="foto-perro" hidden>
+      </label>
       <div>
         <h2>${esc(d.nombre)}</h2>
         <p class="flojo">${esc(d.raza) || "sin raza anotada"}${edad !== null ? ` · ${edad} ${edad === 1 ? "año" : "años"}` : ""}</p>
@@ -171,6 +175,27 @@ async function ficha(contenedor, id, { volverA = null } = {}) {
       </div>` : ""}
 
     <div id="papeles-perro"></div>`;
+
+  /* La foto, que se sube y se guarda al momento. */
+  if (d.foto) {
+    verFoto(d.foto).then(url => {
+      const hueco = contenedor.querySelector("#avatar-perro");
+      if (url && hueco) hueco.innerHTML = `<img src="${url}" alt="">`;
+    });
+  }
+
+  contenedor.querySelector("#foto-perro")?.addEventListener("change", async e => {
+    const fichero = e.target.files?.[0];
+    if (!fichero) return;
+    const hueco = contenedor.querySelector("#avatar-perro");
+    hueco.textContent = "…";
+
+    const r = await subirFoto(fichero, id);
+    if (!r.ok) { hueco.textContent = "🐕"; return; }
+
+    await guardarPerro({ id, foto: r.ruta });
+    ficha(contenedor, id, { volverA });
+  });
 
   contenedor.querySelector("#volver").addEventListener("click",
     () => volverA ? window.irA?.(volverA) : render(contenedor));
