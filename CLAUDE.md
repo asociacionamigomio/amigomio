@@ -103,6 +103,24 @@ Lee `2026-09-12-amigomio-reservas-design.md` (el diseño), `2026-09-12-plan-fase
   aún, comprobar la ESTRUCTURA (el `default` de una columna, las columnas de una vista) en vez de
   los datos.
 
+- **SI EL ARRANQUE SE ATASCA, LA PANTALLA TIENE QUE DECIRLO.** «Cargando…» es el texto que
+  trae `index.html` de fábrica: que se quede ahí significa que la aplicación no llegó ni a
+  correr, y sin más pista no hay por dónde empezar. Hay un vigía en `index.html` —JavaScript
+  normal, **no un módulo**, para que siga vivo justo cuando lo que falla es la carga de los
+  módulos— y `arrancar()` recoge su propio error. Una promesa que revienta sin que nadie la
+  recoja no hace **absolutamente nada** en la pantalla.
+
+- **LA APLICACIÓN NO PUEDE DEPENDER DE NADA DE FUERA PARA ABRIR.** La librería de Supabase venía
+  de un CDN; sin ella no arranca, así que un CDN lento o bloqueado era una aplicación muerta, y
+  ajena: no se puede ni guardar ni arreglar. Vive en `js/vendor/`, con la versión clavada. Hay
+  prueba que salta si vuelve a aparecer un `src="https://…"` en `index.html`.
+
+- **EL SERVICE WORKER NO PUEDE DEVOLVER `index.html` PARA TODO.** Si lo que se pedía era un
+  módulo de JavaScript, el navegador recibe HTML donde espera código: error de sintaxis y la
+  aplicación entera no arranca. La portada sólo vale como recambio de una **navegación**
+  (`peticion.mode === "navigate"`). Y se guarda **todo** el JavaScript, no una parte: lo que no
+  esté guardado se pide a la red en cada arranque, y basta que falle uno.
+
 - **«MIS» COSAS SON LAS MÍAS: filtrar por el usuario NO es redundante con RLS.** Administración
   ve todo —hace falta para atender un teléfono y para una inspección—, así que cualquier consulta
   que no diga «las mías» le devuelve **las de todos**, y las pantallas de cliente se llenan de
