@@ -145,7 +145,10 @@ test("lo que escribe Zapatilla no se interpreta como HTML", () => {
      perro con etiquetas dentro se ejecutaría en la página. */
   assert.match(widget, /const esc = /);
   assert.match(widget, /esc\(t\)/, "se escapa antes de pintar");
-  assert.match(widget, /no se interpreta HTML venga de donde venga/);
+  /* Y se comprueba de verdad, no leyendo un comentario: eso lo
+     rompe cualquiera que reescriba la frase. Lo de los enlaces
+     está en pruebas/enlaces-zapatilla.test.mjs. */
+  assert.match(widget, /venga de donde venga/i);
 });
 
 test("no hay reglas de negocio en el botón", () => {

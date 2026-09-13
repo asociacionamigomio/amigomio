@@ -14,11 +14,45 @@ import { TELEFONO_BONITO } from "./contacto.js";
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-/* Lo que escribe Zapatilla puede traer saltos de línea y algún
-   **negrita**. Nada más: no se interpreta HTML venga de donde venga. */
-function aTexto(t) {
+/* Lo que escribe Zapatilla puede traer saltos de línea, alguna
+   **negrita** y enlaces. Nada más: NO se interpreta HTML venga de
+   donde venga — lo que escribe un modelo es texto de fuera, y se
+   escapa entero antes de tocar nada.
+
+   Los enlaces hicieron falta el 13/09/2026. Santiago: «el enlace
+   de whatsapp que da zapatilla va mal». Y el número estaba bien:
+   lo que pasaba es que salía escrito y NO SE PODÍA TOCAR. En un
+   móvil, un enlace que no se toca no es un enlace — es un número
+   que hay que copiar a mano.
+
+   Sólo `http` y `https`. `javascript:` en un enlace que escribe
+   un modelo es exactamente la razón por la que esto se escapaba
+   entero, y no se enlaza jamás. */
+
+/* Una sola pasada con las dos formas a la vez. En dos pasadas, la
+   segunda entraría a destrozar el `href` que acaba de escribir la
+   primera. */
+const ENLACES = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)|(\bhttps?:\/\/[^\s<>"')]+)/g;
+
+/* Zapatilla escribe «(https://wa.me/34673229399).» y esos signos
+   no son de la dirección. Si se cuelan, WhatsApp no encuentra a
+   nadie: la forma más tonta de que un enlace falle. */
+const quitarElRabo = url => url.replace(/[.,;:!?]+$/, "");
+
+function enlazar(texto, url) {
+  const limpia = quitarElRabo(url);
+  return `<a href="${limpia}" target="_blank" rel="noopener noreferrer">` +
+         `${texto || limpia}</a>`;
+}
+
+/* Exportada para poder probarla de verdad, no leyendo el código. */
+export function aTexto(t) {
+  /* Escapar SIEMPRE primero: a partir de aquí no queda ni un `<`
+     ni una comilla capaz de romper un atributo. */
   return esc(t)
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(ENLACES, (entero, texto, urlMarkdown, urlSuelta) =>
+      enlazar(texto, urlMarkdown || urlSuelta))
     .replace(/\n/g, "<br>");
 }
 
