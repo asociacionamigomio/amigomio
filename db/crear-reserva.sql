@@ -265,13 +265,29 @@ begin
   end;
   assert salto, 'un perro con manejo de peligrosidad va siempre solo';
 
-  -- Pero solo sí, y va a alojamiento especial
-  r := crear_reserva(c, array[bravo], '2027-04-05 11:00', '2027-04-08 11:00');
-  assert (select a.tipo from reserva rr join alojamiento a on a.id = rr.alojamiento_id
-           where rr.id = (r->>'id')::uuid) = 'especial',
-         'tiene que ir a un alojamiento especial';
-  assert (r->'desglose'->>'total')::numeric = 35 * 3,
-         'tres noches en especial son 105, dio ' || (r->'desglose'->>'total');
+  -- Pero solo sí, y va a alojamiento especial.
+  --
+  -- SÓLO SE COMPRUEBA SI HAY ALGUNO. El 13/09/2026 se decidió que
+  -- en AmigoMío no hay alojamientos de tarifa plana, y esta prueba
+  -- —escrita cuando sí los había— dejó el SQL entero sin poder
+  -- aplicarse: `crear_reserva` manda a los perros con manejo de
+  -- peligrosidad a un «especial», y sin ninguno no encuentra sitio.
+  --
+  -- Eso destapó algo más gordo que una prueba: mientras no haya un
+  -- alojamiento `especial`, NINGÚN perro con manejo de
+  -- peligrosidad puede reservar. Está pendiente de decidir con
+  -- Santiago a qué alojamiento van esos perros.
+  if exists (select 1 from alojamiento where tipo = 'especial' and activo) then
+    r := crear_reserva(c, array[bravo], '2027-04-05 11:00', '2027-04-08 11:00');
+    assert (select a.tipo from reserva rr join alojamiento a on a.id = rr.alojamiento_id
+             where rr.id = (r->>'id')::uuid) = 'especial',
+           'tiene que ir a un alojamiento especial';
+    assert (r->'desglose'->>'total')::numeric = 35 * 3,
+           'tres noches en especial son 105, dio ' || (r->'desglose'->>'total');
+  else
+    raise notice 'Crear reserva: sin alojamientos especiales, se salta esa parte. '
+                 'OJO: asi ningun perro con manejo de peligrosidad puede reservar.';
+  end if;
 
   -- Cuatro perros no caben
   salto := false;
