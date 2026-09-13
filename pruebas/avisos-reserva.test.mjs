@@ -26,7 +26,8 @@ const cartero = leer("supabase/functions/avisos/index.ts");
 
 test("al entrar una reserva se avisa al cliente", () => {
   assert.match(sql, /reserva-nueva:/);
-  assert.match(sql, /encolar_aviso\(\s*\n?\s*new\.cliente_id/);
+  assert.match(sql, /encolar_o_reescribir\(\s*\n?\s*r\.cliente_id/,
+    "el aviso va al dueño de la reserva");
 });
 
 test("y también a administración", () => {
@@ -49,11 +50,35 @@ test("el correo dice de qué perros habla", () => {
   assert.match(sql, /string_agg\(p\.nombre/);
 });
 
-test("por eso el disparador es APLAZADO", () => {
-  /* Los perros de la reserva se meten DESPUÉS que la reserva. Un
-     disparador normal saltaría antes de que existieran y el
-     correo saldría sin decir de qué perro habla. */
-  assert.match(sql, /create constraint trigger reserva_avisa_al_entrar[\s\S]*?deferrable initially deferred/);
+test("por eso el disparador cuelga de reserva_perro", () => {
+  /* Los perros se meten DESPUÉS que la reserva, así que un
+     disparador sobre `reserva` mandaría el correo sin decir de
+     qué perro habla.
+
+     El primer intento fue un disparador APLAZADO, y reventó de la
+     peor manera (13/09/2026):
+
+       55006: cannot ALTER TABLE "reserva" because it has pending
+              trigger events
+
+     Las pruebas de reservas.sql, bloqueos.sql y crear-reserva.sql
+     insertan reservas de mentira, y cada una dejaba un evento
+     pendiente que BLOQUEA la tabla para todo lo que venga
+     después. El SQL entero dejó de poder aplicarse. */
+  assert.match(sql, /create trigger reserva_perro_avisa_al_entrar\s*\n\s*after insert on reserva_perro/);
+  assert.doesNotMatch(sql, /deferrable initially deferred/,
+    "nada aplazado sobre reserva: bloquea la tabla y no se puede aplicar el SQL");
+});
+
+test("y reescribe el correo con cada perro que se añade", () => {
+  /* Salta una vez por perro. La primera vez el texto sólo tiene
+     uno; al meter el último ya está completo. Reescribir sólo
+     vale mientras no se haya mandado. */
+  assert.match(sql, /function encolar_o_reescribir/);
+  const fn = sql.match(/function encolar_o_reescribir[\s\S]*?\bend \$\$;/)[0];
+  assert.match(fn, /on conflict \(marca\) do update/);
+  assert.match(fn, /where aviso\.estado = 'pendiente'/,
+    "lo que ya ha salido por correo no se toca");
 });
 
 test("un aviso que falla NO puede tumbar la reserva", () => {

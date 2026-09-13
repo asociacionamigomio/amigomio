@@ -44,7 +44,7 @@ declare
   puestos integer := 0;
 begin
   for a in select id from cliente where es_admin loop
-    if encolar_aviso(a.id, el_motivo, la_marca || ':' || a.id, el_asunto, el_cuerpo) then
+    if encolar_o_reescribir(a.id, el_motivo, la_marca || ':' || a.id, el_asunto, el_cuerpo) then
       puestos := puestos + 1;
     end if;
   end loop;
@@ -69,82 +69,150 @@ returns text language sql immutable as $$
 $$;
 
 -- ------------------------------------------------------------
+-- Encolar, o REESCRIBIR si todavía no ha salido.
+--
+-- Es la pieza que permite que el disparador cuelgue de
+-- `reserva_perro` en vez de ser APLAZADO. Ver el comentario largo
+-- de abajo.
+--
+-- Mientras el aviso siga en `pendiente` se puede reescribir: no
+-- se ha mandado nada todavía, así que no hay nada que duplicar.
+-- En cuanto pasa a `enviando` o `enviado` no se toca, porque
+-- entonces sí habría salido ya por correo.
+-- ------------------------------------------------------------
+create or replace function encolar_o_reescribir(
+  el_cliente uuid,
+  el_motivo  text,
+  la_marca   text,
+  el_asunto  text,
+  el_cuerpo  text
+) returns boolean language plpgsql security definer
+set search_path = public as $$
+declare
+  su_correo text;
+  quiere    boolean;
+begin
+  select u.email, c.quiere_correos into su_correo, quiere
+    from cliente c join auth.users u on u.id = c.id
+   where c.id = el_cliente;
+
+  if su_correo is null then return false; end if;
+  if not coalesce(quiere, true) then return false; end if;
+
+  insert into aviso (cliente_id, correo, asunto, cuerpo, motivo, marca)
+       values (el_cliente, su_correo, el_asunto, el_cuerpo, el_motivo, la_marca)
+  on conflict (marca) do update
+     set asunto = excluded.asunto,
+         cuerpo = excluded.cuerpo
+   where aviso.estado = 'pendiente';
+
+  return true;
+end $$;
+
+revoke all on function encolar_o_reescribir(uuid, text, text, text, text) from public;
+
+-- ------------------------------------------------------------
 -- 1. Entra una reserva.
 --
--- DISPARADOR APLAZADO (`deferrable initially deferred`): salta
--- al CERRAR la operación, no al insertar la fila. Hace falta
--- porque los perros de la reserva se meten DESPUÉS que la
--- reserva, y sin esperar al cierre el correo saldría sin decir
--- de qué perros habla — que es justo el dato por el que el
--- cliente abre el correo.
+-- CUELGA DE `reserva_perro`, NO DE `reserva`. Y no es capricho.
+--
+-- El problema: los perros de una reserva se meten DESPUÉS que la
+-- reserva, así que un disparador sobre `reserva` mandaría el
+-- correo sin decir de qué perro habla — que es justo el dato por
+-- el que el cliente lo abre.
+--
+-- El primer intento fue un disparador APLAZADO, que salta al
+-- cerrar la operación. Reventó el 13/09/2026 y de la peor manera:
+--
+--   55006: cannot ALTER TABLE "reserva" because it has pending
+--          trigger events
+--
+-- Las pruebas de `reservas.sql`, `bloqueos.sql` y
+-- `crear-reserva.sql` insertan reservas de mentira, y cada una
+-- dejaba un disparador pendiente que BLOQUEA la tabla para todo
+-- lo que venga después. El SQL entero dejó de poder aplicarse.
+--
+-- Colgándolo de `reserva_perro` no hay nada aplazado: salta con
+-- cada perro que se añade, y cada vez REESCRIBE el correo con la
+-- lista de perros que haya hasta ese momento. Al meter el último,
+-- el texto ya está completo — y el reparto no pasa hasta cinco
+-- minutos después. Lo que ya se ha mandado no se toca.
 -- ------------------------------------------------------------
 create or replace function aviso_de_reserva_nueva()
 returns trigger language plpgsql security definer
 set search_path = public as $$
 declare
+  r            reserva%rowtype;
   perros_texto text;
   sitio        text;
   cliente_texto text;
 begin
+  select * into r from reserva where id = new.reserva_id;
+  if r.id is null then return null; end if;
+
+  -- Sólo al nacer. Añadir un perro a una reserva ya confirmada no
+  -- es una reserva nueva y no tiene que mandar nada.
+  if r.estado not in ('pendiente', 'confirmada') then return null; end if;
+
   select string_agg(p.nombre, ', ' order by p.nombre)
     into perros_texto
     from reserva_perro rp join perro p on p.id = rp.perro_id
-   where rp.reserva_id = new.id;
+   where rp.reserva_id = r.id;
 
-  select nombre into sitio from alojamiento where id = new.alojamiento_id;
+  select nombre into sitio from alojamiento where id = r.alojamiento_id;
 
   select trim(c.nombre || ' ' || c.apellidos) into cliente_texto
-    from cliente c where c.id = new.cliente_id;
+    from cliente c where c.id = r.cliente_id;
 
   -- ---------- Al cliente ----------
-  if new.estado = 'pendiente' then
-    perform encolar_aviso(
-      new.cliente_id, 'reserva', 'reserva-nueva:' || new.id,
+  if r.estado = 'pendiente' then
+    perform encolar_o_reescribir(
+      r.cliente_id, 'reserva', 'reserva-nueva:' || r.id,
       'Hemos recibido tu reserva en AmigoMío',
       'Hola:' || chr(10) || chr(10) ||
       'Ya tenemos tu reserva apuntada para ' || coalesce(perros_texto, 'tu perro') || ':' ||
       chr(10) || chr(10) ||
-      'Entrada: ' || to_char(new.entrada, 'DD/MM/YYYY') || ' a las ' ||
-                     to_char(new.entrada, 'HH24:MI') || chr(10) ||
-      'Salida: '  || to_char(new.salida,  'DD/MM/YYYY') || ' a las ' ||
-                     to_char(new.salida,  'HH24:MI') || chr(10) ||
-      'Total: '   || to_char(new.total, 'FM999999990.00') || ' €' ||
+      'Entrada: ' || to_char(r.entrada, 'DD/MM/YYYY') || ' a las ' ||
+                     to_char(r.entrada, 'HH24:MI') || chr(10) ||
+      'Salida: '  || to_char(r.salida,  'DD/MM/YYYY') || ' a las ' ||
+                     to_char(r.salida,  'HH24:MI') || chr(10) ||
+      'Total: '   || to_char(r.total, 'FM999999990.00') || ' €' ||
       chr(10) || chr(10) ||
       'NOS FALTA EL JUSTIFICANTE. Guardamos el sitio hasta el ' ||
-      to_char(new.expira, 'DD/MM/YYYY') || ' a las ' || to_char(new.expira, 'HH24:MI') ||
+      to_char(r.expira, 'DD/MM/YYYY') || ' a las ' || to_char(r.expira, 'HH24:MI') ||
       '; si para entonces no nos ha llegado, se suelta solo y lo puede coger otro.' ||
       chr(10) || chr(10) ||
       'Súbenos el resguardo de la transferencia desde «Mis reservas» en la ' ||
       'aplicación y listo.' || pie_de_contacto());
   else
-    perform encolar_aviso(
-      new.cliente_id, 'reserva', 'reserva-nueva:' || new.id,
+    perform encolar_o_reescribir(
+      r.cliente_id, 'reserva', 'reserva-nueva:' || r.id,
       'Tu reserva en AmigoMío está confirmada',
       'Hola:' || chr(10) || chr(10) ||
       'Tu reserva para ' || coalesce(perros_texto, 'tu perro') || ' está confirmada:' ||
       chr(10) || chr(10) ||
-      'Entrada: ' || to_char(new.entrada, 'DD/MM/YYYY') || ' a las ' ||
-                     to_char(new.entrada, 'HH24:MI') || chr(10) ||
-      'Salida: '  || to_char(new.salida,  'DD/MM/YYYY') || ' a las ' ||
-                     to_char(new.salida,  'HH24:MI') || chr(10) ||
-      'Total: '   || to_char(new.total, 'FM999999990.00') || ' €' ||
+      'Entrada: ' || to_char(r.entrada, 'DD/MM/YYYY') || ' a las ' ||
+                     to_char(r.entrada, 'HH24:MI') || chr(10) ||
+      'Salida: '  || to_char(r.salida,  'DD/MM/YYYY') || ' a las ' ||
+                     to_char(r.salida,  'HH24:MI') || chr(10) ||
+      'Total: '   || to_char(r.total, 'FM999999990.00') || ' €' ||
       chr(10) || chr(10) ||
       'Se paga al llegar. No tienes que hacer nada más.' || pie_de_contacto());
   end if;
 
   -- ---------- Y a administración ----------
   perform avisar_a_administracion(
-    'reserva', 'reserva-nueva-admin:' || new.id,
+    'reserva', 'reserva-nueva-admin:' || r.id,
     'Reserva nueva: ' || coalesce(perros_texto, '?') || ', ' ||
-      to_char(new.entrada, 'DD/MM'),
+      to_char(r.entrada, 'DD/MM'),
     coalesce(cliente_texto, 'Un cliente') || ' ha reservado para ' ||
     coalesce(perros_texto, '?') || '.' || chr(10) || chr(10) ||
-    'Del ' || to_char(new.entrada, 'DD/MM/YYYY HH24:MI') ||
-    ' al ' || to_char(new.salida,  'DD/MM/YYYY HH24:MI') || chr(10) ||
+    'Del ' || to_char(r.entrada, 'DD/MM/YYYY HH24:MI') ||
+    ' al ' || to_char(r.salida,  'DD/MM/YYYY HH24:MI') || chr(10) ||
     'Alojamiento: ' || coalesce(sitio, '?') || chr(10) ||
-    'Total: ' || to_char(new.total, 'FM999999990.00') || ' €' || chr(10) ||
-    'Estado: ' || new.estado ||
-    case when new.estado = 'pendiente'
+    'Total: ' || to_char(r.total, 'FM999999990.00') || ' €' || chr(10) ||
+    'Estado: ' || r.estado ||
+    case when r.estado = 'pendiente'
          then ' (esperando el justificante)' else '' end ||
     chr(10) || chr(10) ||
     'La tienes en Administración → Por validar.');
@@ -157,14 +225,14 @@ exception when others then
   -- entera y el cliente vería un error sin entender nada. Se
   -- queda anotado en el registro del servidor y la reserva sigue
   -- su camino: el dinero primero, el correo después.
-  raise warning 'No se pudo encolar el aviso de la reserva %: %', new.id, sqlerrm;
+  raise warning 'No se pudo encolar el aviso de la reserva %: %', r.id, sqlerrm;
   return null;
 end $$;
 
 drop trigger if exists reserva_avisa_al_entrar on reserva;
-create constraint trigger reserva_avisa_al_entrar
-  after insert on reserva
-  deferrable initially deferred
+drop trigger if exists reserva_perro_avisa_al_entrar on reserva_perro;
+create trigger reserva_perro_avisa_al_entrar
+  after insert on reserva_perro
   for each row execute function aviso_de_reserva_nueva();
 
 -- ------------------------------------------------------------
@@ -280,10 +348,18 @@ declare
 begin
   -- El de entrar tiene que ser APLAZADO, o el correo saldría sin
   -- los perros dentro.
+  -- NO puede ser aplazado: un disparador aplazado sobre `reserva`
+  -- deja eventos pendientes que bloquean la tabla y hacen que el
+  -- SQL entero no se pueda aplicar (55006). Va sobre
+  -- `reserva_perro` y salta en el momento.
   select count(*) into n
     from pg_trigger
-   where tgname = 'reserva_avisa_al_entrar' and tgdeferrable;
-  assert n = 1, 'el aviso de reserva nueva tiene que ser un disparador aplazado';
+   where tgname = 'reserva_perro_avisa_al_entrar' and not tgdeferrable;
+  assert n = 1, 'falta el disparador de reserva nueva, o es aplazado';
+
+  select count(*) into n from pg_trigger where tgdeferrable
+     and tgrelid = 'reserva'::regclass and not tgisinternal;
+  assert n = 0, 'ningun disparador nuestro sobre reserva puede ser aplazado';
 
   select count(*) into n from pg_trigger where tgname = 'reserva_avisa_al_cancelar';
   assert n = 1, 'falta el disparador de cancelacion';
