@@ -25,7 +25,7 @@
    días antes y le enseñaba perros de otros clientes. Una
    aplicación que se actualiza en el escritorio y no en el móvil
    miente en el móvil. */
-const VERSION = "2026-09-13-s";
+const VERSION = "2026-09-13-t";
 const CACHE = `amigomio-${VERSION}`;
 
 /* TODO lo que hace falta para abrir. No una parte.
@@ -70,6 +70,7 @@ const LO_BASICO = [
   "./js/vistas/admin-perros.js",
   "./js/vistas/admin-solicitudes.js",
   "./js/vistas/admin-tarifas.js",
+  "./js/vistas/admin-validar.js",
   "./js/vistas/clicker.js",
   "./js/vistas/contrasena-nueva.js",
   "./js/vistas/entrada.js",

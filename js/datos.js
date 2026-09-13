@@ -908,6 +908,56 @@ export async function intereses() {
   return data || [];
 }
 
+/* ------------------------------------------------------------
+   Lo que está esperando a administración.
+
+   Santiago, 13/09/2026: «en el perfil de administración no me
+   salen las cosas para validar». Y no salían: para verlas había
+   que ir al cuadrante y pinchar las reservas una por una, a ver
+   si alguna tenía algo. Eso no es administrar, es buscar.
+
+   Las cuatro consultas van a la vez y con `allSettled`: si una
+   falla, las otras tres salen igual. Enseñar tres cuartas partes
+   de lo que hay que hacer es infinitamente mejor que enseñar una
+   pantalla de error — y lo que falle se dice, no se esconde.
+   ------------------------------------------------------------ */
+export async function cosasPorValidar() {
+  const conDueno = "*, cliente(nombre, apellidos, telefono), " +
+                   "reserva_perro(perro(nombre)), alojamiento(nombre)";
+
+  const [justificantes, esperando, cambios, interesados] = await Promise.allSettled([
+    /* 1. Justificante subido, esperando tu visto bueno. LO QUE MÁS
+          CORRE: hay alguien que ya ha pagado. */
+    supabase.from("reserva").select(conDueno)
+      .eq("estado", "revisando").order("entrada"),
+
+    /* 2. Reservada pero sin justificante. Caducan solas a las 24 h,
+          así que enterarse tarde es perder la reserva. */
+    supabase.from("reserva").select(conDueno)
+      .eq("estado", "pendiente").order("entrada"),
+
+    /* 3. Cambios de chip o de nombre. */
+    supabase.from("solicitud_cambio")
+      .select("*, perro(nombre, chip), cliente!solicitud_cambio_cliente_id_fkey(nombre, apellidos, telefono)")
+      .eq("estado", "pendiente").order("creada"),
+
+    /* 4. Quién ha dicho que le interesa educación o deporte. */
+    supabase.from("interes")
+      .select("*, cliente(nombre, apellidos, telefono), perro(nombre, raza)")
+      .eq("estado", "nueva").order("creada", { ascending: false }),
+  ]);
+
+  const saca = r => (r.status === "fulfilled" && !r.value.error)
+    ? (r.value.data || []) : null;   // null = no se ha podido preguntar
+
+  return {
+    justificantes: saca(justificantes),
+    esperando:     saca(esperando),
+    cambios:       saca(cambios),
+    interesados:   saca(interesados),
+  };
+}
+
 export async function atenderInteres(id, estado, nota = "") {
   const fila = { estado, nota };
   if (estado !== "nueva") fila.atendida = new Date().toISOString();

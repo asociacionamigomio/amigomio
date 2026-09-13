@@ -20,6 +20,7 @@ import { render as renderCuentas }  from "./vistas/admin-cuentas.js";
 import { render as renderBloqueos } from "./vistas/admin-bloqueos.js";
 import { render as renderAdminPerros } from "./vistas/admin-perros.js";
 import { fichaDePerro as renderFichaPerro } from "./vistas/perros.js";
+import { render as renderValidar } from "./vistas/admin-validar.js";
 import { render as renderCuadro } from "./vistas/admin-cuadro.js";
 import { render as renderHoja } from "./vistas/admin-hoja.js";
 import { render as renderEstancia } from "./vistas/admin-estancia.js";
@@ -53,6 +54,11 @@ const SECCIONES = [
   { id: "vecinos",     texto: "Los vecinos",  render: renderVecinos,       icono: "gente" },
   { id: "clicker",     texto: "Clicker",      render: renderClicker,       icono: "circulo" },
   { id: "ficha",       texto: "Mi ficha",     render: renderMiFicha,       icono: "persona" },
+  /* La PRIMERA de administración a propósito: es lo que hay que
+     mirar al entrar. Santiago, 13/09/2026: «no me salen las cosas
+     para validar». No salían — había que ir al cuadrante y pinchar
+     las reservas una por una. */
+  { id: "validar",     texto: "Por validar",   render: renderValidar,       admin: true, icono: "sello" },
   { id: "cuadrante",   texto: "El cuadrante",    render: renderCuadro,        admin: true, icono: "rejilla" },
   { id: "hoja",        texto: "Hoja del día", render: renderHoja,          admin: true, icono: "papel" },
   { id: "estancia",    texto: "Estancia",     render: renderEstancia,      admin: true, icono: "lista", oculta: true },
@@ -93,6 +99,8 @@ const ICONOS = {
   libro:      '<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5Z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8 7.5h7M8 11h7"/>',
   rejilla:    '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8.5 9.5V20M14 9.5V20"/>',
   papel:      '<path d="M6 2.5h8l5 5V21a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 6 21V3a.5.5 0 0 1 .5-.5Z"/><path d="M13.5 2.8V8h5M9 12.5h6M9 16h6"/>',
+  /* Un sello: lo que se pone cuando algo queda dado por bueno. */
+  sello:      '<path d="M9 3.5h6a2 2 0 0 1 2 2v3.2c0 .9-.4 1.4-1 2l-1 1c-.6.6-1 1.1-1 2V15H9v-1.3c0-.9-.4-1.4-1-2l-1-1c-.6-.6-1-1.1-1-2V5.5a2 2 0 0 1 2-2Z"/><rect x="4" y="17.5" width="16" height="3" rx="1.2"/>',
   salida:     '<path d="M14 3.5H6.5A2.5 2.5 0 0 0 4 6v12a2.5 2.5 0 0 0 2.5 2.5H14"/><path d="m16.5 8.5 3.5 3.5-3.5 3.5M20 12H9.5"/>',
 };
 

@@ -1216,3 +1216,35 @@ button.perro-mini:hover { border-color: var(--azul-medio, #6199C8); }
   border: 2px solid var(--amarillo, #E8C547); margin-bottom: 1rem;
 }
 .tarjeta.confirmar .botonera { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+/* ------------------------------------------------------------
+   Por validar: lo que está esperando a administración.
+
+   Santiago, 13/09/2026: «no me salen las cosas para validar».
+   Es la primera pantalla del panel, así que lo que corre tiene
+   que verse que corre de un vistazo, sin leer.
+   ------------------------------------------------------------ */
+.grupo {
+  margin: 1.6rem 0 .2rem;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.grupo:first-of-type { margin-top: 1rem; }
+
+.tarjeta.por-validar { margin-bottom: .8rem; }
+
+/* Un filo a la izquierda, no un fondo de color: se ve de lejos y
+   no convierte la pantalla en un semáforo. Alguien ha pagado ya y
+   está esperando; eso va primero y se nota. */
+.tarjeta.por-validar.corre { border-left: 4px solid var(--azul, #4E80A5); }
+
+.tarjeta.por-validar h3 { margin: .2rem 0 .3rem; }
+.tarjeta.por-validar .botonera {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .8rem;
+}
+.tarjeta.por-validar .botonera .boton { width: auto; flex: 1 1 auto; }
