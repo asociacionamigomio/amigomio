@@ -300,6 +300,39 @@ set search_path = public as $$
      and clave in ('reservas_abiertas','dias_cancelacion_gratis','tope_perros_simultaneos');
 $$;
 
+-- ------------------------------------------------------------
+-- DÓNDE SE TRANSFIERE.
+--
+-- Va aparte de `ajuste_publico` a propósito: esa función la puede
+-- llamar CUALQUIERA de internet, porque la clave anónima está en
+-- el repositorio y el repositorio es público. El número de cuenta
+-- de la asociación no es una contraseña, pero tampoco es para
+-- publicarlo en abierto.
+--
+-- Hizo falta el 13/09/2026. La aplicación le decía al cliente
+-- «mira en Mis reservas dónde transferir» y en Mis reservas NO
+-- SALÍA EL IBAN por ningún sitio: no estaba entre los ajustes que
+-- se dejan ver. Se le pedía una transferencia sin decirle a dónde.
+-- ------------------------------------------------------------
+create or replace function datos_para_pagar()
+returns jsonb language plpgsql stable security definer
+set search_path = public as $$
+declare
+  el_iban text;
+begin
+  -- Sin sesión no se enseña. La puerta la vigila ella misma
+  -- porque `security definer` se salta RLS.
+  if auth.uid() is null then
+    return jsonb_build_object('iban', '');
+  end if;
+
+  select valor into el_iban from ajuste where clave = 'iban';
+  return jsonb_build_object('iban', coalesce(el_iban, ''));
+end $$;
+
+revoke all on function datos_para_pagar() from public;
+grant execute on function datos_para_pagar() to authenticated;
+
 -- ============================================================
 -- EL PRECIO DE UNA NOCHE
 --

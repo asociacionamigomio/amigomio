@@ -6,7 +6,9 @@
    de datos no coinciden, es que alguien ha hecho cuentas donde
    no debía.
    ============================================================ */
+import { render as renderReservaHecha } from "./reserva-hecha.js";
 import { misPerros, presupuesto, haySitio, crearReserva, reservasAbiertas,
+         datosParaPagar, miFicha,
          tarifas } from "../datos.js";
 import { puedenCompartir } from "../perro.js";
 import { t } from "../idioma.js";
@@ -242,10 +244,18 @@ export async function render(contenedor, { ficha } = {}) {
     if (!r.ok) { boton.disabled = false; return pintar(r.mensaje, "error"); }
 
     elegidos.clear(); cuentas = null; sitio = null;
-    pintar(r.estado === "confirmada"
-      ? "¡Listo! Tu reserva está confirmada. Nos vemos."
-      : "¡Hecho! Ya tienes el sitio guardado. Mira en «Mis reservas» dónde transferir: " +
-        "tienes 24 horas.", "aviso");
+
+    /* Y se le explica QUÉ PASA AHORA.
+    
+       Antes esto era una línea suelta y la pantalla volvía al
+       formulario vacío, como si no hubiera pasado nada. Es el
+       momento en que el cliente decide si se fía: si se queda sin
+       saber qué le toca hacer, o llama, o se va. */
+    const [pago, quien] = await Promise.all([
+      datosParaPagar().catch(() => null),
+      miFicha().catch(() => null),
+    ]);
+    renderReservaHecha(contenedor, { reserva: r, pago, quien });
   }
 }
 

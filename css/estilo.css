@@ -1259,3 +1259,37 @@ button.perro-mini:hover { border-color: var(--azul-medio, #6199C8); }
   border: 1px solid var(--rojo);
 }
 .boton.peligro:hover { background: var(--rojo); color: #fff; }
+
+/* ------------------------------------------------------------
+   «Ya has reservado»: qué pasa ahora.
+
+   Los pasos con su número a la izquierda. Una parrafada no se
+   lee: se mira si hay números y se cuentan.
+   ------------------------------------------------------------ */
+.reserva-hecha h2 { margin-top: 0; }
+.aviso.destacado { border-left-width: 4px; font-size: 1rem; }
+
+.pasos { list-style: none; padding: 0; margin: .6rem 0 1.2rem; counter-reset: paso; }
+.paso { display: flex; gap: .8rem; padding: .9rem 0; border-bottom: 1px solid #F0EAE0; }
+.paso:last-child { border-bottom: 0; }
+
+.paso-numero {
+  flex: 0 0 1.9rem; height: 1.9rem; border-radius: 50%;
+  background: var(--azul, #4E80A5); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .95rem;
+}
+.paso-texto { flex: 1; }
+.paso-texto strong { display: block; margin-bottom: .3rem; }
+.paso-texto p { margin: .3rem 0; }
+.paso-texto .boton { width: auto; margin-top: .5rem; }
+
+/* El IBAN, grande y separado: copiarlo mal es una transferencia
+   que devuelve el banco tres días después. */
+.iban {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .6rem;
+  background: #F4F1EB; border-radius: 10px; padding: .7rem .8rem; margin: .4rem 0;
+}
+.iban code {
+  font-size: 1rem; letter-spacing: .04em; word-break: break-all; flex: 1 1 12rem;
+}

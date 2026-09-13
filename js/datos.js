@@ -548,6 +548,29 @@ export async function misReservas() {
   return data || [];
 }
 
+/**
+ * Dónde se transfiere.
+ *
+ * Va en su propia función de Postgres y no con los otros ajustes
+ * porque `ajuste_publico` la puede llamar CUALQUIERA de internet:
+ * la clave anónima está en el repositorio, y el repositorio es
+ * público. El número de cuenta no es una contraseña, pero tampoco
+ * es para publicarlo en abierto.
+ *
+ * Y si la base todavía no la tiene (PGRST202), se devuelve vacío:
+ * la pantalla sale igual, sólo que sin el número. EL NAVEGADOR SE
+ * DESPLIEGA ANTES QUE LA BASE. SIEMPRE.
+ */
+export async function datosParaPagar() {
+  const { data, error } = await supabase.rpc("datos_para_pagar");
+  if (error) {
+    if (error.code !== "PGRST202")
+      console.error("[AmigoMío] no se pudo traer dónde pagar:", error);
+    return null;
+  }
+  return data?.iban ? data : null;
+}
+
 export async function reservasAbiertas() {
   const { data } = await supabase.rpc("ajuste_publico", { la_clave: "reservas_abiertas" });
   return data === "si";
