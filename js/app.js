@@ -225,14 +225,6 @@ function pintarSinConfirmar(sesion) {
       <button class="boton" id="salir">Salir</button>
     </div>`;
   app.querySelector("#salir").addEventListener("click", async () => { await salir(); arrancar(); });
-
-  /* Cambiar de idioma repinta lo que hay: no hace falta
-     recargar ni perder lo que se estuviera haciendo. */
-  app.querySelectorAll("[data-idioma]").forEach(b =>
-    b.addEventListener("click", () => {
-      ponerIdioma(b.dataset.idioma);
-      pintarMarco(seccion.id, sesion);
-    }));
 }
 
 function pintarMarco(seccionId, sesion) {
@@ -276,6 +268,21 @@ function pintarMarco(seccionId, sesion) {
     b.addEventListener("click", () => pintarMarco(b.dataset.ir, sesion)));
 
   app.querySelector("#salir").addEventListener("click", async () => { await salir(); arrancar(); });
+
+  /* Cambiar de idioma repinta lo que hay, sin recargar: recargar
+     perdería lo que estuviera a medias, y una ficha de perro a
+     medio rellenar no se vuelve a rellenar.
+
+     Esto vivía en `pintarSinConfirmar`, que NO TIENE botones de
+     idioma — copiado al sitio equivocado. Los botones estaban a
+     la vista, se podían pulsar, y no pasaba nada. Santiago,
+     13/09/2026: «el idioma inglés no carga». Un botón que no hace
+     nada es peor que no tener botón: parece que está rota. */
+  app.querySelectorAll("[data-idioma]").forEach(b =>
+    b.addEventListener("click", () => {
+      ponerIdioma(b.dataset.idioma);
+      pintarMarco(seccion.id, sesion);
+    }));
 
   /* El marco se repinta entero al cambiar de sección, así que
      el botón de instalar se va con él. Si sigue haciendo falta,

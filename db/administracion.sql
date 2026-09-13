@@ -97,6 +97,25 @@ set search_path = public as $$
                'reserva', r.id,
                'alojamiento', a.nombre,
                'tipo', a.tipo,
+
+               /* Los identificadores, para poder HACER cosas desde
+                  la hoja y no sólo mirarla: mover de box y abrir la
+                  ficha del perro. Con el nombre no se mueve nada. */
+               'alojamiento_id', a.id,
+               'perro_id', p.id,
+
+               /* Cuántos días le quedan para irse.
+               
+                  Se cuenta contra EL DÍA DE LA HOJA, no contra hoy:
+                  la hoja se puede sacar del sábado que viene, y ahí
+                  «le quedan 3 días» tiene que ser 3 desde el sábado.
+               
+                  Santiago, 13/09/2026: es lo que decide si hoy toca
+                  preparar una salida, avisar al dueño o pedir más
+                  comida. */
+               'dias', (r.salida::date - el_dia),
+               'se_va', r.salida,
+
                'perro', p.nombre,
                'come', p.pautas_alimentacion,
                'cuidados', p.cuidados,

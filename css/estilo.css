@@ -1324,3 +1324,37 @@ button.perro-mini:hover { border-color: var(--azul-medio, #6199C8); }
    venga de donde venga el texto. */
 .reserva-hecha { overflow-wrap: anywhere; }
 .reserva-hecha .boton { max-width: 100%; }
+
+/* ------------------------------------------------------------
+   La hoja del día: los mandos.
+
+   La hoja se imprime y se cuelga en la nave, así que todo lo que
+   sirve para tocar desaparece en el papel. Y al revés: el nombre
+   del perro es un botón en pantalla y texto normal impreso.
+   ------------------------------------------------------------ */
+.como-enlace {
+  background: none; border: 0; padding: 0;
+  font: inherit; font-weight: 700; color: var(--azul, #4E80A5);
+  text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.solo-imprimir { display: none; }
+@media print { .solo-imprimir { display: inline; } }
+
+.mandos-perro {
+  display: flex; flex-wrap: wrap; gap: .6rem; align-items: flex-end;
+  margin-top: .6rem; padding-top: .6rem; border-top: 1px dashed #E7DFD2;
+}
+.mandos-perro label { font-size: .8rem; color: var(--flojo, #6B7C88); }
+.mandos-perro select {
+  display: block; margin-top: .2rem; padding: .35rem .5rem;
+  border: 1px solid #D9CFBF; border-radius: 8px; font: inherit; font-size: .9rem;
+  max-width: 100%;
+}
+.mandos-perro .boton { width: auto; }
+
+/* Cuánto le queda. Debajo del box, que es donde se mira. */
+.le-queda {
+  display: block; margin-top: .2rem;
+  font-size: .72rem; font-weight: 600; line-height: 1.2;
+  color: var(--flojo, #6B7C88); text-transform: none; letter-spacing: 0;
+}
