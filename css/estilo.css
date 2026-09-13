@@ -1248,3 +1248,14 @@ button.perro-mini:hover { border-color: var(--azul-medio, #6199C8); }
   margin-top: .8rem;
 }
 .tarjeta.por-validar .botonera .boton { width: auto; flex: 1 1 auto; }
+
+/* Lo que quita algo. Ni rojo chillón —esta pantalla no es una
+   alarma— ni igual que los demás, que es como se pulsa sin
+   querer. Se lee antes de tocarlo, que es todo lo que se le
+   pide. */
+.boton.peligro {
+  background: none;
+  color: var(--rojo);
+  border: 1px solid var(--rojo);
+}
+.boton.peligro:hover { background: var(--rojo); color: #fff; }

@@ -23,7 +23,12 @@ export async function render(contenedor) {
   if (lista.length === 0) {
     contenedor.innerHTML = `
       <h2>Solicitudes</h2>
-      <div class="tarjeta vacio"><p>Nada pendiente. Todo al día.</p></div>`;
+      <div class="tarjeta vacio">
+        <p>Nada pendiente. Todo al día.</p>
+        <p class="flojo">Aquí llegan las peticiones de cambiar el chip o el
+           nombre de un perro. Las pide el dueño desde la ficha de su perro,
+           y hasta que tú la apruebas el dato no cambia.</p>
+      </div>`;
     return;
   }
 

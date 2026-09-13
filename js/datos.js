@@ -253,7 +253,14 @@ export async function pedirCambio({ perroId, campo, valorActual, valorNuevo, mot
     perro_id: perroId, cliente_id: user.id, campo,
     valor_actual: valorActual, valor_nuevo: valorNuevo, motivo: motivo || "",
   });
-  if (error) return { ok: false, mensaje: "No hemos podido enviar la solicitud." };
+  if (error) {
+    /* El error DE VERDAD, al registro. Un mensaje amable sin
+       rastro de la causa es lo que convierte un fallo de cinco
+       minutos en un día entero (13/09/2026). */
+    console.error("[AmigoMío] no se pudo pedir el cambio:", error);
+    window.apuntarElFallo?.("al pedir un cambio de chip o nombre", error);
+    return { ok: false, mensaje: "No hemos podido enviar la solicitud." };
+  }
   return { ok: true, mensaje: "Recibido. Lo miramos y te decimos algo." };
 }
 

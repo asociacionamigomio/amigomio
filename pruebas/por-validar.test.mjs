@@ -115,3 +115,77 @@ test("los estados que se escriben son los que admite la base", () => {
     assert.ok(validos.includes(`'${m[1]}'`),
       `«${m[1]}» no es un estado que admita la tabla interes`);
 });
+
+test("una pantalla vacía se explica: vacía y rota no se parecen", () => {
+  /* Santiago, 13/09/2026: «no me sale en mensajes las solicitudes
+     pendientes». No salían porque no había ninguna —cero en la
+     base, nunca ha habido— pero un «Nada pendiente» a secas no
+     distingue «no hay» de «no funciona». Después del día que
+     llevamos, eso no vale. */
+  for (const v of ["js/vistas/admin-validar.js", "js/vistas/admin-solicitudes.js"]) {
+    const vacio = leer(v).match(/vacio[\s\S]{0,600}?<\/div>/)[0];
+    assert.match(vacio, /Aquí (aparecen|llegan)/,
+      `${v} no explica de dónde salen las cosas cuando no hay ninguna`);
+  }
+});
+
+test("pedir un cambio que falla deja rastro", () => {
+  /* Un mensaje amable sin rastro de la causa es lo que convierte
+     un fallo de cinco minutos en un día entero. */
+  const fn = sinComentarios(leer("js/datos.js"))
+    .match(/export async function pedirCambio[\s\S]*?\n\}/)[0];
+  assert.match(fn, /console\.error/);
+});
+
+/* ============================================================
+   Descartar: quitar de la lista lo que no procede.
+
+   Santiago, 13/09/2026: «necesito que en las validaciones me deje
+   eliminar lo que considere, reservas o lo que sea».
+
+   Una lista de la que no se puede quitar nada se llena de cosas
+   que ya no sirven —la reserva de alguien que llamó y lo anuló,
+   la que está duplicada— y entonces deja de mirarse. Una pantalla
+   de pendientes sólo vale si se puede vaciar.
+
+   Pero NO se borra de la base: se CANCELA. Una residencia con
+   libro de registro no puede perder el rastro de quién reservó
+   qué de cara a una inspección. Desaparece de la lista, libera el
+   box, y queda el apunte.
+   ============================================================ */
+test("se puede quitar de la lista cualquier cosa que haya", () => {
+  const vista = leer("js/vistas/admin-validar.js");
+  assert.match(vista, /data-descartar/,
+    "las reservas tienen que poder quitarse de la lista");
+  /* Y las otras tres ya tenían su manera: rechazar la solicitud y
+     descartar el interés. */
+  assert.match(vista, /data-solicitud/);
+  assert.match(vista, /descartada/);
+});
+
+test("descartar CANCELA, no borra", () => {
+  /* El libro de registro es obligatorio para las inspecciones.
+     Un `delete` ahí deja un hueco que no se puede explicar. */
+  const vista = sinComentarios(leer("js/vistas/admin-validar.js"));
+  assert.doesNotMatch(vista, /borrarReserva|\.delete\(/,
+    "de aquí no se borra nada de la base: se cancela");
+  assert.match(vista, /cancelarReserva|cambiarEstado/);
+});
+
+test("los estados que escribe son los que admite la base", () => {
+  const vista = leer("js/vistas/admin-validar.js");
+  const validos = leer("db/reservas.sql").match(/estado in \('pendiente'[\s\S]*?\)\)/)[0];
+  for (const m of vista.matchAll(/cambiarEstado\([^,]+,\s*"([^"]+)"/g))
+    assert.ok(validos.includes(`'${m[1]}'`),
+      `«${m[1]}» no es un estado que admita la tabla reserva`);
+});
+
+test("no se descarta sin preguntar", () => {
+  /* Es lo único de esta pantalla que le quita una reserva a un
+     cliente. Un resbalón con el dedo en el móvil no puede
+     cancelarle a nadie sus vacaciones. */
+  const vista = sinComentarios(leer("js/vistas/admin-validar.js"));
+  const trozo = vista.match(/data-descartar[\s\S]{0,1200}/)[0];
+  assert.match(trozo, /confirm|¿/,
+    "descartar tiene que pedir confirmación");
+});

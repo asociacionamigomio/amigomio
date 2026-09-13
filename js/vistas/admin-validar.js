@@ -19,7 +19,8 @@
    usa.
    ============================================================ */
 import { cosasPorValidar, validarJustificante, rechazarJustificante,
-         verJustificante, resolverSolicitud, atenderInteres } from "../datos.js";
+         verJustificante, resolverSolicitud, atenderInteres,
+         cancelarReserva } from "../datos.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -69,6 +70,10 @@ export async function render(contenedor) {
       <h2>Por validar</h2>
       <div class="tarjeta vacio">
         <p>Nada pendiente. Todo al día.</p>
+        <p class="flojo">Aquí aparecen solas cuatro cosas: los justificantes
+           de pago recién subidos, las reservas que todavía no lo han mandado,
+           las peticiones de cambiar el chip o el nombre de un perro, y quien
+           ha preguntado por educación o deporte.</p>
       </div>`;
     return;
   }
@@ -118,6 +123,7 @@ function tarjetaJustificante(r) {
       <div class="botonera">
         ${r.justificante ? `<button class="boton fantasma" data-ver="${esc(r.justificante)}">Ver el resguardo</button>` : ""}
         <button class="boton fantasma" data-rechazar="${r.id}">No cuadra</button>
+        <button class="boton peligro" data-descartar="${r.id}">Anular la reserva</button>
         <button class="boton" data-validar="${r.id}">He visto el dinero, confirmar</button>
       </div>
     </div>`;
@@ -133,6 +139,7 @@ function tarjetaEsperando(r) {
       <p>${dia(r.entrada)} → ${dia(r.salida)}
          ${r.total ? `· <strong>${r.total} €</strong>` : ""}</p>
       <div class="botonera">
+        <button class="boton peligro" data-descartar="${r.id}">Anular la reserva</button>
         <button class="boton" data-validar="${r.id}">Ha pagado en persona, confirmar</button>
       </div>
     </div>`;
@@ -167,6 +174,7 @@ function tarjetaInteres(i) {
       ${i.perro?.nombre ? `<p>Con ${esc(i.perro.nombre)}${i.perro.raza ? `, ${esc(i.perro.raza)}` : ""}</p>` : ""}
       ${i.mensaje ? `<p class="motivo">«${esc(i.mensaje)}»</p>` : ""}
       <div class="botonera">
+        <button class="boton fantasma" data-descartar-interes="${i.id}">Quitar de aquí</button>
         <button class="boton" data-interes="${i.id}">Ya le he hablado</button>
       </div>
     </div>`;
@@ -209,6 +217,28 @@ function enganchar(contenedor) {
     if (motivo === null) return { ok: false, mensaje: "" };
     return rechazarJustificante(b.dataset.rechazar, motivo);
   });
+
+  /* ANULAR UNA RESERVA NO LA BORRA: la deja en «cancelada».
+
+     El libro de registro es obligatorio para las inspecciones, y
+     un borrado deja ahí un hueco que no se puede explicar. Así
+     desaparece de esta lista, el box queda libre, y el apunte de
+     quién reservó qué se conserva.
+
+     Y se pregunta antes: es lo único de esta pantalla que le
+     quita una reserva a un cliente, y un resbalón con el dedo en
+     el móvil no puede cancelarle a nadie sus vacaciones. */
+  alPulsar("[data-descartar]", b => {
+    if (!confirm("¿Anulamos esta reserva?\n\n" +
+                 "Deja de contar, el alojamiento queda libre y desaparece de " +
+                 "esta lista. No se borra: queda anotada como anulada para el " +
+                 "libro de registro."))
+      return { ok: false, mensaje: "" };
+    return cancelarReserva(b.dataset.descartar);
+  });
+
+  alPulsar("[data-descartar-interes]", b =>
+    atenderInteres(b.dataset.descartarInteres, "descartada"));
 
   alPulsar("[data-solicitud]", b => {
     const [id, accion] = b.dataset.solicitud.split(":");
