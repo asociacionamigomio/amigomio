@@ -78,3 +78,15 @@ test("esto sólo lo ve administración", () => {
      siquiera el suyo en esta pantalla. */
   assert.match(vista, /es_admin/);
 });
+
+test("si no se sabe quién mira, se dice — no se esconde el botón", () => {
+  /* El 13/09/2026 `miFicha()` falló toda la tarde por un permiso
+     de columna, y el efecto aquí fue que desapareció el botón de
+     escribirle al dueño. Sin decir nada, y sin parecerse en nada
+     a la causa. Una función que se esconde por un fallo se busca
+     durante horas. */
+  const fuente = readFileSync(new URL("../js/vistas/perros.js", import.meta.url), "utf8");
+  assert.doesNotMatch(fuente, /miFicha\(\)\.catch\(\(\) => null\)/,
+    "esconder las cosas de administración por un fallo es mentir");
+  assert.match(fuente, /noSeSabeQuienMira/);
+});

@@ -84,7 +84,22 @@ async function ficha(contenedor, id, { volverA = null } = {}) {
   /* Quién está mirando: el bloque de escribirle al dueño es sólo
      para administración. Un cliente no tiene por qué ver el
      teléfono de nadie en esta pantalla. */
-  const quienMira = await miFicha().catch(() => null);
+  /* Si esto falla, la pantalla NO puede limitarse a esconder las
+     cosas de administración como si no fueras administrador.
+
+     El 13/09/2026 `miFicha()` estuvo toda la tarde fallando por un
+     permiso de columna, y el efecto aquí fue que desapareció el
+     botón de escribirle al dueño por WhatsApp — sin decir nada, y
+     sin que se pareciera en nada a la causa. Una función que se
+     esconde por un fallo se busca durante horas. */
+  let quienMira = null;
+  let noSeSabeQuienMira = false;
+  try { quienMira = await miFicha(); }
+  catch (e) {
+    noSeSabeQuienMira = true;
+    console.error("[AmigoMío] no se pudo saber quién mira la ficha:", e);
+    window.apuntarElFallo?.("al abrir la ficha de un perro", e);
+  }
   const avisos = avisosDelPerro(d);
   const campos = camposSanidad(d);
   const hoy = new Date().toISOString().slice(0, 10);
@@ -180,6 +195,11 @@ async function ficha(contenedor, id, { volverA = null } = {}) {
       </div>` : ""}
 
     ${quienMira?.es_admin ? bloqueWhatsApp(d) : ""}
+    ${noSeSabeQuienMira ? `
+      <div class="aviso" style="margin-top:1rem">
+        No hemos podido traer tus datos, así que puede que falte algo en esta
+        ficha. Suele ser la cobertura.
+      </div>` : ""}
 
     <div id="papeles-perro"></div>`;
 
