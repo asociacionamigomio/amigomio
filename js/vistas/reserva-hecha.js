@@ -155,8 +155,10 @@ function pintarPendiente(r, pago, quien) {
               <code>${esc(pago.iban)}</code>
               <button class="boton pequeno fantasma" id="copiar-iban">Copiar</button>
             </div>` : `
-            <p class="flojo">Te damos el número de cuenta en «Mis reservas»;
-               si no te aparece, pídenoslo por WhatsApp y te lo pasamos.</p>`}
+            <p class="flojo">Todavía no tenemos aquí el número de cuenta.
+               Pídenoslo y te lo pasamos al momento:</p>
+            ${botonWhatsApp("Pedir el número de cuenta",
+              "Hola, acabo de reservar y necesito el número de cuenta para la transferencia.")}`}
           <p class="flojo">En el concepto pon
              <strong>${esc(concepto) || "tu nombre y apellidos"}</strong>.
              Sin eso, en el extracto no sabemos de quién es la transferencia

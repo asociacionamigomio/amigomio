@@ -11,6 +11,7 @@
    Se pregunta por dos vistas que sólo tienen esas columnas.
    ============================================================ */
 import { perfilesVisibles, perrosVisibles, verFotos, miFicha } from "../datos.js";
+import { t } from "../idioma.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -18,7 +19,7 @@ const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
 const SEXOS = { macho: "macho", hembra: "hembra" };
 
 export async function render(contenedor) {
-  contenedor.innerHTML = `<p class="cargando">Un momento…</p>`;
+  contenedor.innerHTML = `<p class="cargando">${t("Un momento…")}</p>`;
 
   const [gente, perros, yo] = await Promise.all([
     perfilesVisibles(), perrosVisibles(), miFicha(),
@@ -42,17 +43,17 @@ export async function render(contenedor) {
     ? `<img src="${fotos[ruta]}" alt="">` : porDefecto;
 
   contenedor.innerHTML = `
-    <h2>Los vecinos</h2>
-    <p class="flojo">Quienes pasan por AmigoMío y han querido presentarse.
+    <h2>${t("Los vecinos")}</h2>
+    <p class="flojo">${t("Quienes pasan por AmigoMío y han querido presentarse.")}
        ${yo?.perfil_visible
-         ? "Tú también sales, porque lo activaste en tu ficha."
-         : `Si quieres salir tú, enciéndelo en <strong>Mi ficha</strong>.`}</p>
+         ? t("Tú también sales, porque lo activaste en tu ficha.")
+         : t("Si quieres salir tú, enciéndelo en «Mi ficha».")}</p>
 
     ${gente.length === 0 ? `
       <div class="tarjeta vacio">
-        <p>Todavía no se ha presentado nadie.</p>
-        <p class="flojo">Puedes ser el primero: enciéndelo en tu ficha.</p>
-        <button class="boton" data-ir="ficha">Ir a mi ficha</button>
+        <p>${t("Todavía no se ha presentado nadie.")}</p>
+        <p class="flojo">${t("Puedes ser el primero: enciéndelo en tu ficha.")}</p>
+        <button class="boton" data-ir="ficha">${t("Ir a mi ficha")}</button>
       </div>` : `
       <div class="vecinos">
         ${gente.map(persona => {

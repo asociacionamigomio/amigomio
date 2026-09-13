@@ -228,19 +228,20 @@ async function ficha(contenedor, id, { volverA = null } = {}) {
     () => volverA ? window.irA?.(volverA) : render(contenedor));
   contenedor.querySelector("#editar").addEventListener("click", () => formulario(contenedor, id));
 
-  engancharWhatsApp(d);
   pintarPapeles();
 
   /* Escribirle al dueño desde aquí.
 
-     OJO CON LO DE LAS FOTOS, que no es un capricho de cómo está
-     hecho: UN ENLACE DE WHATSAPP NO PUEDE LLEVAR FICHEROS. El
-     `wa.me/...` sólo admite texto y no hay forma de rodearlo.
+     SÓLO EL ENLACE, sin mandar fotos desde aquí.
 
-     Lo que sí funciona es el botón de compartir del propio
-     móvil: se le pasa la foto al sistema, el sistema ofrece
-     WhatsApp entre las opciones y va con la foto puesta. Es un
-     toque más, y es el único camino que existe. */
+     Hubo un botón para compartir fotos y vídeos, porque un enlace
+     de WhatsApp no puede llevar ficheros y el único rodeo era el
+     botón de compartir del propio móvil. Santiago lo quitó el
+     13/09/2026: sólo funcionaba en el móvil, fallaba en el
+     ordenador, y una vez abierta la conversación mandar una foto
+     desde WhatsApp es más rápido que desde aquí.
+
+     Una función que sólo va a veces cansa más de lo que ayuda. */
   function bloqueWhatsApp(d) {
     const dueno = `${d.cliente?.nombre ?? ""} ${d.cliente?.apellidos ?? ""}`.trim();
     const url = enlaceWhatsAppA(d.cliente?.telefono,
@@ -258,56 +259,12 @@ async function ficha(contenedor, id, { volverA = null } = {}) {
       <div class="tarjeta whatsapp-dueno" style="margin-top:1rem">
         <p class="rotulo">Hablar con ${esc(dueno) || "el dueño"}</p>
 
-        <div class="botonera">
-          <a class="boton whatsapp" target="_blank" rel="noopener" href="${url}">
-            Escribirle por WhatsApp
-          </a>
-          <label class="boton fantasma subir">
-            Mandarle una foto o un vídeo
-            <input type="file" accept="image/*,video/*" id="compartir" hidden multiple>
-          </label>
-        </div>
-
-        <p class="flojo" id="aviso-compartir">Las fotos van por el botón de compartir
-           del móvil: se elige WhatsApp ahí y se manda con la foto puesta.
-           <strong>Desde el ordenador no suele funcionar</strong>, es cosa del navegador.</p>
+        <a class="boton whatsapp" target="_blank" rel="noopener" href="${url}">
+          Escribirle por WhatsApp
+        </a>
       </div>`;
   }
 
-  function engancharWhatsApp(d) {
-    const entrada = contenedor.querySelector("#compartir");
-    if (!entrada) return;
-
-    entrada.addEventListener("change", async () => {
-      const ficheros = [...(entrada.files || [])];
-      if (!ficheros.length) return;
-
-      const aviso = contenedor.querySelector("#aviso-compartir");
-
-      /* Se pregunta ANTES de intentarlo: si el navegador no sabe
-         compartir ficheros, pulsar y que no pase nada es lo peor
-         que puede ocurrir. */
-      if (!navigator.canShare?.({ files: ficheros })) {
-        aviso.innerHTML = `<strong>Este navegador no sabe compartir ficheros.</strong>
-          Ábrelo en el móvil y vuelve a intentarlo; desde el ordenador casi nunca
-          se puede.`;
-        aviso.classList.add("error-linea");
-        return;
-      }
-
-      try {
-        await navigator.share({
-          files: ficheros,
-          title: d.nombre,
-          text: `${d.nombre}, desde AmigoMío`,
-        });
-      } catch {
-        /* Cancelar el compartir tira un error. No es un fallo:
-           es que ha cambiado de idea. */
-      }
-      entrada.value = "";
-    });
-  }
 
   /* La cartilla fotografiada. Es lo último de la ficha porque es
      VOLUNTARIO: quien no quiera, ni se entera. */

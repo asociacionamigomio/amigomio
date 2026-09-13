@@ -58,21 +58,6 @@ test("si no hay teléfono, se dice: no sale un botón roto", () => {
   assert.match(vista, /sin tel[eé]fono|no tenemos su tel/i);
 });
 
-test("las fotos van por el compartir del sistema, no por el enlace", () => {
-  /* Un enlace de WhatsApp NO puede llevar ficheros. El único
-     camino es `navigator.share` con `files`. */
-  assert.match(vista, /navigator\.share/);
-  assert.match(vista, /canShare/,
-    "hay que preguntar antes: no todos los navegadores comparten ficheros");
-});
-
-test("y si el navegador no sabe compartir, se dice por qué", () => {
-  /* Callarse y no hacer nada al pulsar es lo peor que puede
-     pasar. En el ordenador esto no funciona casi nunca. */
-  assert.match(vista, /no sabe compartir/i);
-  assert.match(vista, /desde el ordenador/i);
-});
-
 test("esto sólo lo ve administración", () => {
   /* Un cliente no tiene por qué ver el teléfono de nadie, ni
      siquiera el suyo en esta pantalla. */
@@ -89,4 +74,25 @@ test("si no se sabe quién mira, se dice — no se esconde el botón", () => {
   assert.doesNotMatch(fuente, /miFicha\(\)\.catch\(\(\) => null\)/,
     "esconder las cosas de administración por un fallo es mentir");
   assert.match(fuente, /noSeSabeQuienMira/);
+});
+
+test("desde aquí NO se mandan fotos", () => {
+  /* Hubo un botón para compartir fotos y vídeos: un enlace de
+     WhatsApp no puede llevar ficheros, y el único rodeo era el
+     botón de compartir del propio móvil.
+
+     Santiago lo quitó el 13/09/2026, y con razón: sólo funcionaba
+     en el móvil, fallaba en el ordenador, y una vez abierta la
+     conversación mandar una foto desde el propio WhatsApp es más
+     rápido que desde aquí. Una función que sólo va a veces cansa
+     más de lo que ayuda. */
+  const fuente = readFileSync(new URL("../js/vistas/perros.js", import.meta.url), "utf8");
+  assert.doesNotMatch(fuente, /navigator\.share|canShare|id="compartir"/,
+    "se quitó a propósito: sólo funcionaba a veces");
+});
+
+test("pero el enlace para escribirle sigue estando", () => {
+  const fuente = readFileSync(new URL("../js/vistas/perros.js", import.meta.url), "utf8");
+  assert.match(fuente, /Escribirle por WhatsApp/);
+  assert.match(fuente, /enlaceWhatsAppA/);
 });

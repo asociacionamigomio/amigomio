@@ -13,6 +13,7 @@
    marcan también al perro de al lado.
    ============================================================ */
 import { SONIDOS, POR_DEFECTO, sonido } from "../sonidos-clicker.js";
+import { t } from "../idioma.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -60,22 +61,22 @@ export function render(contenedor) {
   let cual = elegido();
 
   contenedor.innerHTML = `
-    <h2>Clicker</h2>
+    <h2>${t("Clicker")}</h2>
 
     <button class="clicker" id="clic" aria-label="Clic">
       <span class="clicker-dentro">CLIC</span>
     </button>
 
-    <p class="cuenta-clics" id="cuenta">Toca para empezar</p>
+    <p class="cuenta-clics" id="cuenta">${t("Toca para empezar")}</p>
 
     <div class="sonidos">
-      <p class="rotulo">El sonido</p>
+      <p class="rotulo">${t("El sonido")}</p>
       ${SONIDOS.map(s => `
         <button class="sonido ${s.id === cual ? "elegido" : ""}" data-sonido="${s.id}">
           <strong>${esc(s.nombre)}</strong>
           <span class="flojo">${esc(s.pista)}</span>
         </button>`).join("")}
-      <p class="flojo">Tócalos para oírlos. Se queda el que elijas.</p>
+      <p class="flojo">${t("Tócalos para oírlos. Se queda el que elijas.")}</p>
     </div>`;
 
   const boton = contenedor.querySelector("#clic");
@@ -85,7 +86,7 @@ export function render(contenedor) {
     e.preventDefault();
     try { sonar(cual); } catch { /* sin sonido, pero el botón responde igual */ }
     cuenta++;
-    cuentaTexto.textContent = cuenta === 1 ? "1 clic" : `${cuenta} clics`;
+    cuentaTexto.textContent = cuenta === 1 ? t("1 clic") : t("{n} clics", { n: cuenta });
     boton.classList.remove("pulsado");
     void boton.offsetWidth;
     boton.classList.add("pulsado");

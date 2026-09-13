@@ -6,6 +6,7 @@
    nadie se quede esperando sin saber qué pasa.
    ============================================================ */
 import { entrar, darseDeAlta, recuperarContrasena } from "../sesion.js";
+import { t } from "../idioma.js";
 
 export function render(contenedor, { alEntrar }) {
   let modo = "entrar";   // "alta" · "olvidada"
@@ -21,35 +22,35 @@ export function render(contenedor, { alEntrar }) {
     contenedor.innerHTML = `
       <div class="portada">
         <img src="assets/logo.png" alt="AmigoMío" class="logo">
-        <p class="lema">Tu mejor amig@ también se va de vacaciones</p>
+        <p class="lema">${t("Tu mejor amig@ también se va de vacaciones")}</p>
       </div>
 
       <div class="tarjeta">
-        <h2>${esAlta ? "Crear una cuenta" : "Entrar"}</h2>
+        <h2>${t(esAlta ? "Crear una cuenta" : "Entrar")}</h2>
 
         ${aviso ? `<div class="${clase}">${aviso}</div>` : ""}
 
-        <label for="correo">Tu correo</label>
+        <label for="correo">${t("Tu correo")}</label>
         <input id="correo" type="email" autocomplete="email" inputmode="email"
                placeholder="tucorreo@ejemplo.com">
 
-        <label for="clave">Tu contraseña</label>
+        <label for="clave">${t("Tu contraseña")}</label>
         <input id="clave" type="password"
                autocomplete="${esAlta ? "new-password" : "current-password"}"
-               placeholder="${esAlta ? "Al menos 8 caracteres" : ""}">
+               placeholder="${esAlta ? t("Al menos 8 caracteres") : ""}">
 
         <button class="boton" id="enviar">
-          ${esAlta ? "Crear cuenta" : "Entrar"}
+          ${t(esAlta ? "Crear cuenta" : "Entrar")}
         </button>
 
         <p class="cambiar">
-          ${esAlta ? "¿Ya tienes cuenta?" : "¿Primera vez por aquí?"}
-          <a href="#" id="cambiar">${esAlta ? "Entrar" : "Crear una cuenta"}</a>
+          ${t(esAlta ? "¿Ya tienes cuenta?" : "¿Primera vez por aquí?")}
+          <a href="#" id="cambiar">${t(esAlta ? "Entrar" : "Crear una cuenta")}</a>
         </p>
 
         ${esAlta ? "" : `
           <p class="cambiar">
-            <a href="#" id="olvidada">He olvidado la contraseña</a>
+            <a href="#" id="olvidada">${t("He olvidado la contraseña")}</a>
           </p>`}
 
         <div id="hueco-instalar"></div>
@@ -102,18 +103,18 @@ export function render(contenedor, { alEntrar }) {
       </div>
 
       <div class="tarjeta">
-        <h2>He olvidado la contraseña</h2>
-        <p class="flojo">Dinos tu correo y te mandamos un enlace para poner una nueva.</p>
+        <h2>${t("He olvidado la contraseña")}</h2>
+        <p class="flojo">${t("Dinos tu correo y te mandamos un enlace para poner una nueva.")}</p>
 
         ${aviso ? `<div class="${clase}">${aviso}</div>` : ""}
 
-        <label for="correo">Tu correo</label>
+        <label for="correo">${t("Tu correo")}</label>
         <input id="correo" type="email" autocomplete="email" inputmode="email"
                placeholder="tucorreo@ejemplo.com">
 
-        <button class="boton" id="enviar">Mándame el enlace</button>
+        <button class="boton" id="enviar">${t("Mándame el enlace")}</button>
 
-        <p class="cambiar"><a href="#" id="cambiar">Volver a entrar</a></p>
+        <p class="cambiar"><a href="#" id="cambiar">${t("Volver a entrar")}</a></p>
 
         <div id="hueco-instalar"></div>
       </div>`;

@@ -16,6 +16,8 @@
    residencia llena, y entonces ya no se cree nada más.
    ============================================================ */
 import { misPerros, mostrarInteres, misIntereses, retirarInteres } from "../datos.js";
+import { t } from "../idioma.js";
+import { botonWhatsApp } from "../contacto.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -34,16 +36,16 @@ export async function render(contenedor) {
   await pintar();
 
   async function pintar(aviso = "", clase = "aviso") {
-    contenedor.innerHTML = `<p class="cargando">Un momento…</p>`;
+    contenedor.innerHTML = `<p class="cargando">${t("Un momento…")}</p>`;
     [perros, pedidos] = await Promise.all([misPerros(), misIntereses()]);
 
     const yaPedido = tipo => pedidos.find(p =>
       p.tipo === tipo && ["nueva", "hablada"].includes(p.estado));
 
     const elegirPerro = id => perros.length === 0 ? "" : `
-      <label class="mini" for="perro-${id}">¿De qué perro hablamos?
+      <label class="mini" for="perro-${id}">${t("¿De qué perro hablamos?")}
         <select id="perro-${id}">
-          <option value="">Todavía no lo sé</option>
+          <option value="">${t("Todavía no lo sé")}</option>
           ${perros.filter(p => !p.borrador).map(p =>
             `<option value="${p.id}">${esc(p.nombre)}</option>`).join("")}
         </select>
@@ -58,12 +60,12 @@ export async function render(contenedor) {
 
         ${pedido ? `
           <div class="aviso">
-            <strong>${esc(COMO_VA[pedido.estado] || "")}.</strong>
-            Te escribimos o te llamamos.
-            <br><button class="enlace" data-retirar="${pedido.id}">Ya no me interesa</button>
+            <strong>${esc(t(COMO_VA[pedido.estado] || ""))}.</strong>
+            ${t("Te escribimos o te llamamos.")}
+            <br><button class="enlace" data-retirar="${pedido.id}">${t("Ya no me interesa")}</button>
           </div>` : `
           ${elegirPerro(tipo)}
-          <label class="mini" for="msg-${tipo}">¿Quieres contarnos algo?
+          <label class="mini" for="msg-${tipo}">${t("¿Quieres contarnos algo?")}
             <textarea id="msg-${tipo}" rows="2" placeholder="${esc(pista)}"></textarea>
           </label>
           <button class="boton" data-pedir="${tipo}">${botonTexto}</button>`}
@@ -71,31 +73,27 @@ export async function render(contenedor) {
     };
 
     contenedor.innerHTML = `
-      <h2>Educación y deporte</h2>
-      <p class="flojo">AmigoMío no es sólo residencia. Si te apetece hacer algo más
-         con tu perro, dínoslo y hablamos.</p>
+      <h2>${t("Educación y deporte")}</h2>
+      <p class="flojo">${t("AmigoMío no es sólo residencia. Si te apetece hacer algo más con tu perro, dínoslo y hablamos.")}</p>
 
       ${aviso ? `<div class="${clase}">${esc(aviso)}</div>` : ""}
 
-      ${bloque("educacion", "Educación canina",
-        `<p>Grupos para trabajar lo de todos los días: que venga cuando le llamas,
-            que pasee sin tirar, que sepa estar en un bar, que no se coma lo que
-            encuentra por la calle.</p>
-         <p class="flojo">No hace falta que tu perro sea un problema para venir.
-            La mayoría vienen porque quieren entenderse mejor con él.</p>`,
-        "Quiero que me contéis",
-        "Qué te gustaría mejorar, la edad que tiene…")}
+      ${bloque("educacion", t("Educación canina"),
+        `<p>${t("Grupos para trabajar lo de todos los días: que venga cuando le llamas, que pasee sin tirar, que sepa estar en un bar, que no se coma lo que encuentra por la calle.")}</p>
+         <p class="flojo">${t("No hace falta que tu perro sea un problema para venir. La mayoría vienen porque quieren entenderse mejor con él.")}</p>`,
+        t("Quiero que me contéis"),
+        t("Qué te gustaría mejorar, la edad que tiene…"))}
 
-      ${bloque("deporte", "Deporte con tu perro",
-        `<p>El grupo de trabajo entrena aquí. Se hace obediencia, rastro y
-            defensa deportiva — lo que se ve en las pruebas de IGP.</p>
-         <p><strong>Antes de nada, vente a ver un entrenamiento.</strong>
-            No hay que llevar al perro ni comprometerse a nada.</p>`,
-        "Quiero ver un entrenamiento",
-        "Si has hecho algo antes, qué raza tiene…")}
+      ${bloque("deporte", t("Deporte con tu perro"),
+        `<p>${t("El grupo de trabajo entrena aquí. Se hace obediencia, rastro y defensa deportiva — lo que se ve en las pruebas de IGP.")}</p>
+         <p><strong>${t("Antes de nada, vente a ver un entrenamiento.")}</strong>
+            ${t("No hay que llevar al perro ni comprometerse a nada.")}</p>`,
+        t("Quiero ver un entrenamiento"),
+        t("Si has hecho algo antes, qué raza tiene…"))}
 
-      <p class="flojo">Lo miramos y te decimos algo. Si tienes prisa,
-         escríbenos por WhatsApp al 673 229 399.</p>`;
+      <p class="flojo">${t("Lo miramos y te decimos algo. ¿Tienes prisa?")}</p>
+      ${botonWhatsApp(t("Háblanos por WhatsApp"),
+        "Hola, os escribo por lo de educación o deporte con mi perro: ")}`;
 
     contenedor.querySelectorAll("[data-pedir]").forEach(b =>
       b.addEventListener("click", async () => {

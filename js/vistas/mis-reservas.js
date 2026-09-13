@@ -4,7 +4,7 @@
    ============================================================ */
 import { misReservas, cancelarReserva, subirJustificante } from "../datos.js";
 import { t } from "../idioma.js";
-import { enlaceWhatsApp } from "../contacto.js";
+import { enlaceWhatsApp, botonWhatsApp } from "../contacto.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -26,18 +26,18 @@ const ROTULOS = {
 };
 
 export async function render(contenedor) {
-  contenedor.innerHTML = `<p class="cargando">Buscando tus reservas…</p>`;
+  contenedor.innerHTML = `<p class="cargando">${t("Buscando tus reservas…")}</p>`;
 
   let lista;
   try { lista = await misReservas(); }
-  catch { contenedor.innerHTML = `<div class="error">No hemos podido cargarlas.</div>`; return; }
+  catch { contenedor.innerHTML = `<div class="error">${t("No hemos podido cargarlas.")}</div>`; return; }
 
   if (lista.length === 0) {
     contenedor.innerHTML = `
-      <h2>Mis reservas</h2>
+      <h2>${t("Mis reservas")}</h2>
       <div class="tarjeta vacio">
-        <p>Todavía no has reservado nada.</p>
-        <button class="boton" data-ir="reservar">Reservar unos días</button>
+        <p>${t("Todavía no has reservado nada.")}</p>
+        <button class="boton" data-ir="reservar">${t("Reservar unos días")}</button>
       </div>`;
     enganchar();
     return;
@@ -49,10 +49,10 @@ export async function render(contenedor) {
   const pasadas   = lista.filter(r => !proximas.includes(r));
 
   contenedor.innerHTML = `
-    <h2>Mis reservas</h2>
+    <h2>${t("Mis reservas")}</h2>
     ${proximas.length ? `<div class="lista-perros">${proximas.map(tarjeta).join("")}</div>` : ""}
     ${pasadas.length ? `
-      <h3 class="separador">Estancias anteriores</h3>
+      <h3 class="separador">${t("Estancias anteriores")}</h3>
       <div class="lista-perros">${pasadas.map(tarjeta).join("")}</div>` : ""}`;
 
   enganchar();
@@ -101,22 +101,21 @@ function tarjeta(r) {
   return `
     <div class="tarjeta">
       <span class="etiqueta ${rotulo.clase}">${rotulo.texto}</span>
-      <h3>${perros.length ? esc(perros.join(" y ")) : "Tu reserva"}</h3>
-      <p class="flojo">Del ${dia(r.entrada)} al ${dia(r.salida)}
+      <h3>${perros.length ? esc(perros.join(t(" y "))) : t("Tu reserva")}</h3>
+      <p class="flojo">${t("Del")} ${dia(r.entrada)} ${t("al")} ${dia(r.salida)}
          · ${esc(r.alojamiento?.nombre || "")}</p>
       <p><strong>${euros(r.total)}</strong></p>
 
       ${r.estado === "pendiente" ? `
         <div class="aviso">
           <strong>${t("Nos falta el justificante de la transferencia.")}</strong>
-          ${r.expira ? `<br>Tienes hasta el ${dia(r.expira)} a las
+          ${r.expira ? `<br>${t("Tienes hasta el")} ${dia(r.expira)} ${t("a las")}
             ${new Date(r.expira).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})}.` : ""}
           ${r.justificante_nota ? `
-            <br><strong>El anterior no nos valía:</strong> ${esc(r.justificante_nota)}` : ""}
-          <br>Pídenos el número de cuenta si no lo tienes por
-          <a target="_blank" rel="noopener"
-             href="${enlaceWhatsApp("Hola, ¿me pasáis el número de cuenta para la transferencia?")}"
-          >WhatsApp</a>.
+            <br><strong>${t("El anterior no nos valía:")}</strong> ${esc(r.justificante_nota)}` : ""}
+          <br>${t("¿No tienes el número de cuenta?")}
+          <br>${botonWhatsApp(t("Pídenoslo por WhatsApp"),
+                "Hola, ¿me pasáis el número de cuenta para la transferencia?")}
 
           <label class="boton pequeno subir" style="margin-top:.6rem">
             ${t("Subir el justificante")}
@@ -127,16 +126,15 @@ function tarjeta(r) {
 
       ${r.estado === "revisando" ? `
         <div class="aviso">
-          <strong>${t("Lo hemos recibido.")}</strong> Lo miramos y te confirmamos.
-          No tienes que hacer nada más.
+          <strong>${t("Lo hemos recibido.")}</strong>
+          ${t("Lo miramos y te confirmamos. No tienes que hacer nada más.")}
         </div>` : ""}
 
       ${sePuedeCancelar
-        ? `<button class="enlace" data-cancelar="${r.id}">Cancelar (te devolvemos todo)</button>`
+        ? `<button class="enlace" data-cancelar="${r.id}">${t("Cancelar (te devolvemos todo)")}</button>`
         : ["pendiente","revisando","confirmada"].includes(r.estado)
-          ? `<p class="flojo">Quedan menos de 7 días: ya no se puede cancelar por aquí.
-               Si ha pasado algo, <a target="_blank" rel="noopener"
-               href="${enlaceWhatsApp("Hola, ha pasado algo con una reserva y ya no puedo cancelarla por la app.")}"
-               >háblanos por WhatsApp</a>.</p>` : ""}
+          ? `<p class="flojo">${t("Quedan menos de 7 días: ya no se puede cancelar por aquí. Si ha pasado algo, háblanos y lo vemos.")}</p>
+             ${botonWhatsApp(t("Háblanos por WhatsApp"),
+               "Hola, ha pasado algo con una reserva y ya no puedo cancelarla por la app.")}` : ""}
     </div>`;
 }

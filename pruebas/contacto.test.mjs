@@ -12,7 +12,7 @@
    ============================================================ */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { TELEFONO, TELEFONO_BONITO, enlaceWhatsApp } from "../js/contacto.js";
 
 const leer = f => readFileSync(new URL("../" + f, import.meta.url), "utf8");
@@ -106,4 +106,32 @@ test("sin número no hay enlace", () => {
 test("el mensaje se puede dejar escrito", () => {
   const url = enlaceWhatsAppA("673229399", "Hola, te escribo por Luna");
   assert.ok(url.includes(encodeURIComponent("Hola, te escribo por Luna")));
+});
+
+test("el WhatsApp se ofrece con un BOTÓN, nunca con el número suelto", () => {
+  /* Santiago, 13/09/2026: «cambia cada vez que dices que nos
+     pueden hablar por whatsapp a nuestro número por un botón que
+     lo enlace y lo haga».
+
+     Y tiene razón: un número escrito obliga a salir de la
+     aplicación, abrir WhatsApp, escribirlo a mano y no
+     equivocarse. Un botón abre la conversación con el mensaje
+     empezado. Son dos cosas distintas, no dos formas de lo
+     mismo. */
+  const carpetas = ["js", "js/vistas"];
+  const malos = [];
+
+  for (const c of carpetas)
+    for (const f of readdirSync(new URL("../" + c, import.meta.url))) {
+      if (!f.endsWith(".js")) continue;
+      const ruta = `${c}/${f}`;
+      if (ruta === "js/contacto.js") continue;   // es quien lo define
+      const src = readFileSync(new URL("../" + ruta, import.meta.url), "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, "");
+      if (/673\s?229\s?399|673229399/.test(src)) malos.push(ruta);
+    }
+
+  assert.deepEqual(malos, [],
+    "el número va en js/contacto.js y se ofrece con botonWhatsApp():\n  " +
+    malos.join("\n  "));
 });

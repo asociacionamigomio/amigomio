@@ -32,6 +32,143 @@ export const IDIOMAS = [
    notified». */
 export const DICCIONARIO = {
   en: {
+    /* ---------- Clicker y el móvil ---------- */
+    "Toca para empezar": "Tap to start",
+    "1 clic": "1 click",
+    "{n} clics": "{n} clicks",
+    "El sonido": "The sound",
+    "Tócalos para oírlos. Se queda el que elijas.":
+      "Tap them to hear them. The one you pick stays.",
+    "Toca el botón de Compartir y luego «Añadir a pantalla de inicio». Ábrela desde ahí y aquí te saldrá el botón.":
+      "Tap Share and then \u00abAdd to Home Screen\u00bb. Open it from there and the button will show up here.",
+
+    /* ---------- Mis reservas ---------- */
+    "Buscando tus reservas…": "Looking for your bookings…",
+    "No hemos podido cargarlas.": "We couldn't load them.",
+    "Todavía no has reservado nada.": "You haven't booked anything yet.",
+    "Reservar unos días": "Book a few days",
+    "Estancias anteriores": "Past stays",
+    "Tu reserva": "Your booking",
+    " y ": " and ",
+    "Del": "From",
+    "al": "to",
+    "Tienes hasta el": "You have until",
+    "a las": "at",
+    "El anterior no nos valía:": "The last one didn't work for us:",
+    "¿No tienes el número de cuenta?": "Don't have the account number?",
+    "Pídenoslo por WhatsApp": "Ask us on WhatsApp",
+    "Lo miramos y te confirmamos. No tienes que hacer nada más.":
+      "We'll check it and confirm. Nothing else for you to do.",
+    "Cancelar (te devolvemos todo)": "Cancel (full refund)",
+    "Quedan menos de 7 días: ya no se puede cancelar por aquí. Si ha pasado algo, háblanos y lo vemos.":
+      "Less than 7 days to go: it can't be cancelled here any more. If something's come up, talk to us and we'll sort it.",
+
+    /* ---------- La puerta (js/vistas/entrada.js) ---------- */
+    "Tu mejor amig@ también se va de vacaciones":
+      "Your best friend deserves a holiday too",
+    "Tu correo": "Your email",
+    "Tu contraseña": "Your password",
+    "Al menos 8 caracteres": "At least 8 characters",
+    "Crear cuenta": "Create account",
+    "¿Primera vez por aquí?": "First time here?",
+    "He olvidado la contraseña": "I've forgotten my password",
+    "Dinos tu correo y te mandamos un enlace para poner una nueva.":
+      "Tell us your email and we'll send you a link to set a new one.",
+    "Mándame el enlace": "Send me the link",
+    "Volver a entrar": "Back to sign in",
+
+    /* ---------- Mi ficha ---------- */
+    "No hemos podido cargar tus datos.": "We couldn't load your details.",
+    "Tu foto": "Your photo",
+    "Cambiar la foto": "Change photo",
+    "Poner una foto": "Add a photo",
+    "No hace falta, pero ayuda a que os reconozcáis.":
+      "Not required, but it helps us recognise each other.",
+    "Estos datos no son curiosidad nuestra: la ley nos obliga a anotarlos en el libro de registro de la residencia.":
+      "We're not being nosy: the law requires us to record these in the kennel's register.",
+    "Nombre": "First name",
+    "Apellidos": "Surname",
+    "DNI o NIE": "ID or passport number",
+    "Dirección": "Address",
+    "Calle, número, población": "Street, number, town",
+    "Teléfono": "Phone",
+    "¿Puede recogerlo alguien más?": "Can anyone else pick them up?",
+    "Opcional. Si lo rellenas, a esa persona se le pide el DNI al entregarle el perro. Si no, solo te lo entregamos a ti.":
+      "Optional. If you fill this in, we'll ask that person for ID when we hand your dog over. If not, we'll only hand them to you.",
+    "Su nombre y apellidos": "Their full name",
+    "Su DNI": "Their ID number",
+    "Acepto que AmigoMío guarde estos datos y los de mis perros para gestionar las estancias y llevar el libro de registro que exige la normativa.":
+      "I agree to AmigoMío keeping these details, and my dogs', to manage stays and to keep the register the law requires.",
+    "Puedes pedirnos que los borremos cuando quieras.":
+      "You can ask us to delete them whenever you like.",
+    "Avisadme por correo de lo importante: si a mi perro le caduca algo de la cartilla, si falta el justificante de una reserva, o el recordatorio de la víspera.":
+      "Email me about what matters: if something in my dog's health record is running out, if a booking is missing its payment slip, or the reminder the day before.",
+    "Si lo quitas dejamos de escribirte. Nada más: las reservas siguen igual.":
+      "Turn it off and we'll stop writing. Nothing else changes: your bookings work just the same.",
+    "Que los demás clientes de AmigoMío puedan ver mi perfil.":
+      "Let other AmigoMío clients see my profile.",
+    "Verían tu nombre de pila, tu foto y tus perros (nombre, raza y foto). No verían tus apellidos, ni tu DNI, ni tu dirección, ni tu teléfono, ni el chip de tus perros, ni sus datos de salud. Puedes quitarlo cuando quieras.":
+      "They'd see your first name, your photo and your dogs (name, breed and photo). They would not see your surname, ID, address or phone, nor your dogs' microchip or health details. You can turn it off whenever you like.",
+    "Avisarme en el móvil": "Notify me on my phone",
+    "Lo mismo que te contamos por correo, pero en el momento: si a tu perro le caduca algo, si falta el justificante de una reserva o la víspera de la entrada.":
+      "The same things we email you about, but straight away: something running out, a booking missing its payment slip, or the day before drop-off.",
+    "Guardar": "Save",
+    "Este navegador no sabe mandar avisos al móvil. Seguirás recibiendo los correos.":
+      "This browser can't send phone notifications. You'll still get the emails.",
+    "En iPhone hay que instalar la aplicación primero.":
+      "On iPhone you have to install the app first.",
+    "Es cosa de Apple, no nuestra: en Safari normal no deja.":
+      "That's Apple's rule, not ours: plain Safari won't allow it.",
+    "Encendidos en este móvil. ✓": "On for this phone. ✓",
+    "Quitar los avisos": "Turn notifications off",
+    "Avisarme en este móvil": "Notify me on this phone",
+    "Se enciende en cada móvil por separado.": "You turn it on separately on each phone.",
+
+    /* ---------- Los vecinos ---------- */
+    "Los vecinos": "The neighbours",
+    "Quienes pasan por AmigoMío y han querido presentarse.":
+      "People who come to AmigoMío and wanted to say hello.",
+    "Tú también sales, porque lo activaste en tu ficha.":
+      "You're in here too, because you turned it on in your details.",
+    "Si quieres salir tú, enciéndelo en «Mi ficha».":
+      "If you'd like to appear too, turn it on in \u00abMy details\u00bb.",
+    "Todavía no se ha presentado nadie.": "Nobody has said hello yet.",
+    "Puedes ser el primero: enciéndelo en tu ficha.":
+      "You could be the first: turn it on in your details.",
+    "Ir a mi ficha": "Go to my details",
+
+    /* ---------- Educación y deporte ---------- */
+    "Educación y deporte": "Training and dog sport",
+    "AmigoMío no es sólo residencia. Si te apetece hacer algo más con tu perro, dínoslo y hablamos.":
+      "AmigoMío isn't only boarding. If you fancy doing something more with your dog, tell us and we'll talk.",
+    "Educación canina": "Dog training",
+    "Grupos para trabajar lo de todos los días: que venga cuando le llamas, que pasee sin tirar, que sepa estar en un bar, que no se coma lo que encuentra por la calle.":
+      "Group classes for everyday things: coming when called, walking without pulling, settling in a bar, not eating whatever they find in the street.",
+    "No hace falta que tu perro sea un problema para venir. La mayoría vienen porque quieren entenderse mejor con él.":
+      "Your dog doesn't have to be a problem to come along. Most people come because they want to understand each other better.",
+    "Quiero que me contéis": "Tell me more",
+    "Qué te gustaría mejorar, la edad que tiene…": "What you'd like to work on, how old they are…",
+    "Deporte con tu perro": "Dog sport",
+    "El grupo de trabajo entrena aquí. Se hace obediencia, rastro y defensa deportiva — lo que se ve en las pruebas de IGP.":
+      "The working group trains here: obedience, tracking and sport protection — what you see at IGP trials.",
+    "Antes de nada, vente a ver un entrenamiento.":
+      "Before anything else, come and watch a training session.",
+    "No hay que llevar al perro ni comprometerse a nada.":
+      "No need to bring your dog, and no commitment at all.",
+    "Quiero ver un entrenamiento": "I'd like to watch a session",
+    "Si has hecho algo antes, qué raza tiene…": "Anything you've done before, what breed they are…",
+    "¿De qué perro hablamos?": "Which dog are we talking about?",
+    "Todavía no lo sé": "I don't know yet",
+    "¿Quieres contarnos algo?": "Anything you'd like to tell us?",
+    "Te escribimos o te llamamos.": "We'll write or call you.",
+    "Ya no me interesa": "I'm no longer interested",
+    "Lo tenemos apuntado": "We've got it noted down",
+    "Hemos hablado contigo": "We've spoken with you",
+    "Ya estás dentro": "You're in",
+    "De momento lo dejamos": "We'll leave it for now",
+    "Lo miramos y te decimos algo. ¿Tienes prisa?":
+      "We'll look at it and get back to you. In a hurry?",
+
     /* ---------- El menú ---------- */
     "Inicio": "Home",
     "Reservar": "Book a stay",
