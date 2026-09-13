@@ -323,11 +323,11 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 /* ------------------------------------------------------------
    Instalar
    ------------------------------------------------------------ */
-.boton.instalar {
-  position: fixed; left: 50%; transform: translateX(-50%);
-  bottom: max(1rem, env(safe-area-inset-bottom));
-  width: auto; z-index: 40; box-shadow: var(--sombra);
-}
+/* Ya NO flota. Flotaba abajo, y ahí abajo está también la barra
+   de «hay una versión nueva»: dos cosas flotando en la misma
+   esquina se tapan, y la que pierde es siempre la de abajo.
+   Ahora tiene su hueco dentro de la tarjeta de la puerta. */
+.boton.instalar { width: auto; margin-top: .8rem; }
 
 /* ------------------------------------------------------------
    Zapatilla
@@ -408,8 +408,8 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
   background: var(--azul); color: #fff; font-size: 1.2rem; cursor: pointer;
 }
 
-/* El botón de instalar no puede taparla. */
-.boton.instalar { left: 1rem; transform: none; right: auto; }
+/* (El botón de instalar ya no flota, así que no hay nada que
+   apartar.) */
 
 /* ------------------------------------------------------------
    Avisos de caducidad

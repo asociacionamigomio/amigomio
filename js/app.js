@@ -464,14 +464,16 @@ function mostrarBotonInstalar() {
     b.remove();
   });
 
-  const dentroDelMenu = document.getElementById("hueco-instalar");
-  if (dentroDelMenu) {
-    b.className = "lateral-instalar";
-    b.innerHTML = `${icono("movil")}<span>Instalar en el móvil</span>`;
-    dentroDelMenu.appendChild(b);
-  } else {
-    b.className = "boton instalar";
-    b.textContent = "Instalar en el móvil";
-    document.body.appendChild(b);
-  }
+  /* Su hueco: dentro del menú, o dentro de la tarjeta de la
+     puerta. Nunca flotando: en la esquina de abajo ya está la
+     barra de «hay una versión nueva», y dos cosas flotando en el
+     mismo sitio se tapan. */
+  const hueco = document.getElementById("hueco-instalar");
+  if (!hueco) return;
+
+  b.className = hueco.closest(".lateral") ? "lateral-instalar" : "boton instalar";
+  b.innerHTML = b.className === "lateral-instalar"
+    ? `${icono("movil")}<span>Instalar en el móvil</span>`
+    : "Instalar en el móvil";
+  hueco.appendChild(b);
 }

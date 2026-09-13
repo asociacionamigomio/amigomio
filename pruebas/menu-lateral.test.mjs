@@ -63,3 +63,23 @@ test("el menú sigue cabiendo cuando hay muchas opciones", () => {
   const bloque = css.match(/\.lateral \{[^}]*\}/)[0];
   assert.match(bloque, /overflow-y: auto/);
 });
+
+test("el botón de instalar nunca flota encima de nada", () => {
+  /* Visto en la pantalla de entrada: el botón flotaba abajo a
+     la izquierda y la barra de «hay una versión nueva» —que
+     también flota— se le echaba encima. Dos cosas flotando en la
+     misma esquina se tapan la una a la otra, y la que pierde es
+     siempre la de abajo.
+
+     Así que el botón tiene su hueco en las DOS pantallas donde
+     puede aparecer: dentro del menú, y dentro de la tarjeta de
+     entrada. La única que flota es la barra de versión, que es
+     momentánea y en ese momento es lo más importante. */
+  const entrada = leer("js/vistas/entrada.js");
+  assert.match(entrada, /hueco-instalar/,
+    "la pantalla de entrada también necesita su hueco");
+
+  const css2 = leer("css/estilo.css");
+  assert.doesNotMatch(css2, /\.boton\.instalar \{[^}]*position: fixed/,
+    "ya no hay ningún botón de instalar flotando");
+});

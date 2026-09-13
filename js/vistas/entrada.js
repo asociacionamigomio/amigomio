@@ -51,6 +51,8 @@ export function render(contenedor, { alEntrar }) {
           <p class="cambiar">
             <a href="#" id="olvidada">He olvidado la contraseña</a>
           </p>`}
+
+        <div id="hueco-instalar"></div>
       </div>`;
 
     contenedor.querySelector("#olvidada")?.addEventListener("click", e => {
@@ -112,6 +114,8 @@ export function render(contenedor, { alEntrar }) {
         <button class="boton" id="enviar">Mándame el enlace</button>
 
         <p class="cambiar"><a href="#" id="cambiar">Volver a entrar</a></p>
+
+        <div id="hueco-instalar"></div>
       </div>`;
 
     contenedor.querySelector("#cambiar").addEventListener("click", e => {
