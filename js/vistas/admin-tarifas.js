@@ -383,6 +383,22 @@ export async function render(contenedor) {
        Un «¿estás seguro?» se acepta sin leerlo. Uno que dice
        «esto cierra las reservas de toda la residencia» y te hace
        teclear «no», no. */
+    /* ¿Es lo mismo? Sin pelearse con los espacios ni con las
+       mayúsculas.
+
+       Un IBAN se escribe «ESxx xxxx xxxx» o «ESxxxxxxxxxx» según
+       a quién le preguntes, y las dos son la misma cuenta. Pedir
+       que coincida carácter a carácter no protege de nada: sólo
+       hace imposible cambiarlo, y una protección que no deja
+       hacer lo correcto se acaba quitando entera.
+
+       Lo que importa es que haya LEÍDO y ESCRITO el valor, no que
+       ponga los espacios donde yo quiera. */
+    function igualDeVerdad(a, b) {
+      const limpio = x => String(x ?? "").replace(/\s+/g, "").toLowerCase();
+      return limpio(a) === limpio(b);
+    }
+
     function confirmarCambio(campo) {
       const clave = campo.dataset.ajuste;
       const antes = lista.find(a => a.clave === clave)?.valor ?? "";
@@ -400,8 +416,9 @@ export async function render(contenedor) {
 
           ${peligroso ? `
             <p class="consecuencia">⚠ ${esc(CONSECUENCIAS[clave])}</p>
-            <label for="tecleado">Para confirmarlo, escribe aquí el valor nuevo:</label>
-            <input id="tecleado" placeholder="${esc(ahora) || "(déjalo vacío)"}">` : ""}
+            <label for="tecleado">Para confirmarlo, vuelve a escribirlo aquí:</label>
+            <input id="tecleado" autocomplete="off" spellcheck="false">
+            ${ahora ? "" : `<p class="flojo">Lo vas a dejar vacío: deja este hueco vacío también.</p>`}` : ""}
 
           <div class="botonera" style="margin-top:.8rem">
             <button class="boton" id="si">Sí, cambiarlo</button>
@@ -419,11 +436,14 @@ export async function render(contenedor) {
 
       caja.querySelector("#si").addEventListener("click", async () => {
         if (peligroso) {
-          const tecleado = caja.querySelector("#tecleado").value.trim();
-          if (tecleado !== ahora) {
+          const tecleado = caja.querySelector("#tecleado").value;
+          if (!igualDeVerdad(tecleado, ahora)) {
             caja.querySelector("#tecleado").classList.add("error-linea");
+            caja.querySelector(".error")?.remove();
             caja.insertAdjacentHTML("beforeend",
-              `<p class="error">Lo que has escrito no es lo mismo. Míralo otra vez.</p>`);
+              `<p class="error">Esto no coincide con
+                 <strong>${esc(ahora) || "(vacío)"}</strong>, que es lo que
+                 vas a poner. Cópialo tal cual y vuelve a probar.</p>`);
             return;
           }
         }

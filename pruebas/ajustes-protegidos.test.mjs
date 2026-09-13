@@ -76,3 +76,45 @@ test("los precios normales no se vuelven incómodos", () => {
   const precios = vista.match(/async function verPrecios.*?async function/s)?.[0] ?? "";
   assert.doesNotMatch(precios, /CONSECUENCIAS/);
 });
+
+/* ============================================================
+   Que se pueda cambiar de verdad.
+
+   Santiago, 13/09/2026: «no me deja cambiar el IBAN, cuando lo
+   intento me dice que no es lo que tenía... lógicamente, por eso
+   lo cambio y no lo cambia».
+
+   Dos fallos míos encadenados:
+
+   1. El hueco de confirmar llevaba el valor nuevo COMO TEXTO DE
+      FONDO. Un `placeholder` se ve igual que algo ya escrito: le
+      das a «Sí, cambiarlo» creyendo que está puesto, y el campo
+      está vacío. Encima le regala la respuesta a quien tenía que
+      escribirla, que era todo el sentido de pedirla.
+
+   2. Y comparaba carácter a carácter. Un IBAN se escribe con
+      espacios y cada uno los pone donde le parece: «ES12 3456» y
+      «ES123456» son la misma cuenta y no cuadraban.
+
+   Una protección que no deja hacer lo correcto no protege: se
+   acaba quitando entera, y entonces no queda ninguna.
+   ============================================================ */
+test("el hueco de confirmar no regala la respuesta", () => {
+  const fuente = leer("js/vistas/admin-tarifas.js");
+  const trozo = fuente.match(/id="tecleado"[^>]*>/)[0];
+  assert.doesNotMatch(trozo, /placeholder="\$\{esc\(ahora\)/,
+    "enseñar el valor a escribir lo convierte en copiar, y parece ya escrito");
+});
+
+test("comparar sin pelearse con los espacios ni las mayúsculas", () => {
+  /* «ES12 3456» y «es123456» son la misma cuenta. */
+  const fuente = leer("js/vistas/admin-tarifas.js").replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.match(fuente, /function igualDeVerdad|replace\(\/\\s\+\/g/,
+    "hay que comparar el contenido, no los espacios");
+});
+
+test("y si no cuadra, se dice qué pasa exactamente", () => {
+  const fuente = leer("js/vistas/admin-tarifas.js");
+  assert.doesNotMatch(fuente, /no es lo mismo\. Míralo otra vez/,
+    "«no es lo mismo» se lee como «no es lo que tenías»");
+});
