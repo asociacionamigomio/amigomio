@@ -571,6 +571,19 @@ export async function datosParaPagar() {
   return data?.iban ? data : null;
 }
 
+/**
+ * Un ajuste de los que se pueden enseñar a cualquiera.
+ *
+ * Cuáles son «públicos» lo decide Postgres, no esto: la función
+ * `ajuste_publico` tiene la lista dentro. Aquí no se puede pedir
+ * el IBAN ni el secreto del reloj aunque se escriba la clave.
+ */
+export async function ajustePublico(clave) {
+  const { data, error } = await supabase.rpc("ajuste_publico", { la_clave: clave });
+  if (error) return null;
+  return data ?? null;
+}
+
 export async function reservasAbiertas() {
   const { data } = await supabase.rpc("ajuste_publico", { la_clave: "reservas_abiertas" });
   return data === "si";

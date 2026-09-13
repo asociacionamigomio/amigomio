@@ -28,6 +28,7 @@ import { render as renderEstancia } from "./vistas/admin-estancia.js";
 import { render as renderReservar } from "./vistas/reservar.js";
 import { render as renderMisReservas } from "./vistas/mis-reservas.js";
 import { render as renderVecinos } from "./vistas/vecinos.js";
+import { render as renderComoLlegar } from "./vistas/como-llegar.js";
 import { render as renderActividades } from "./vistas/actividades.js";
 import { render as renderIntereses } from "./vistas/admin-intereses.js";
 import { render as renderClicker } from "./vistas/clicker.js";
@@ -53,6 +54,7 @@ const SECCIONES = [
   { id: "perros",      texto: "Mis perros",   render: renderPerros,        icono: "corazon" },
   { id: "actividades", texto: "Educación y deporte", render: renderActividades, icono: "silbato" },
   { id: "vecinos",     texto: "Los vecinos",  render: renderVecinos,       icono: "gente" },
+  { id: "llegar",      texto: "Cómo llegar",  render: renderComoLlegar,    icono: "mapa" },
   { id: "clicker",     texto: "Clicker",      render: renderClicker,       icono: "circulo" },
   { id: "ficha",       texto: "Mi ficha",     render: renderMiFicha,       icono: "persona" },
   /* La PRIMERA de administración a propósito: es lo que hay que
@@ -102,6 +104,8 @@ const ICONOS = {
   papel:      '<path d="M6 2.5h8l5 5V21a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 6 21V3a.5.5 0 0 1 .5-.5Z"/><path d="M13.5 2.8V8h5M9 12.5h6M9 16h6"/>',
   /* Un sello: lo que se pone cuando algo queda dado por bueno. */
   sello:      '<path d="M9 3.5h6a2 2 0 0 1 2 2v3.2c0 .9-.4 1.4-1 2l-1 1c-.6.6-1 1.1-1 2V15H9v-1.3c0-.9-.4-1.4-1-2l-1-1c-.6-.6-1-1.1-1-2V5.5a2 2 0 0 1 2-2Z"/><rect x="4" y="17.5" width="16" height="3" rx="1.2"/>',
+  /* Una chincheta de mapa. */
+  mapa:       '<path d="M12 21.5s6.5-6 6.5-10.6a6.5 6.5 0 1 0-13 0C5.5 15.5 12 21.5 12 21.5Z"/><circle cx="12" cy="10.6" r="2.4"/>',
   salida:     '<path d="M14 3.5H6.5A2.5 2.5 0 0 0 4 6v12a2.5 2.5 0 0 0 2.5 2.5H14"/><path d="m16.5 8.5 3.5 3.5-3.5 3.5M20 12H9.5"/>',
 };
 

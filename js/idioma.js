@@ -32,6 +32,24 @@ export const IDIOMAS = [
    notified». */
 export const DICCIONARIO = {
   en: {
+    /* ---------- Cómo llegar ---------- */
+    "Cómo llegar": "Getting here",
+    "Estamos en El Marquesado, Puerto Real (Cádiz).":
+      "We're in El Marquesado, Puerto Real (Cádiz).",
+    "Llévame hasta allí": "Take me there",
+    "Se abre el mapa del móvil con la ruta desde donde estés.":
+      "Your phone's map app opens with directions from wherever you are.",
+    "Sólo ver dónde está": "Just show me where it is",
+    "Un par de cosas del camino": "A couple of things about the drive",
+    "El último tramo es de campo. Se llega bien con cualquier coche, pero sin prisa.":
+      "The last stretch is a country track. Any car makes it, just take it slowly.",
+    "Si vienes con el perro suelto en el maletero, párate antes de llegar y ponle la correa: aquí hay otros perros.":
+      "If your dog is loose in the boot, stop before you arrive and put the lead on: there are other dogs here.",
+    "Hay sitio de sobra para aparcar dentro.": "There's plenty of parking inside.",
+    "¿Te has liado?": "Lost?",
+    "Pasa, y no es culpa tuya: por aquí los mapas se hacen un lío con los caminos. Háblanos y te vamos guiando.":
+      "It happens, and it's not your fault: maps get confused by the tracks around here. Message us and we'll talk you in.",
+
     /* ---------- Clicker y el móvil ---------- */
     "Toca para empezar": "Tap to start",
     "1 clic": "1 click",

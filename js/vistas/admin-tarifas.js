@@ -303,6 +303,10 @@ export async function render(contenedor) {
     iban:
       "Es la cuenta donde los clientes hacen la transferencia. Un dígito mal " +
       "y el dinero se va a otra parte.",
+    mapa_destino:
+      "Es a dónde lleva el botón de «Cómo llegar». Si lo pones mal, mandas a " +
+      "los clientes con el perro en el coche al sitio equivocado. Déjalo vacío " +
+      "y se busca por el nombre de AmigoMío, que suele bastar.",
     larga_desde_noches:
       "A partir de estas noches se cobra la tarifa de temporada larga (12 € " +
       "la noche en vez de 15 o 18). Un número pequeño por error deja media " +
@@ -472,6 +476,7 @@ function etiqueta(clave) {
     tope_perros_simultaneos: "Tope de perros a la vez",
     reservas_abiertas:    "¿Reservas abiertas al público?",
     iban:                 "IBAN donde se transfiere",
+    mapa_destino:         "A dónde lleva «Cómo llegar»",
     dias_cancelacion_gratis: "Días de antelación para cancelar sin coste",
   }[clave] || clave;
 }

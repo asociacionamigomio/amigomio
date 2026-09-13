@@ -135,6 +135,9 @@ insert into ajuste (clave, valor, nota) values
   ('reservas_abiertas', 'no',
    'Mientras sea "no", solo administración puede crear reservas. Wix sigue mandando'),
   ('iban', '', 'Cuenta donde se transfiere. NO se escribe en el repositorio'),
+  ('mapa_destino', '',
+   'A dónde lleva el botón de «Cómo llegar»: una dirección o unas coordenadas. ' ||
+   'VACÍO = se busca por el nombre del sitio. NO se escribe en el repositorio'),
   ('dias_cancelacion_gratis', '7',
    'Con esta antelación o más, devolución completa. Menos, no se puede cancelar'),
   ('descuento_larga_noches', '15',
@@ -297,7 +300,14 @@ returns text language sql stable security definer
 set search_path = public as $$
   select valor from ajuste
    where clave = la_clave
-     and clave in ('reservas_abiertas','dias_cancelacion_gratis','tope_perros_simultaneos');
+     and clave in ('reservas_abiertas','dias_cancelacion_gratis',
+                   'tope_perros_simultaneos',
+                   /* A dónde lleva el botón de «Cómo llegar». Es
+                      público a la fuerza: sin él nadie llega. Y
+                      vive aquí y no en el código porque el
+                      repositorio ES PÚBLICO y la dirección exacta
+                      del núcleo no entra ahí (regla 4). */
+                   'mapa_destino');
 $$;
 
 -- ------------------------------------------------------------
