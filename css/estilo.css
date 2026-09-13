@@ -1159,3 +1159,30 @@ button.perro-mini:hover { border-color: var(--azul-medio, #6199C8); }
 .whatsapp-dueno .botonera { display: flex; gap: .5rem; flex-wrap: wrap; margin: .6rem 0; }
 .whatsapp-dueno .subir { cursor: pointer; }
 .whatsapp-dueno p.flojo { font-size: .82rem; line-height: 1.45; }
+
+/* ============================================================
+   Educación y deporte.
+   ============================================================ */
+.actividad { margin-top: 1rem; }
+.actividad h3 { margin-top: 0; }
+.actividad p { font-size: .92rem; }
+.actividad .mini { display: block; margin-top: .8rem; }
+.actividad textarea, .actividad select { margin-top: .25rem; }
+.actividad .boton { margin-top: .8rem; }
+/* Ya pedida: se apaga el ruido y se deja sólo el estado. */
+.actividad.pedida { border-left: 3px solid var(--verde, #6b8f3f); }
+
+.etiqueta.verde { background: #EAF3E0; color: #4F7020; }
+
+.interes { margin-top: .8rem; }
+.interes.nueva { border-left: 4px solid var(--amarillo, #E8C547); }
+.interes.hablada { border-left: 4px solid var(--azul, #4E80A5); }
+.interes.apuntado { border-left: 4px solid var(--verde, #6b8f3f); }
+.interes.descartada { opacity: .6; }
+/* Lo que ha escrito el cliente, entre comillas y algo aparte:
+   es lo único de la tarjeta que no hemos escrito nosotros. */
+.interes .dice {
+  margin: .6rem 0 0; padding: .5rem .7rem; font-size: .88rem; font-style: italic;
+  background: #FAFBFC; border-radius: 8px;
+}
+.interes .botonera { display: flex; gap: .4rem; flex-wrap: wrap; }

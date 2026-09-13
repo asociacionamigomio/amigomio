@@ -824,3 +824,47 @@ export async function perrosVisibles() {
   if (error) return [];
   return data || [];
 }
+
+/* ------------------------------------------------------------
+   Educación y deporte.
+
+   No es una reserva: no hay plazas ni precio ni reloj. Es una
+   conversación que empieza.
+   ------------------------------------------------------------ */
+export async function mostrarInteres(tipo, perroId = null, mensaje = "") {
+  const { data, error } = await supabase.rpc("mostrar_interes", {
+    el_tipo: tipo, el_perro: perroId || null, el_mensaje: mensaje,
+  });
+  if (error) return { ok: false, mensaje: error.message };
+  return { ok: true, ...data };
+}
+
+export async function misIntereses() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  /* Filtrando por cliente: a administración RLS le devolvería
+     los de todos, y ésta es la pantalla del cliente. */
+  const { data } = await supabase.from("interes")
+    .select("*").eq("cliente_id", user.id).order("creada", { ascending: false });
+  return data || [];
+}
+
+export async function retirarInteres(id) {
+  const { error } = await supabase.from("interes").delete().eq("id", id);
+  return { ok: !error, mensaje: error ? "No hemos podido quitarlo." : "Quitado." };
+}
+
+/** Todos, para administración. */
+export async function intereses() {
+  const { data } = await supabase.from("interes")
+    .select("*, cliente(nombre, apellidos, telefono), perro(nombre, raza)")
+    .order("creada", { ascending: false });
+  return data || [];
+}
+
+export async function atenderInteres(id, estado, nota = "") {
+  const fila = { estado, nota };
+  if (estado !== "nueva") fila.atendida = new Date().toISOString();
+  const { error } = await supabase.from("interes").update(fila).eq("id", id);
+  return { ok: !error, mensaje: error ? "No hemos podido guardarlo." : "Guardado." };
+}

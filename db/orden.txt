@@ -6,6 +6,7 @@ documentos.sql
 tarifas.sql
 reservas.sql
 bloqueos.sql
+actividades.sql
 peligrosidad.sql
 crear-reserva.sql
 avisos.sql

@@ -26,6 +26,8 @@ import { render as renderEstancia } from "./vistas/admin-estancia.js";
 import { render as renderReservar } from "./vistas/reservar.js";
 import { render as renderMisReservas } from "./vistas/mis-reservas.js";
 import { render as renderVecinos } from "./vistas/vecinos.js";
+import { render as renderActividades } from "./vistas/actividades.js";
+import { render as renderIntereses } from "./vistas/admin-intereses.js";
 import { render as renderClicker } from "./vistas/clicker.js";
 import { montar as montarZapatilla } from "./zapatilla.js";
 
@@ -47,6 +49,7 @@ const SECCIONES = [
   { id: "reservar",    texto: "Reservar",     render: renderReservar,      icono: "calendario" },
   { id: "reservas",    texto: "Mis reservas", render: renderMisReservas,   icono: "lista" },
   { id: "perros",      texto: "Mis perros",   render: renderPerros,        icono: "corazon" },
+  { id: "actividades", texto: "Educación y deporte", render: renderActividades, icono: "corazon" },
   { id: "vecinos",     texto: "Los vecinos",  render: renderVecinos,       icono: "gente" },
   { id: "clicker",     texto: "Clicker",      render: renderClicker,       icono: "circulo" },
   { id: "ficha",       texto: "Mi ficha",     render: renderMiFicha,       icono: "persona" },
@@ -54,6 +57,7 @@ const SECCIONES = [
   { id: "hoja",        texto: "Hoja del día", render: renderHoja,          admin: true, icono: "papel" },
   { id: "estancia",    texto: "Estancia",     render: renderEstancia,      admin: true, icono: "lista", oculta: true },
   { id: "solicitudes", texto: "Solicitudes",  render: renderSolicitudes,   admin: true, icono: "sobre" },
+  { id: "intereses",   texto: "Educación y deporte", render: renderIntereses, admin: true, icono: "corazon" },
   { id: "clientes",    texto: "Clientes",     render: renderAdminClientes, admin: true, icono: "gente" },
   { id: "perros-todos", texto: "Perros de clientes", render: renderAdminPerros, admin: true, icono: "corazon" },
   { id: "perro",       texto: "Ficha del perro", render: renderFichaPerro,  admin: true, icono: "corazon", oculta: true },

@@ -130,10 +130,19 @@ begin
                                 'pautas_alimentacion','cuidados','es_ppp']),
     'la vista pública de perros enseña datos que no debe: ' || columnas::text;
 
-  -- Y de fábrica, nadie es visible.
-  assert (select coalesce(bool_and(not perfil_visible), true) from cliente
-           where creado < now() - interval '1 minute'),
-    'alguien se ha quedado con el perfil visible sin pedirlo';
+  -- Y de fábrica, apagado.
+  --
+  -- Se comprueba el VALOR POR DEFECTO de la columna, no los
+  -- datos: mirar los datos era preguntar lo que esta prueba no
+  -- puede saber. Saltó en cuanto Santiago encendió su propio
+  -- perfil —que es exactamente lo que tiene que poder hacer— y
+  -- abortó una instalación por algo que estaba bien.
+  --
+  -- Una prueba que no distingue «esto está mal» de «alguien ha
+  -- usado la función» no prueba nada: sólo estorba.
+  assert (select column_default from information_schema.columns
+           where table_name = 'cliente' and column_name = 'perfil_visible') = 'false',
+    'el perfil visible tiene que venir APAGADO de fábrica';
 
   raise notice 'Perfiles: todas las comprobaciones pasan.';
 end $$;
