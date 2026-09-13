@@ -130,14 +130,25 @@ begin
     raise exception 'Alguno de esos perros no está en tu ficha.';
   end if;
 
-  -- Agresividad con personas: alojamiento especial y siempre solo
+  -- MANEJO DE PELIGROSIDAD: cambia el manejo, NO la ubicación.
+  --
+  -- Hasta el 13/09/2026 aquí ponía `tipo := 'especial'`, que los
+  -- mandaba a un alojamiento aparte con tarifa plana de 35 €. Eran
+  -- dos cosas metidas en una palabra, y al quitar la tarifa
+  -- especial estos perros se quedaron SIN PODER RESERVAR: no
+  -- quedaba ningún alojamiento de ese tipo.
+  --
+  -- Santiago: «usamos esos alojamientos normales para los perros
+  -- de manejo peligroso, lo que varía es el manejo y las demandas
+  -- de esos perros pero no la ubicación física».
+  --
+  -- Lo que SÍ se mantiene y no se negocia: VA SIEMPRE SOLO. No
+  -- comparte alojamiento con nadie. Eso no es una tarifa, es
+  -- seguridad — y lo garantiza este portazo, no una convención.
   select count(*) into agresivos from perro
    where id = any(los_perros) and agresivo_con_personas;
-  if agresivos > 0 then
-    if n > 1 then
-      raise exception 'Un perro que necesita alojamiento propio va siempre solo.';
-    end if;
-    tipo := 'especial';
+  if agresivos > 0 and n > 1 then
+    raise exception 'Un perro con manejo de peligrosidad va siempre solo.';
   end if;
 
   -- Compatibilidad entre ellos

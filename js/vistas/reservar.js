@@ -216,9 +216,11 @@ export async function render(contenedor, { ficha } = {}) {
     calculando = true; pintar();
 
     const cuando = { entrada: `${entrada} ${horaEntrada}`, salida: `${salida} ${horaSalida}` };
-    const hayAgresivo = [...elegidos]
-      .some(id => disponibles.find(p => p.id === id)?.agresivo_con_personas);
-    const tipo = hayAgresivo ? "especial" : "normal";
+    /* Un perro con manejo de peligrosidad va al MISMO tipo de
+       alojamiento que cualquiera: lo que cambia es el manejo, no
+       la ubicación. Pedir aquí un tipo «especial» era pedir un
+       alojamiento que ya no existe, y no encontraba sitio. */
+    const tipo = "normal";
 
     sitio = await haySitio({ ...cuando, tipo, perros: elegidos.size });
     if (sitio.hay) {

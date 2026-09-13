@@ -8,6 +8,7 @@ import { sesionActual, salir, puedeReservar, supabase } from "./sesion.js";
 import { t, arrancarIdioma, idiomaActual, ponerIdioma, IDIOMAS } from "./idioma.js";
 import { miFicha, misPerros, misReservas, pendientes } from "./datos.js";
 import { avisosDeTodos } from "./sanidad.js";
+import { saludo } from "./saludo.js";
 import { render as renderEntrada } from "./vistas/entrada.js";
 import { render as renderContrasenaNueva } from "./vistas/contrasena-nueva.js";
 import { render as renderPerros }  from "./vistas/perros.js";
@@ -399,7 +400,7 @@ async function renderInicio(contenedor, { sesion }) {
 
   contenedor.innerHTML = `
     <div class="tarjeta">
-      <h2>¡Hola, ${esc(nombre)}!</h2>
+      <h2>${esc(saludo(nombre))}</h2>
       ${ficha?.es_admin ? `<p class="flojo">Entras como administración.</p>` : ""}
     </div>
 

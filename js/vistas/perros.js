@@ -811,7 +811,9 @@ function cuerpoPaso2(d, error) {
     ${d.agresivo_con_personas ? `
       <div class="aviso">
         <strong>Este perro está clasificado con manejo de peligrosidad.</strong>
-        Va a alojamiento propio, siempre solo, y su estancia tiene tarifa especial.
+        Se aloja igual que los demás, pero <strong>siempre solo</strong>: no
+        comparte alojamiento con ningún otro perro, ni sale al patio con nadie.
+        Lo maneja directamente Santi o Elena.
         Si crees que ya no hace falta, háblalo con nosotros.
       </div>` : ""}
 
