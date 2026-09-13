@@ -79,3 +79,30 @@ test("dice la zona, que es lo que ya está publicado", () => {
 test("se guarda en el móvil como todo lo demás", () => {
   assert.match(leer("sw.js"), /"\.\/js\/vistas\/como-llegar\.js"/);
 });
+
+test("lo de la puerta va destacado, no como una viñeta más", () => {
+  /* Santiago, 13/09/2026: «la puerta de entrada está cerrada pero
+     no tiene candado, abre, pasa y cierra, es una medida de
+     seguridad antes de bajar a los perros».
+
+     De todo lo que dice esta pantalla es lo único que, si se hace
+     mal, acaba en un disgusto: un perro suelto y una puerta
+     abierta al campo. Metido como tercera viñeta de una lista se
+     lee igual que «hay sitio para aparcar», y no es igual. */
+  assert.match(vista, /aviso destacado[\s\S]{0,400}candado/,
+    "la puerta tiene que ir aparte y destacada");
+  assert.doesNotMatch(vista, /<li>[^<]*candado/,
+    "en una viñeta se lee como si diera igual");
+});
+
+test("dice POR QUÉ hay que cerrarla", () => {
+  /* «Cierra la puerta» se cumple a medias. «Es lo que hay entre un
+     perro suelto y la carretera» se cumple siempre. */
+  assert.match(vista, /carretera|se suelta/i);
+});
+
+test("y cuándo se puede bajar al perro del coche", () => {
+  /* Es el orden lo que importa: primero la puerta, después el
+     perro. Al revés es cuando pasa. */
+  assert.match(vista, /hasta que la puerta no esté cerrada|no bajes/i);
+});

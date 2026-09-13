@@ -76,10 +76,22 @@ export async function render(contenedor) {
     <div class="tarjeta">
       <p class="rotulo">${t("Un par de cosas del camino")}</p>
       <ul class="cosas">
-        <li>${t("El último tramo es de campo. Se llega bien con cualquier coche, pero sin prisa.")}</li>
-        <li>${t("Si vienes con el perro suelto en el maletero, párate antes de llegar y ponle la correa: aquí hay otros perros.")}</li>
-        <li>${t("Hay sitio de sobra para aparcar dentro.")}</li>
+        <li>${t("El último tramo es un carril de tierra. Se pasa bien con cualquier coche, pero no corras.")}</li>
+        <li>${t("En el aparcamiento hay sitio de sobra. Intenta no pegarte a otros coches: así todos podemos abrir las puertas y sacar al perro con calma.")}</li>
       </ul>
+
+      <!-- LA PUERTA VA APARTE Y DESTACADA.
+      
+           De las tres cosas de esta pantalla, es la única que, si
+           se hace mal, acaba en un disgusto: un perro suelto y una
+           puerta abierta al campo. Metida como tercera viñeta de
+           una lista se lee igual que «hay sitio para aparcar», y
+           no es igual. -->
+      <div class="aviso destacado">
+        <strong>${t("La puerta está cerrada, pero no tiene candado.")}</strong>
+        ${t("Ábrela, pasa y ciérrala detrás de ti.")}
+        <br><span class="flojo">${t("No es desconfianza: es la barrera que hay entre un perro que se suelta y la carretera. Por eso, hasta que la puerta no esté cerrada, no bajes al tuyo del coche.")}</span>
+      </div>
     </div>
 
     <div class="tarjeta">
