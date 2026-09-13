@@ -123,25 +123,32 @@ test("el cuerpo del correo se escapa antes de enlazar nada", () => {
 });
 
 /* ---------- Y que aplicar el SQL no mande correos de mentira ---------- */
-test("las pruebas del SQL no dejan correos encolados", () => {
-  /* Las pruebas de crear-reserva crean reservas DE VERDAD para un
-     cliente DE VERDAD. Desde que existe el disparador, cada una
-     encola un correo: sin limpiarlos, aplicar el SQL le manda a
-     alguien cinco correos de reservas de 2027 que no ha hecho. */
-  const crear = leer("db/crear-reserva.sql");
-  assert.match(crear, /delete from aviso/);
-  assert.match(crear, /antes_avisos/,
-    "hay que comprobar que la cola queda como estaba");
-});
+test("las pruebas del SQL no dejan NADA: se deshacen enteras", () => {
+  /* Antes borraban a mano lo que habían creado, y eso se quedó
+     corto el 13/09/2026 en cuanto apareció el disparador de
+     avisos. Dos cosas a la vez:
 
-test("y los borra por identificador, no por fecha", () => {
-  /* Mientras esto corre puede estar entrando una reserva de
-     verdad. Esa no se toca. */
+     - el disparador es APLAZADO, así que salta al CERRAR la
+       operación —DESPUÉS del borrado—, y a alguien le habrían
+       llegado cinco correos de reservas de 2027 que no ha hecho;
+     - y esos disparadores pendientes bloquean la tabla:
+       «55006: cannot ALTER TABLE reserva because it has pending
+       trigger events». El SQL entero dejó de poder aplicarse.
+
+     Ahora el bloque de pruebas acaba lanzando un error a
+     propósito: se deshace todo —perros, reservas, correos
+     encolados y disparadores pendientes—. Lo que no ha llegado a
+     existir no hay que limpiarlo. */
   const crear = leer("db/crear-reserva.sql");
-  const limpieza = crear.match(/delete from aviso[\s\S]*?;/)[0];
-  assert.match(limpieza, /using reserva r/);
-  assert.doesNotMatch(limpieza, /interval/,
-    "borrar «lo de hace un minuto» se lleva por delante lo de un cliente real");
+
+  assert.match(crear, /raise exception 'PRUEBAS-DE-CREAR-RESERVA-OK'/,
+    "el bloque de pruebas tiene que deshacerse solo");
+  assert.match(crear, /if sqlerrm <> 'PRUEBAS-DE-CREAR-RESERVA-OK' then\s*\n\s*raise;/,
+    "un fallo de verdad sí tiene que salir");
+
+  /* Y ya no hace falta borrar a mano, porque no queda nada. */
+  assert.doesNotMatch(crear, /delete from aviso/,
+    "si hay que borrar avisos es que se han llegado a crear");
 });
 
 test("este fichero está en orden.txt, y detrás de avisos.sql", () => {

@@ -68,8 +68,13 @@ test("los autorizados a pagar en persona se saltan el justificante", () => {
 });
 
 test("las pruebas del SQL dejan la base como estaba", () => {
-  assert.match(sql, /delete from perro where chip like '90000000000000%'/);
-  assert.match(sql, /= antes, 'las pruebas tienen que dejarlo todo como estaba'/);
+  /* Corren contra la base DE VERDAD, con un cliente de verdad
+     (`select id from cliente limit 1`). Lo que creen no puede
+     sobrevivir ni un segundo. */
+  assert.match(sql, /raise exception 'PRUEBAS-DE-CREAR-RESERVA-OK'/,
+    "se deshacen enteras en vez de limpiar detrás");
+  assert.match(sql, /count\(\*\) from reserva\) = antes/,
+    "y se comprueba que no ha quedado nada");
 });
 
 test("la regla de compatibilidad avisa de que está duplicada", () => {

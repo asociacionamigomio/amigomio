@@ -192,6 +192,29 @@ end $$;
 -- PRUEBAS DE CREAR RESERVA.
 -- Crean perros de mentira, prueban cada portazo, y borran.
 -- ============================================================
+-- ------------------------------------------------------------
+-- ESTAS PRUEBAS NO DEJAN NADA. Y no porque limpien detrás: porque
+-- SE DESHACEN ENTERAS.
+--
+-- Antes borraban a mano lo que habían creado, y eso se quedó
+-- corto el 13/09/2026 en cuanto apareció el disparador de avisos:
+--
+--   * las reservas de mentira encolaban correos de verdad, y el
+--     disparador es APLAZADO, así que salta al CERRAR — después
+--     del borrado. La limpieza llegaba tarde y a alguien le
+--     habrían llegado cinco correos de reservas de 2027;
+--   * y esos disparadores pendientes bloqueaban la tabla:
+--     «55006: cannot ALTER TABLE reserva because it has pending
+--     trigger events». El SQL entero dejó de poder aplicarse.
+--
+-- Con un subbloque que acaba lanzando un error a propósito se
+-- deshace TODO: los perros, las reservas, los correos encolados y
+-- los disparadores pendientes. Lo que no ha llegado a existir no
+-- hay que limpiarlo.
+--
+-- Un fallo de verdad sigue saliendo: sólo se traga el error
+-- propio, el resto se vuelve a lanzar.
+-- ------------------------------------------------------------
 do $$
 declare
   c uuid;
@@ -199,7 +222,6 @@ declare
   r jsonb;
   salto boolean;
   antes integer;
-  antes_avisos integer;
 begin
   select id into c from cliente limit 1;
   if c is null then
@@ -208,7 +230,8 @@ begin
   end if;
 
   select count(*) into antes from reserva;
-  select count(*) into antes_avisos from aviso;
+
+  begin   -- <<< todo lo de aquí dentro se deshace al final
 
   insert into perro (cliente_id, chip, nombre, sexo, sociable)
        values (c,'900000000000001','PRU-Luna','hembra','todos') returning id into luna;
@@ -266,28 +289,15 @@ begin
   end;
   assert salto, 'no se puede reservar con un perro ajeno';
 
-  -- Limpieza.
-  --
-  -- OJO CON LOS AVISOS: estas pruebas crean reservas DE VERDAD
-  -- para un cliente DE VERDAD (`select id from cliente limit 1`),
-  -- y desde que existe el disparador de `avisos-reserva.sql` cada
-  -- una encola un correo. Sin esto, aplicar el SQL le mandaría a
-  -- alguien cinco correos de reservas de 2027 que no ha hecho.
-  --
-  -- Se borran por el identificador de cada reserva de mentira, no
-  -- por fecha ni por patrón: mientras esto corre puede estar
-  -- entrando una reserva de verdad, y ésa no se toca.
-  delete from aviso a
-   using reserva r
-   where r.cliente_id = c and r.entrada >= '2027-01-01'
-     and (a.marca = 'reserva-nueva:' || r.id
-          or a.marca like 'reserva-nueva-admin:' || r.id || ':%');
+    -- Y aquí se deshace todo, a propósito.
+    raise exception 'PRUEBAS-DE-CREAR-RESERVA-OK';
+  exception when others then
+    if sqlerrm <> 'PRUEBAS-DE-CREAR-RESERVA-OK' then
+      raise;   -- un fallo de verdad sí tiene que salir
+    end if;
+  end;
 
-  delete from reserva where cliente_id = c and entrada >= '2027-01-01';
-  delete from perro where chip like '90000000000000%';
-
-  assert (select count(*) from reserva) = antes, 'las pruebas tienen que dejarlo todo como estaba';
-  assert (select count(*) from aviso) = antes_avisos,
-    'las pruebas no pueden dejar correos encolados: se mandarian de verdad';
-  raise notice 'Crear reserva: todas las comprobaciones pasan.';
+  assert (select count(*) from reserva) = antes,
+    'las pruebas tienen que dejarlo todo como estaba';
+  raise notice 'Crear reserva: todas las comprobaciones pasan, y sin dejar rastro.';
 end $$;
