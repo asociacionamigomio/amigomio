@@ -72,7 +72,7 @@ function tarjetaPerro(p) {
    un botón: entrar a mirar cómo está tu perro y que te salte un
    formulario de tres pasos es agresivo.
    ------------------------------------------------------------ */
-async function ficha(contenedor, id) {
+async function ficha(contenedor, id, { volverA = null } = {}) {
   contenedor.innerHTML = `<p class="cargando">Un momento…</p>`;
 
   const d = await unPerro(id);
@@ -110,7 +110,8 @@ async function ficha(contenedor, id) {
 
   contenedor.innerHTML = `
     <div class="cabecera-seccion">
-      <button class="boton fantasma pequeno" id="volver">← Mis perros</button>
+      <button class="boton fantasma pequeno" id="volver">← ${
+        volverA ? "Volver" : "Mis perros"}</button>
       <button class="boton pequeno" id="editar">Editar</button>
     </div>
 
@@ -171,7 +172,8 @@ async function ficha(contenedor, id) {
 
     <div id="papeles-perro"></div>`;
 
-  contenedor.querySelector("#volver").addEventListener("click", () => render(contenedor));
+  contenedor.querySelector("#volver").addEventListener("click",
+    () => volverA ? window.irA?.(volverA) : render(contenedor));
   contenedor.querySelector("#editar").addEventListener("click", () => formulario(contenedor, id));
 
   pintarPapeles();
@@ -726,4 +728,24 @@ function cuerpoPaso2(d, error) {
       <label for="seg">¿Y el seguro de responsabilidad civil?</label>
       <input id="seg" type="date" data-campo="ppp_seguro_hasta" value="${esc(d.ppp_seguro_hasta)}">
       ${error("ppp_seguro_hasta")}` : ""}`;
+}
+
+/* ============================================================
+   La ficha de un perro concreto, abierta desde fuera.
+
+   La usa administración: pincha el nombre de un perro en la
+   ficha de su dueño y ve su ficha, igual que pincha una reserva
+   en el cuadrante y ve la estancia.
+
+   Es la MISMA ficha que ve el cliente, a propósito: mantener
+   dos pantallas que enseñan lo mismo acaba con las dos diciendo
+   cosas distintas. Lo único que cambia es a dónde vuelve.
+   ============================================================ */
+export async function fichaDePerro(contenedor, { perroId } = {}) {
+  const id = perroId || window.__perro;
+  if (!id) {
+    contenedor.innerHTML = `<div class="aviso">Pincha un perro en la ficha de su dueño.</div>`;
+    return;
+  }
+  await ficha(contenedor, id, { volverA: "perros-todos" });
 }

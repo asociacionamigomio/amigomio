@@ -176,11 +176,19 @@ export async function render(contenedor) {
     hueco.innerHTML = perros.length === 0
       ? `<p class="flojo">Todavía no ha dado de alta ningún perro.</p>`
       : perros.map(p => `
-          <div class="perro-mini">
+          <button class="perro-mini" data-perro="${p.id}">
             <strong>${esc(p.nombre)}</strong>
             <span class="flojo">${esc(p.raza) || "sin raza"} · chip ${esc(p.chip)}</span>
             ${p.agresivo_con_personas ? `<span class="etiqueta roja">alojamiento aparte</span>` : ""}
             ${p.es_ppp ? `<span class="etiqueta">PPP</span>` : ""}
-          </div>`).join("");
+            <span class="flojo abrir">Ver su ficha →</span>
+          </button>`).join("");
+
+  /* A la ficha del perro, la misma que ve el cliente. */
+  hueco.querySelectorAll("[data-perro]").forEach(b =>
+    b.addEventListener("click", e => {
+      e.stopPropagation();
+      window.verPerro?.(b.dataset.perro);
+    }));
   }
 }

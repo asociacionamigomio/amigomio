@@ -18,6 +18,7 @@ import { render as renderLibro }    from "./vistas/admin-libro.js";
 import { render as renderCuentas }  from "./vistas/admin-cuentas.js";
 import { render as renderBloqueos } from "./vistas/admin-bloqueos.js";
 import { render as renderAdminPerros } from "./vistas/admin-perros.js";
+import { fichaDePerro as renderFichaPerro } from "./vistas/perros.js";
 import { render as renderCuadro } from "./vistas/admin-cuadro.js";
 import { render as renderHoja } from "./vistas/admin-hoja.js";
 import { render as renderEstancia } from "./vistas/admin-estancia.js";
@@ -51,6 +52,8 @@ const SECCIONES = [
   { id: "estancia",    texto: "Estancia",     render: renderEstancia,      admin: true, icono: "lista", oculta: true },
   { id: "solicitudes", texto: "Solicitudes",  render: renderSolicitudes,   admin: true, icono: "sobre" },
   { id: "clientes",    texto: "Clientes",     render: renderAdminClientes, admin: true, icono: "gente" },
+  { id: "perros-todos", texto: "Perros de clientes", render: renderAdminPerros, admin: true, icono: "corazon" },
+  { id: "perro",       texto: "Ficha del perro", render: renderFichaPerro,  admin: true, icono: "corazon", oculta: true },
   { id: "tarifas",     texto: "Tarifas",      render: renderTarifas,       admin: true, icono: "euro" },
   { id: "bloqueos",    texto: "Bloquear fechas", render: renderBloqueos,   admin: true, icono: "candado" },
   { id: "cuentas",     texto: "Las cuentas",  render: renderCuentas,       admin: true, icono: "grafico" },
@@ -189,6 +192,9 @@ function pintarMarco(seccionId, sesion) {
   window.refrescar = () => pintarMarco(seccion.id, sesion);
   /* Del cuadro a la ficha de una estancia concreta. */
   window.verEstancia = rid => { window.__estancia = rid; pintarMarco("estancia", sesion); };
+  /* Y de la ficha del cliente a la ficha de uno de sus perros,
+     igual que del cuadrante a la estancia. */
+  window.verPerro = pid => { window.__perro = pid; pintarMarco("perro", sesion); };
 
   montarZapatilla();
 

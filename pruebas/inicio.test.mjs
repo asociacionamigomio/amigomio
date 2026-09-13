@@ -71,3 +71,35 @@ test("desde ahí se ve de quién es cada perro", () => {
   const vista = aplanar(leer("js/vistas/admin-perros.js"));
   assert.match(vista, /cliente/);
 });
+
+test("cada pantalla importada está de verdad en el menú", () => {
+  /* Fallo del 13/09/2026: la pantalla de «Perros de clientes»
+     se escribió, se importó… y la línea del menú no llegó a
+     entrar. El import estaba, así que la prueba que miraba el
+     import pasaba, y Santiago no veía la pantalla por ninguna
+     parte.
+
+     Una pantalla importada y no enrutada es código muerto que
+     parece vivo. */
+  const crudo = leer("js/app.js");
+  const importados = [...crudo.matchAll(/import \{ render as (render\w+) \}/g)]
+    .map(m => m[1]);
+  const secciones = crudo.match(/const SECCIONES = \[[\s\S]*?\n\];/)[0];
+
+  /* `renderEntrada` es la puerta: se pinta ANTES de que haya
+     menú, así que no está en SECCIONES y es correcto. */
+  const fueraDelMenu = ["renderEntrada"];
+
+  for (const r of importados.filter(x => !fueraDelMenu.includes(x)))
+    assert.ok(secciones.includes(r),
+      `${r} se importa pero no está en SECCIONES: no hay forma de llegar a esa pantalla`);
+});
+
+test("se puede abrir la ficha de un perro desde fuera de «Mis perros»", () => {
+  /* Administración pincha el nombre del perro en la ficha del
+     cliente y quiere ver su ficha, igual que pincha una reserva
+     en el cuadrante y ve la estancia. */
+  assert.match(app, /window\.verPerro/);
+  const clientes = aplanar(leer("js/vistas/admin-clientes.js"));
+  assert.match(clientes, /verPerro/);
+});

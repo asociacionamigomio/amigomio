@@ -1100,3 +1100,13 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 .perro-admin.con-vencido { border-left: 4px solid var(--rojo, #b4453a); }
 .perro-admin .lista-avisos { margin-top: .6rem; padding-top: .6rem;
                              border-top: 1px solid var(--borde); }
+
+/* El perro de un cliente, en su ficha: ahora se pincha y lleva
+   a su ficha, así que tiene que parecer que se pincha. */
+button.perro-mini {
+  width: 100%; text-align: left; cursor: pointer;
+  font: inherit; color: var(--texto);
+}
+button.perro-mini:hover { border-color: var(--azul-medio, #6199C8); }
+.perro-mini .abrir { display: block; margin-top: .25rem; font-size: .78rem;
+                     color: var(--azul, #4E80A5); }
