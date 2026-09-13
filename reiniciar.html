@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reiniciar AmigoMío</title>
+<!-- Esta página NO usa ningún fichero de la aplicación a
+     propósito: es la que la arregla cuando la aplicación no
+     abre, así que no puede depender de ella. Todo va dentro. -->
+<style>
+  body { margin:0; padding:2rem 1.25rem; background:#FBF7F0; color:#243B4A;
+         font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .caja { max-width:24rem; margin:0 auto; background:#fff; border-radius:16px;
+          padding:1.5rem; box-shadow:0 4px 20px rgba(0,0,0,.06); }
+  h1 { font-size:1.3rem; margin:0 0 .8rem; }
+  p { font-size:.95rem; }
+  .flojo { color:#6B7C88; font-size:.87rem; }
+  button { width:100%; padding:.9rem; margin-top:1rem; border:0; border-radius:12px;
+           background:#4E80A5; color:#fff; font:inherit; font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.6; }
+  .bien { color:#4F7020; font-weight:600; }
+  .mal { color:#b4453a; }
+  ul { padding-left:1.1rem; font-size:.9rem; }
+</style>
+</head>
+<body>
+<div class="caja">
+  <h1>Reiniciar AmigoMío</h1>
+
+  <p>Si la aplicación no abre o se queda en blanco, esto la deja como recién
+     instalada.</p>
+
+  <p class="flojo"><strong>No pierdes nada.</strong> Tus datos, tus perros y tus
+     reservas están en el servidor, no en el móvil. Sólo se borra la copia que el
+     móvil guarda para funcionar sin cobertura. Como mucho tendrás que volver a
+     entrar con tu correo.</p>
+
+  <button id="ir">Reiniciar ahora</button>
+
+  <div id="resultado"></div>
+</div>
+
+<script>
+document.getElementById("ir").addEventListener("click", async (e) => {
+  const boton = e.target;
+  const donde = document.getElementById("resultado");
+  boton.disabled = true;
+  boton.textContent = "Limpiando…";
+
+  const pasos = [];
+
+  try {
+    const regs = await navigator.serviceWorker?.getRegistrations() ?? [];
+    for (const r of regs) await r.unregister();
+    pasos.push(`Service workers quitados: ${regs.length}`);
+  } catch (err) { pasos.push("No se pudieron quitar los service workers"); }
+
+  try {
+    const claves = await caches.keys();
+    for (const k of claves) await caches.delete(k);
+    pasos.push(`Cachés borradas: ${claves.length}`);
+  } catch (err) { pasos.push("No se pudieron borrar las cachés"); }
+
+  donde.innerHTML = `
+    <p class="bien">Listo.</p>
+    <ul>${pasos.map(p => `<li>${p}</li>`).join("")}</ul>
+    <p class="flojo">Ahora se abre la aplicación otra vez. Si sigue sin ir, cierra
+       el navegador del todo y vuelve a entrar.</p>`;
+
+  boton.textContent = "Abrir AmigoMío";
+  boton.disabled = false;
+  boton.onclick = () => location.replace("./?limpio=" + Date.now());
+});
+</script>
+</body>
+</html>

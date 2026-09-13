@@ -25,7 +25,7 @@
    días antes y le enseñaba perros de otros clientes. Una
    aplicación que se actualiza en el escritorio y no en el móvil
    miente en el móvil. */
-const VERSION = "2026-09-13-n";
+const VERSION = "2026-09-13-o";
 const CACHE = `amigomio-${VERSION}`;
 
 const LO_BASICO = [
@@ -35,10 +35,21 @@ const LO_BASICO = [
 ];
 
 self.addEventListener("install", e => {
+  /* Si no se puede llenar el caché, la instalación FALLA a
+     propósito.
+     
+     Antes esto llevaba un `.catch(() => {})`: se instalaba igual
+     con el caché a medias, y acto seguido `activate` borraba el
+     viejo. Un móvil con mala cobertura en el momento justo se
+     quedaba sin el caché viejo y sin el nuevo — y si abría la
+     aplicación instalada, que arranca del caché, no abría nada.
+     Le pasó a Santiago el 13/09/2026.
+
+     Más vale seguir con la versión vieja, que funciona, que
+     quedarse sin ninguna. */
   e.waitUntil(
     caches.open(CACHE)
       .then(c => c.addAll(LO_BASICO))
-      .catch(() => {})          // si algo no está, se instala igual
       .then(() => self.skipWaiting())
   );
 });
@@ -76,6 +87,11 @@ self.addEventListener("fetch", e => {
   /* Nada de Supabase se guarda. Una disponibilidad de ayer
      enseñada como si fuera de hoy vende plazas que no existen. */
   if (url.hostname.endsWith("supabase.co") || e.request.method !== "GET") return;
+
+  /* Y la página de rescate NUNCA pasa por aquí: sería el colmo
+     que la página que arregla el service worker la sirviera el
+     service worker roto. */
+  if (url.pathname.endsWith("/reiniciar.html")) return;
 
   e.respondWith(
     fetch(e.request)
