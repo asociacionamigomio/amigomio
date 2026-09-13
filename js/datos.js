@@ -462,8 +462,19 @@ export async function crearReserva({ perros, entrada, salida, extras = [], quien
 }
 
 export async function misReservas() {
+  /* Filtrar por `cliente_id` NO es redundante con RLS: a
+     administración RLS le deja ver las de TODOS, y sin esta
+     línea a Santiago le salían en «Mis reservas» y en el inicio
+     las estancias de todos los clientes. Mismo fallo que tuvo
+     `misPerros()`.
+     La regla, y hay prueba que la vigila: lo que se llama «mío»
+     filtra por quien ha entrado. */
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
   const { data, error } = await supabase.from("reserva")
     .select("*, alojamiento(nombre, tipo), reserva_perro(perro(nombre))")
+    .eq("cliente_id", user.id)
     .order("entrada", { ascending: false });
   if (error) throw error;
   return data || [];

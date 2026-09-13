@@ -94,6 +94,14 @@ Lee `2026-09-12-amigomio-reservas-design.md` (el diseño), `2026-09-12-plan-fase
 
 ## Mañas que ya han costado una tarde
 
+- **«MIS» COSAS SON LAS MÍAS: filtrar por el usuario NO es redundante con RLS.** Administración
+  ve todo —hace falta para atender un teléfono y para una inspección—, así que cualquier consulta
+  que no diga «las mías» le devuelve **las de todos**, y las pantallas de cliente se llenan de
+  datos ajenos. Ha pasado dos veces: con `misPerros()` y con `misReservas()`, ésta enseñándole a
+  Santiago las estancias de todos los clientes en su propio inicio. Toda función `mi…`/`mis…`
+  filtra por `user.id`; lo que no filtre se llama `todosLosPerros()` y así se ve de lejos.
+  Hay prueba que lo caza sola (`pruebas/lo-mio-es-mio.test.mjs`).
+
 - **Aplicar todo el SQL de golpe sacó seis fallos seguidos el 12/09/2026.** Todos de la misma
   familia: *lo idempotente no actualiza lo que ya existe*.
   - `create table if not exists` **no toca nada** de una tabla que ya está: ni columnas, ni
