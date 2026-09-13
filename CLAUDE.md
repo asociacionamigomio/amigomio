@@ -103,6 +103,16 @@ Lee `2026-09-12-amigomio-reservas-design.md` (el diseño), `2026-09-12-plan-fase
   aún, comprobar la ESTRUCTURA (el `default` de una columna, las columnas de una vista) en vez de
   los datos.
 
+- **LOS PERMISOS DE COLUMNAS SE DAN AL FINAL, Y NUNCA CON UNA LISTA A MANO.** Costó dos días
+  (13/09/2026). `perfiles.sql` daba los permisos de `cliente` columna por columna y se aplica el
+  tercero; `push.sql` añadió después `quiere_push`. Una columna creada **después** de darse los
+  permisos se queda sin ninguno, y **basta una** para que Postgres rechace el `select *` entero
+  con **42501**. Ningún cliente pudo traer su ficha, y como eso es de lo primero que hace el
+  arranque, la aplicación no abría — con un error que no se parecía en nada a la causa. Ahora
+  viven en `db/permisos.sql`, **el último de `orden.txt`**, se le preguntan a
+  `information_schema.columns`, y hay un `assert` dentro del SQL que aborta la instalación si
+  queda una columna huérfana.
+
 - **SI EL ARRANQUE SE ATASCA, LA PANTALLA TIENE QUE DECIRLO.** «Cargando…» es el texto que
   trae `index.html` de fábrica: que se quede ahí significa que la aplicación no llegó ni a
   correr, y sin más pista no hay por dónde empezar. Hay un vigía en `index.html` —JavaScript

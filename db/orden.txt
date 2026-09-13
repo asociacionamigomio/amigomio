@@ -15,3 +15,4 @@ reloj.sql
 administracion.sql
 libros.sql
 extras-repetidos.sql
+permisos.sql

@@ -86,24 +86,16 @@ create policy perro_de_perfil_publico on perro
 -- OJO: esas dos políticas abren la FILA entera de `cliente` y de
 -- `perro` a los demás clientes. Es lo que RLS sabe hacer.
 --
--- Lo que impide que se vea el DNI o el chip NO es la política:
--- es que la aplicación pregunta por las VISTAS, que sólo tienen
--- las columnas que se pueden enseñar, y que quien pregunte por
--- la tabla se encuentra… la tabla entera.
+-- Lo que impide que se vea el DNI o el chip NO es la política: es
+-- que la aplicación pregunta por las VISTAS, que sólo tienen las
+-- columnas que se pueden enseñar.
 --
--- Por eso se quitan los permisos sobre las tablas y se dan sólo
--- sobre las vistas. Aquí sí, columna a columna.
-revoke select on cliente from authenticated;
-revoke select on perro   from authenticated;
-grant select (id, nombre, apellidos, dni, domicilio, telefono,
-              recoge_nombre, recoge_dni, paga_en_persona, es_admin,
-              descuento_pct, descuento_nota, quiere_correos,
-              consiente_datos, creado, foto, perfil_visible)
-  on cliente to authenticated;
-grant select on perro to authenticated;
-
-grant select on perfiles_publicos to authenticated;
-grant select on perros_publicos   to authenticated;
+-- Los permisos de las tablas NO se dan aquí, se dan en
+-- `db/permisos.sql`, que es el ÚLTIMO fichero que se aplica.
+-- Tienen que ir los últimos: `push.sql` y `avisos.sql` añaden
+-- columnas a `cliente` DESPUÉS de este fichero, y una columna
+-- creada después de darse los permisos se queda sin ninguno.
+-- Eso costó dos días el 13/09/2026.
 
 -- ============================================================
 -- PRUEBAS. Aplicar este fichero ES ejecutarlas.

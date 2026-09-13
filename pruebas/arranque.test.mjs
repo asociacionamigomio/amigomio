@@ -235,3 +235,48 @@ test("no confundir «no tiene ficha» con «no he podido preguntarlo»", () => {
   assert.match(antesDeCrear, /throw/,
     "hay que cortar por lo sano ANTES de decidir crear nada");
 });
+
+/* ---------- Los permisos, que fueron LA causa ---------- */
+test("los permisos de las tablas se dan los ÚLTIMOS", () => {
+  /* `push.sql` y `avisos.sql` añaden columnas a `cliente`. Una
+     columna creada DESPUÉS de darse los permisos se queda sin
+     ninguno, y basta una para que Postgres rechace `select *`
+     entero. Dos días, el 13/09/2026. */
+  const orden = leer("db/orden.txt").trim().split("\n").map(l => l.trim());
+  assert.equal(orden.at(-1), "permisos.sql",
+    "permisos.sql tiene que aplicarse el último");
+});
+
+test("ningún fichero da permisos de columnas antes de tiempo", () => {
+  const orden = leer("db/orden.txt").trim().split("\n").map(l => l.trim());
+  for (const f of orden.filter(f => f !== "permisos.sql"))
+    assert.doesNotMatch(leer("db/" + f), /grant select\s*\(/,
+      `${f} da permisos columna a columna: eso va en permisos.sql, el último`);
+});
+
+test("los permisos se le preguntan a la tabla, no a una lista a mano", () => {
+  /* Una lista de columnas escrita a mano sobre una tabla que
+     crece es una trampa con fecha: aguanta hasta que alguien
+     añade una columna. */
+  const sql = leer("db/permisos.sql");
+  assert.match(sql, /information_schema\.columns/,
+    "hay que preguntarle a la tabla qué columnas tiene");
+  assert.doesNotMatch(sql, /grant select \(id, nombre/,
+    "eso es una lista a mano, que es justo lo que falló");
+});
+
+test("y hay una prueba dentro del SQL que lo caza sola", () => {
+  /* Aplicar el fichero ES ejecutarla: el día que alguien añada
+     una columna y no llegue el permiso, la instalación aborta en
+     vez de dejar la aplicación muerta y callada. */
+  const sql = leer("db/permisos.sql");
+  assert.match(sql, /assert/);
+  assert.match(sql, /column_privileges/);
+});
+
+test("el navegador aguanta aunque la base esté a medias", () => {
+  /* EL NAVEGADOR SE DESPLIEGA ANTES QUE LA BASE. SIEMPRE. */
+  const f = sinComentarios(datos).match(/export async function miFicha[\s\S]*?\n\}/)[0];
+  assert.match(f, /42501/,
+    "si falta un permiso hay que reintentar, no morirse");
+});
