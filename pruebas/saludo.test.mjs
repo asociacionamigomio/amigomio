@@ -89,3 +89,25 @@ test("habla de perros, que es de lo que va esto", () => {
   const todas = FRANJAS.flatMap(f => f.frases).join(" ").toLowerCase();
   assert.match(todas, /perr|cola|siesta|paseo|croqueta|pelo/);
 });
+
+test("la imagen que se da es de PAZ, no de jaleo", () => {
+  /* Santiago, 13/09/2026: «no me gusta eso de colas y barullo,
+     prefiero dar una imagen de paz, nos acabamos de despertar de
+     la siesta... cosas así».
+
+     Y no es sólo cuestión de gusto: quien deja aquí a su perro se
+     está imaginando dónde está. Si lo que le contamos es jaleo,
+     se lo imagina agobiado. */
+  const todas = FRANJAS.flatMap(f => f.frases).join(" ").toLowerCase();
+  for (const jaleo of ["barullo", "hora punta", "jaleo", "lío", "follón", "alboroto"])
+    assert.ok(!todas.includes(jaleo), `«${jaleo}» da imagen de agobio`);
+});
+
+test("y se nota la calma, no sólo se evita el ruido", () => {
+  /* Quitar las palabras feas no basta: tiene que decir algo
+     tranquilo. */
+  const todas = FRANJAS.flatMap(f => f.frases).join(" ").toLowerCase();
+  const calma = ["calma", "tranquil", "siesta", "sin prisa", "despacio", "sol", "sombra"];
+  const cuantas = calma.filter(x => todas.includes(x)).length;
+  assert.ok(cuantas >= 4, "faltan imágenes de tranquilidad");
+});

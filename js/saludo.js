@@ -19,11 +19,18 @@
       marearía. Se elige con el día del año: hoy siempre la misma,
       mañana otra.
 
-   3. GRACIOSO SIN PASARSE. Esto se lee TODOS los días. Un chiste
-      que se repite mucho deja de hacer gracia y empieza a
-      estorbar, así que: frases cortas, de andar por casa, y
-      ninguna a costa del cliente. Si algún día cansan, se quitan
-      y no pasa nada.
+   3. GRACIOSO SIN PASARSE, Y SOBRE TODO TRANQUILO. Esto se lee
+      TODOS los días. Un chiste que se repite mucho deja de hacer
+      gracia y empieza a estorbar, así que: frases cortas, de
+      andar por casa, y ninguna a costa del cliente.
+
+      Y la imagen que se da es de PAZ. Santiago, 13/09/2026: «no
+      me gusta eso de colas y barullo, prefiero dar una imagen de
+      paz, nos acabamos de despertar de la siesta... cosas así».
+      Tiene razón, y no es sólo estética: quien deja aquí a su
+      perro se está imaginando dónde está. Si lo que le contamos
+      es jaleo, se lo imagina agobiado. Nada de «hora punta» ni de
+      «barullo» — sol, sombra, siesta y poca prisa.
    ============================================================ */
 
 /* De qué hora a qué hora. Se coge la PRIMERA que encaje, así que
@@ -33,8 +40,8 @@ export const FRANJAS = [
     id: "madrugada",          // 00:00 – 06:59
     desde: 0,
     frases: [
-      "¿Todavía despierto? Aquí sólo ronca el que tiene cuatro patas.",
-      "A estas horas hasta los perros duermen. Casi todos.",
+      "A estas horas aquí no se mueve ni una oreja.",
+      "Todos dormidos. Hasta el que ronca.",
       "De madrugada, y pensando en tu perro. Eso es amor.",
     ],
   },
@@ -42,45 +49,45 @@ export const FRANJAS = [
     id: "temprano",           // 07:00 – 09:59
     desde: 7,
     frases: [
-      "Buenos días. Aquí ya se ha repartido el primer desayuno.",
-      "Buenos días. A esta hora esto parece una guardería, pero con más pelo.",
-      "Buenos días. El primer paseo ya está dado y las colas también.",
+      "Buenos días. Aquí se desayuna despacio.",
+      "Buenos días. Los primeros ya están tomando el sol.",
+      "Buenos días. Empieza el día con calma, que es como mejor sale.",
     ],
   },
   {
     id: "manana",             // 10:00 – 13:59
     desde: 10,
     frases: [
-      "Buenos días. Por aquí hay más juego que faena.",
-      "Buenos días. Los patios están en plena hora punta.",
-      "Buenos días. Ya se ha perdido la primera pelota del día.",
+      "Buenos días. Mañana tranquila: sol, sombra y poco más.",
+      "Buenos días. Unos juegan y otros miran. Cada uno a lo suyo.",
+      "Buenos días. Por aquí nadie tiene prisa.",
     ],
   },
   {
     id: "sobremesa",          // 14:00 – 17:59
     desde: 14,
     frases: [
-      "Buenas tardes. Aquí es la hora de la siesta general.",
-      "Buenas tardes. En esta casa, después de comer, nadie se mueve.",
-      "Buenas tardes. Silencio absoluto: están todos roque.",
+      "Buenas tardes. Nos acabamos de despertar de la siesta.",
+      "Buenas tardes. A esta hora aquí sólo se oye el viento.",
+      "Buenas tardes. Siesta larga y sin remordimientos.",
     ],
   },
   {
     id: "tarde",              // 18:00 – 21:29
     desde: 18,
     frases: [
-      "Buenas tardes. Última ronda de patio y a cenar.",
-      "Buenas tardes. Ahora mismo esto es todo colas y barullo.",
-      "Buenas tardes. Se acerca la cena y aquí se nota en el ambiente.",
+      "Buenas tardes. Última vuelta por el campo, sin prisa.",
+      "Buenas tardes. Cae la tarde y aquí baja el ritmo.",
+      "Buenas tardes. Se va la luz y esto se queda en calma.",
     ],
   },
   {
     id: "noche",              // 21:30 – 23:59
     desde: 21.5,
     frases: [
-      "Buenas noches. Por aquí ya están todos recogidos.",
-      "Buenas noches. Cenados, paseados y durmiendo como troncos.",
       "Buenas noches. Aquí ya no se oye ni un ladrido.",
+      "Buenas noches. Cenados y cada uno en su sitio.",
+      "Buenas noches. Todo tranquilo hasta mañana.",
     ],
   },
 ];
