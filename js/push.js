@@ -19,7 +19,7 @@
       vuelve a comprobar cada vez que entra, y por eso el
       servidor borra las que fallan.
    ============================================================ */
-import { supabase } from "./sesion.js";
+import { supabase, usuarioActual } from "./sesion.js";
 
 const w = globalThis.window;
 
@@ -90,7 +90,7 @@ export async function encenderPush() {
          applicationServerKey: aBytes(w.CONFIG.VAPID_PUBLICA),
        });
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await usuarioActual();
   if (!user) return { ok: false, mensaje: "Vuelve a entrar, que se ha caído la sesión." };
 
   const claves = suscripcion.toJSON().keys;
@@ -114,7 +114,7 @@ export async function encenderPush() {
 
 /** Apagarlos. Si no se puede parar, es spam. */
 export async function apagarPush() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await usuarioActual();
 
   try {
     const registro = await navigator.serviceWorker.ready;

@@ -6,7 +6,7 @@
    Los mensajes de error que salen de aquí se le enseñan tal cual
    al cliente: están escritos para que los entienda.
    ============================================================ */
-import { supabase } from "./sesion.js";
+import { supabase, usuarioActual } from "./sesion.js";
 import { normalizarChip } from "./perro.js";
 import { rutaDocumento, encoger, queLePasa, LADO_FOTO } from "./documentos.js";
 
@@ -14,7 +14,7 @@ import { rutaDocumento, encoger, queLePasa, LADO_FOTO } from "./documentos.js";
    Mi ficha de cliente
    ------------------------------------------------------------ */
 export async function miFicha() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await usuarioActual();
   if (!user) return null;
 
   let { data } = await supabase.from("cliente").select("*").eq("id", user.id).maybeSingle();
@@ -38,7 +38,7 @@ export async function miFicha() {
 }
 
 export async function guardarMiFicha(datos) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await usuarioActual();
   /* es_admin y paga_en_persona no se mandan nunca desde aquí: los
      devuelve a su sitio el trigger cliente_no_se_asciende, pero
      mejor ni intentarlo. */
@@ -84,7 +84,7 @@ export async function guardarMiFicha(datos) {
  * que es donde tiene sentido.
  */
 export async function misPerros() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await usuarioActual();
   if (!user) return [];
   const { data, error } = await supabase.from("perro")
     .select("*").eq("cliente_id", user.id).order("nombre");
@@ -160,7 +160,7 @@ export async function unPerro(id) {
 }
 
 export async function guardarPerro(datos, { borrador = false } = {}) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await usuarioActual();
 
   if (datos.id) {
     /* Chip y nombre no se mandan en las modificaciones: los rechaza
@@ -202,7 +202,7 @@ function mensajeDeError(error) {
    Solicitudes de cambio de chip o nombre
    ------------------------------------------------------------ */
 export async function pedirCambio({ perroId, campo, valorActual, valorNuevo, motivo }) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await usuarioActual();
   const { error } = await supabase.from("solicitud_cambio").insert({
     perro_id: perroId, cliente_id: user.id, campo,
     valor_actual: valorActual, valor_nuevo: valorNuevo, motivo: motivo || "",
@@ -238,7 +238,7 @@ export async function solicitudesPendientes() {
  * alguien se presenta con un animal que no coincide.
  */
 export async function resolverSolicitud(id, { aprobar }) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await usuarioActual();
 
   const { data: solicitud, error: e1 } = await supabase
     .from("solicitud_cambio").select("*").eq("id", id).single();
@@ -377,7 +377,7 @@ export async function presupuesto({ entrada, salida, tipo = "normal", perros = 1
      se usa el que está dentro de la aplicación: el presupuesto
      de la pantalla de reservar es el suyo. Administración sí lo
      pasa a mano, que reserva a nombre de otros. */
-  const quien = cliente ?? (await supabase.auth.getUser()).data?.user?.id ?? null;
+  const quien = cliente ?? (await usuarioActual())?.id ?? null;
 
   const comunes = {
     la_entrada: entrada, la_salida: salida, el_tipo: tipo,
@@ -464,7 +464,7 @@ export async function guardarAjuste(clave, valor) {
    Reservas
    ------------------------------------------------------------ */
 export async function crearReserva({ perros, entrada, salida, extras = [], quien = "cliente" }) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await usuarioActual();
   const { data, error } = await supabase.rpc("crear_reserva", {
     el_cliente: user.id, los_perros: perros,
     la_entrada: entrada, la_salida: salida,
@@ -484,7 +484,7 @@ export async function misReservas() {
      `misPerros()`.
      La regla, y hay prueba que la vigila: lo que se llama «mío»
      filtra por quien ha entrado. */
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await usuarioActual();
   if (!user) return [];
 
   const { data, error } = await supabase.from("reserva")
@@ -538,7 +538,7 @@ export async function incidenciasDe(reservaId) {
 }
 
 export async function anotarIncidencia({ reservaId, perroId, tipo = "nota", texto }) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await usuarioActual();
   const { error } = await supabase.from("incidencia")
     .insert({ reserva_id: reservaId, perro_id: perroId || null, tipo, texto, la_puso: user.id });
   return { ok: !error, mensaje: error ? "No hemos podido anotarlo." : "Anotado." };
@@ -584,7 +584,7 @@ export async function subirDocumento(perroId, tipo, fichero, nota = "") {
   const pega = queLePasa(fichero);
   if (pega) return { ok: false, mensaje: pega };
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await usuarioActual();
   if (!user) return { ok: false, mensaje: "Vuelve a entrar, que se ha caído la sesión." };
 
   const encogido = await encoger(fichero);
@@ -632,7 +632,7 @@ export async function subirJustificante(reservaId, fichero) {
   const pega = queLePasa(fichero);
   if (pega) return { ok: false, mensaje: pega };
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await usuarioActual();
   if (!user) return { ok: false, mensaje: "Vuelve a entrar, que se ha caído la sesión." };
 
   const encogido = await encoger(fichero);
@@ -772,7 +772,7 @@ export async function subirFoto(fichero, de = "perfil") {
   if (!fichero.type?.startsWith("image/"))
     return { ok: false, mensaje: "Eso tiene que ser una foto." };
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await usuarioActual();
   if (!user) return { ok: false, mensaje: "Vuelve a entrar, que se ha caído la sesión." };
 
   const encogida = await encoger(fichero, LADO_FOTO);
@@ -840,7 +840,7 @@ export async function mostrarInteres(tipo, perroId = null, mensaje = "") {
 }
 
 export async function misIntereses() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await usuarioActual();
   if (!user) return [];
   /* Filtrando por cliente: a administración RLS le devolvería
      los de todos, y ésta es la pantalla del cliente. */

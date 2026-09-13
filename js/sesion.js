@@ -87,10 +87,45 @@ export async function salir() {
   await supabase.auth.signOut();
 }
 
+/* ============================================================
+   Quién eres.
+
+   LEYENDO LA SESIÓN, que está guardada en este mismo móvil. NO
+   preguntándoselo al servidor.
+
+   Esto costó dos días de «no carga, no abre» (13/09/2026). Por
+   todo el código había `supabase.auth.getUser()`, que parece que
+   lee un dato y en realidad manda una petición a internet. Y la
+   librería, por dentro, hace esto:
+
+     catch(e){ if (esErrorDeAutenticación(e)) return {user:null};
+               throw e }
+
+   Un fallo de red NO es un error de autenticación. Así que no
+   devuelve «no hay usuario»: REVIENTA. Como `miFicha()` es de lo
+   primero que hace el arranque, un segundo de mala cobertura al
+   abrir dejaba la aplicación muerta — en el ordenador jamás, en
+   un móvil a la primera.
+
+   Que la sesión guardada pueda estar caducada no importa: quién
+   puede ver qué NO lo decide el navegador, lo decide RLS. Aquí
+   sólo hace falta para saber cuáles son «mis» cosas y para no
+   pintar pantallas que no tocan.
+   ============================================================ */
+export async function usuarioActual() {
+  if (!supabase) return null;
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data?.session?.user || null;
+  } catch {
+    /* Ni así. Sin usuario se pinta la entrada, que es una pantalla
+       que funciona; morirse no lo es. */
+    return null;
+  }
+}
+
 export async function sesionActual() {
-  if (!supabase) return { usuario: null, correoVerificado: false };
-  const { data } = await supabase.auth.getSession();
-  const usuario = data?.session?.user || null;
+  const usuario = await usuarioActual();
   return { usuario, correoVerificado: !!usuario?.email_confirmed_at };
 }
 

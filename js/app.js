@@ -165,12 +165,43 @@ async function arrancar() {
   }
 
   /* Crea la ficha de cliente si es la primera vez. Si su correo está
-     en la lista de administración, el trigger la marca sola. */
-  ficha = await miFicha();
+     en la lista de administración, el trigger la marca sola.
+
+     Y si no se puede traer, la aplicación ABRE IGUAL. La ficha da
+     el nombre y si eres administración: que no llegue es una
+     molestia, que tumbe la aplicación entera no es aceptable.
+     Justo eso era «no carga, no abre». */
+  let fallóLaFicha = null;
+  try {
+    ficha = await miFicha();
+  } catch (e) {
+    ficha = null;
+    fallóLaFicha = e;
+    console.error("[AmigoMío] no se pudo traer la ficha:", e);
+  }
 
   if (!puedeReservar(sesion)) return pintarSinConfirmar(sesion);
 
   pintarMarco("inicio", sesion);
+
+  /* Se pinta primero y se avisa después: lo importante es que la
+     aplicación esté ahí. Pero callarlo sería mentir — sin la
+     ficha no salen las opciones de administración, y pensar que
+     han desaparecido asusta más que un aviso. */
+  if (fallóLaFicha) avisarDeQueFaltanDatos();
+}
+
+function avisarDeQueFaltanDatos() {
+  const hueco = app.querySelector("#hueco");
+  if (!hueco) return;
+  const nota = document.createElement("div");
+  nota.className = "aviso";
+  nota.innerHTML = `No hemos podido traer tus datos, así que puede que falte
+    algo en pantalla. Suele ser la cobertura.
+    <button class="boton pequeno" id="recargar-ficha">Volver a probar</button>`;
+  hueco.prepend(nota);
+  nota.querySelector("#recargar-ficha")
+    .addEventListener("click", () => location.reload());
 }
 
 function pintarSinConfirmar(sesion) {
@@ -392,6 +423,11 @@ arrancar()
         <p>Nos hemos quedado sin conexión con el servidor. Casi siempre
            es cosa de un momento.</p>
         <button class="boton" id="otra-vez">Probar otra vez</button>
+        <!-- El mensaje de verdad, en pequeño. «No hemos podido
+             abrir» a secas deja igual de ciego que «Cargando…»:
+             con esto delante se arregla en un rato. -->
+        <p class="flojo">Si nos lo quieres contar, esto es lo que ha pasado:
+           <code>${esc(fallo?.message || String(fallo))}</code></p>
         <p class="flojo">Si insiste,
            <a href="reiniciar.html">reinicia la aplicación</a>.
            No pierdes nada: tus perros y tus reservas están a salvo.</p>

@@ -134,3 +134,69 @@ test("el mensaje de atasco está escrito para una persona", () => {
   assert.match(sueltos, /tardando|atascad|no acaba de abrir/i,
     "hay que decir qué pasa, no sólo que pasa algo");
 });
+
+/* ============================================================
+   Y el fallo de verdad, el que dejaba «Cargando…» clavado.
+
+   `supabase.auth.getUser()` no lee la sesión: le PREGUNTA AL
+   SERVIDOR quién eres, por internet. Y mirando la librería (que
+   ahora está en el repositorio y se puede leer):
+
+     catch(e){ if (esErrorDeAutenticación(e)) return {user:null};
+               throw e }
+
+   Un fallo de red NO es un error de autenticación. Así que no
+   devuelve «no hay usuario»: REVIENTA. Y `miFicha()`, que es de
+   lo primero que hace el arranque, lo llamaba a pelo.
+
+   Un segundo de mala cobertura al abrir = aplicación muerta. En
+   el ordenador no pasa jamás; en un móvil, a la primera.
+
+   Quién eres ya lo sabemos: está en la sesión, guardada en el
+   propio móvil. No hay que preguntárselo a nadie. Y quién puede
+   ver qué no lo decide el navegador — lo decide RLS.
+   ============================================================ */
+const datos = leer("js/datos.js");
+const push = leer("js/push.js");
+const sesionjs = leer("js/sesion.js");
+
+test("nadie le pregunta al servidor quién eres: la sesión ya lo dice", () => {
+  for (const [nombre, f] of [["datos.js", datos], ["push.js", push],
+                             ["sesion.js", sesionjs]])
+    assert.doesNotMatch(sinComentarios(f), /auth\.getUser\(\)/,
+      `${nombre} usa getUser(), que va por internet y revienta si no llega`);
+});
+
+test("hay una manera de saber quién eres que no puede fallar", () => {
+  assert.match(sesionjs, /export async function usuarioActual/);
+  const f = sinComentarios(sesionjs)
+    .match(/export async function usuarioActual[\s\S]*?\n\}/)[0];
+  assert.match(f, /catch/, "si esto revienta, revienta la aplicación entera");
+  assert.doesNotMatch(f, /getUser/, "getUser va por internet: es justo lo que falla");
+});
+
+test("leer la sesión tampoco puede tumbar el arranque", () => {
+  /* O recoge ella el error, o se apoya en quien lo recoge. Lo
+     que no puede es reventar: es lo primero que hace el
+     arranque, y si revienta no se pinta nada. */
+  const f = sinComentarios(sesionjs)
+    .match(/export async function sesionActual[\s\S]*?\n\}/)[0];
+  assert.match(f, /catch|usuarioActual\(\)/);
+});
+
+test("si no se puede traer la ficha, la aplicación abre igual", () => {
+  /* La ficha da el nombre y si eres administración. Que no llegue
+     es una molestia; que tumbe la aplicación, no es aceptable. */
+  const f = sinComentarios(app);
+  assert.match(f, /catch[\s\S]{0,120}ficha = null|ficha = await miFicha\(\)[\s\S]{0,200}catch/,
+    "miFicha() tiene que poder fallar sin llevarse el arranque por delante");
+});
+
+test("cuando algo falla, la pantalla dice QUÉ falla", () => {
+  /* «No hemos podido abrir» a secas deja igual de ciego que
+     «Cargando…». Con el mensaje de verdad delante se arregla en
+     un rato; sin él, a adivinar. */
+  const f = sinComentarios(app);
+  assert.match(f, /fallo\?\.message|fallo\.message|String\(fallo/,
+    "hay que enseñar el mensaje del error, no sólo que hubo uno");
+});
