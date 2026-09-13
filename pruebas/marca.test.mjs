@@ -38,17 +38,26 @@ test("no hay framework ni carpeta compilada propia", () => {
     "esta app se sirve tal cual: nada de carpetas compiladas");
 });
 
-test("las librerías de fuera van con versión clavada", () => {
-  /* Sin esto, una actualización del CDN rompe la app un martes
-     cualquiera y nadie sabe por qué. */
+test("las librerías de fuera viven en casa y con versión clavada", () => {
+  /* Esto empezó siendo «que el CDN lleve versión clavada», para
+     que una actualización ajena no rompiera la app un martes
+     cualquiera. El 13/09/2026 quedó claro que no bastaba: un CDN
+     también puede sencillamente NO CONTESTAR, y entonces la
+     aplicación no arranca y no hay nada que puedas hacer, porque
+     no es tuyo. Le pasó a Santiago en su móvil.
+
+     Así que ahora no hay ninguna librería de fuera: están dentro
+     del repositorio, con su versión apuntada en js/vendor/LEEME.md
+     y guardadas en el caché como todo lo demás. */
   const html = lee("index.html");
   const externos = [...html.matchAll(/src="(https?:\/\/[^"]+)"/g)].map(m => m[1]);
-  assert.ok(externos.length > 0, "alguna librería de fuera habrá");
-  for (const url of externos) {
-    assert.doesNotMatch(url, /@latest|\/latest\//,
-      `${url} no lleva versión clavada`);
-    assert.match(url, /@\d+\.\d+\.\d+/, `${url} tiene que llevar versión exacta`);
-  }
+  assert.equal(externos.length, 0,
+    `la aplicación no puede depender de internet para arrancar: ${externos}`);
+
+  const leeme = lee("js/vendor/LEEME.md");
+  assert.doesNotMatch(leeme, /@latest|\/latest\//, "nada de @latest");
+  assert.match(leeme, /\d+\.\d+\.\d+/,
+    "hay que dejar apuntada la versión exacta de lo que se copió");
 });
 
 test("el logo y los iconos de la PWA están en su sitio", () => {

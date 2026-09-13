@@ -25,19 +25,70 @@
    días antes y le enseñaba perros de otros clientes. Una
    aplicación que se actualiza en el escritorio y no en el móvil
    miente en el móvil. */
-const VERSION = "2026-09-13-o";
+const VERSION = "2026-09-13-p";
 const CACHE = `amigomio-${VERSION}`;
 
+/* TODO lo que hace falta para abrir. No una parte.
+
+   Antes aquí había siete ficheros y los otros treinta y cuatro se
+   pedían a la red cada vez que se abría la aplicación: treinta y
+   cuatro oportunidades de que fallara una, y basta una. Con mala
+   cobertura pasa a la primera.
+
+   Hay una prueba (`pruebas/arranque.test.mjs`) que salta si se
+   añade un módulo nuevo y no se apunta aquí. */
 const LO_BASICO = [
-  "./", "./index.html", "./css/estilo.css",
-  "./js/config.js", "./js/app.js",
-  "./assets/logo.png", "./manifest.webmanifest",
+  "./", "./index.html", "./css/estilo.css", "./manifest.webmanifest",
+
+  /* La librería de Supabase, dentro de casa. Ver js/vendor/LEEME.md. */
+  "./js/vendor/supabase.js",
+
+  "./js/config.js",
+  "./js/app.js",
+  "./js/contacto.js",
+  "./js/datos.js",
+  "./js/documentos.js",
+  "./js/ficha.js",
+  "./js/formularios.js",
+  "./js/idioma.js",
+  "./js/perro.js",
+  "./js/push.js",
+  "./js/sanidad.js",
+  "./js/sesion.js",
+  "./js/sonidos-clicker.js",
+  "./js/zapatilla.js",
+
+  "./js/vistas/actividades.js",
+  "./js/vistas/admin-bloqueos.js",
+  "./js/vistas/admin-clientes.js",
+  "./js/vistas/admin-cuadro.js",
+  "./js/vistas/admin-cuentas.js",
+  "./js/vistas/admin-estancia.js",
+  "./js/vistas/admin-hoja.js",
+  "./js/vistas/admin-intereses.js",
+  "./js/vistas/admin-libro.js",
+  "./js/vistas/admin-perros.js",
+  "./js/vistas/admin-solicitudes.js",
+  "./js/vistas/admin-tarifas.js",
+  "./js/vistas/clicker.js",
+  "./js/vistas/contrasena-nueva.js",
+  "./js/vistas/entrada.js",
+  "./js/vistas/mi-ficha.js",
+  "./js/vistas/mis-reservas.js",
+  "./js/vistas/perros.js",
+  "./js/vistas/reservar.js",
+  "./js/vistas/vecinos.js",
+
+  "./assets/logo.png",
+  "./assets/icono-192.png",
+  "./assets/icono-512.png",
+  "./assets/zapatilla.png",
 ];
 
 self.addEventListener("install", e => {
   /* Si no se puede llenar el caché, la instalación FALLA a
      propósito.
-     
+
      Antes esto llevaba un `.catch(() => {})`: se instalaba igual
      con el caché a medias, y acto seguido `activate` borraba el
      viejo. Un móvil con mala cobertura en el momento justo se
@@ -81,6 +132,12 @@ self.addEventListener("activate", e => {
   })());
 });
 
+/* Cuánto se espera a la red teniendo el fichero guardado. Pasado
+   ese plazo se sirve lo guardado y en paz: una aplicación que
+   abre con lo de ayer es infinitamente mejor que una que no
+   abre. La copia buena se guarda igual, para la próxima vez. */
+const MARGEN = 3000;
+
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
 
@@ -93,18 +150,51 @@ self.addEventListener("fetch", e => {
      service worker roto. */
   if (url.pathname.endsWith("/reiniciar.html")) return;
 
-  e.respondWith(
-    fetch(e.request)
-      .then(r => {
-        if (r.ok && url.origin === location.origin) {
-          const copia = r.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copia));
-        }
-        return r;
-      })
-      .catch(() => caches.match(e.request).then(r => r || caches.match("./index.html")))
-  );
+  /* Lo de fuera va derecho a la red, sin pasar por aquí. */
+  if (url.origin !== location.origin) return;
+
+  e.respondWith(servir(e.request));
 });
+
+async function servir(peticion) {
+  const cache = await caches.open(CACHE);
+  const guardado = await cache.match(peticion);
+
+  const red = fetch(peticion).then(r => {
+    if (r.ok) cache.put(peticion, r.clone());
+    return r;
+  });
+
+  if (guardado) {
+    /* Se le da un margen a la red, para traer lo último, y si no
+       contesta se sirve lo guardado. Así abre igual con mala
+       cobertura, que es donde se atascaba. */
+    const plazo = new Promise(listo => setTimeout(() => listo(null), MARGEN));
+    const r = await Promise.race([red.catch(() => null), plazo]);
+    return r || guardado;
+  }
+
+  try {
+    return await red;
+  } catch (fallo) {
+    /* LA PORTADA SÓLO VALE COMO RECAMBIO DE UNA NAVEGACIÓN.
+
+       Antes se devolvía `index.html` para cualquier cosa que
+       fallara. Si lo que se pedía era un módulo de JavaScript, el
+       navegador recibía una página HTML donde esperaba código:
+       error de sintaxis, la aplicación no arranca, y la pantalla
+       se queda en «Cargando…» para siempre sin decir por qué.
+       Santiago, 13/09/2026: «aparece cargando, pero no carga».
+
+       Un módulo que no llega tiene que fallar COMO UN MÓDULO, y
+       entonces el vigía de `index.html` lo cuenta. */
+    if (peticion.mode === "navigate") {
+      const portada = await cache.match("./index.html");
+      if (portada) return portada;
+    }
+    throw fallo;
+  }
+}
 
 /* ============================================================
    Los avisos en el móvil.

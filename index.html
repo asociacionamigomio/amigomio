@@ -13,10 +13,76 @@
     <h1>AmigoMío</h1>
     <p>Cargando…</p>
   </div>
-  <!-- Versión clavada a propósito: sin @latest, para que una actualización
-       suya no rompa la app un martes cualquiera. -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+
+  <!-- La librería de Supabase, con la versión clavada y DENTRO del
+       repositorio (js/vendor/LEEME.md cuenta por qué).
+
+       Antes venía de un CDN de internet. La aplicación no arranca sin
+       ella, así que un CDN lento, o una red que lo bloquee, era una
+       aplicación que no abre — y sin nada que pudiéramos hacer. -->
+  <script src="js/vendor/supabase.js"></script>
   <script src="js/config.js"></script>
   <script type="module" src="js/app.js"></script>
+
+  <!-- ============================================================
+       El vigía del arranque.
+
+       Santiago, 13/09/2026, en su móvil: «aparece cargando, pero no
+       carga». Ese «Cargando…» es el texto de arriba, el de fábrica:
+       que se quede ahí significa que el arranque se atascó, y la
+       pantalla no lo dice. Sin saber qué pasa no se puede ni
+       intentar nada.
+
+       Esto es JavaScript normal y corriente, NO un módulo, y a
+       propósito: si lo que falla es justamente la carga de los
+       módulos, el vigía tiene que seguir vivo para poder contarlo.
+       ============================================================ -->
+  <script>
+    (function () {
+      var app = document.getElementById("app");
+      var avisado = false;
+
+      /* La aplicación avisa de que ya ha pintado. Mientras no lo
+         haga, el vigía sigue mirando. */
+      window.arrancoBien = function () { avisado = true; };
+
+      function seHaAtascado(porQue) {
+        if (avisado) return;
+        avisado = true;
+
+        app.className = "contenedor";
+        app.innerHTML =
+          '<div class="portada"><img src="assets/logo.png" alt="AmigoMío" class="logo"></div>' +
+          '<div class="tarjeta">' +
+            '<h2>Esto está tardando demasiado</h2>' +
+            '<p>La aplicación no acaba de abrir. Casi siempre es la cobertura, ' +
+               'y se arregla solo volviendo a probar.</p>' +
+            '<button class="boton" id="otra-vez">Probar otra vez</button>' +
+            '<p class="flojo">Si vuelve a pasar, ' +
+               '<a href="reiniciar.html">pincha aquí para reiniciar la aplicación</a>. ' +
+               'No pierdes nada: tus perros y tus reservas están a salvo.</p>' +
+          '</div>';
+
+        document.getElementById("otra-vez")
+          .addEventListener("click", function () { location.reload(); });
+
+        /* Al registro de la consola, para poder mirarlo luego. */
+        if (porQue) console.error("El arranque se atascó:", porQue);
+      }
+
+      /* Un módulo que no llega avisa por aquí, y avisa ENSEGUIDA:
+         no hay que esperar a que pase el plazo. */
+      window.addEventListener("error", function (e) {
+        var t = e.target;
+        if (t && t.tagName === "SCRIPT") seHaAtascado(t.src);
+      }, true);
+
+      /* Y si no falla nada pero tampoco avanza —la red colgada, que
+         es lo que no da ningún error—, doce segundos. Bastante más
+         de lo que tarda una conexión mala, y bastante menos de lo
+         que aguanta mirando una persona. */
+      setTimeout(function () { seHaAtascado(null); }, 12000);
+    })();
+  </script>
 </body>
 </html>

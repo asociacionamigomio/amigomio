@@ -119,6 +119,10 @@ supabase?.auth.onAuthStateChange((evento) => {
   if (evento !== "PASSWORD_RECOVERY" || cambiandoContrasena) return;
   cambiandoContrasena = true;
 
+  /* Esto pinta por su cuenta, sin pasar por `arrancar()`: hay que
+     avisar al vigía del arranque o saltaría igual. */
+  window.arrancoBien?.();
+
   app.className = "contenedor";
   renderContrasenaNueva(app, {
     cuandoTermine: () => {
@@ -364,7 +368,37 @@ async function renderInicio(contenedor, { sesion }) {
     b.addEventListener("click", () => pintarMarco(b.dataset.ir, sesion)));
 }
 
-arrancar();
+/* Y se arranca.
+
+   Recogiendo el error: `arrancar()` es una promesa, y una promesa
+   que revienta por dentro sin que nadie la recoja no hace
+   absolutamente nada en la pantalla. Se queda el «Cargando…» del
+   HTML, que es lo que le pasó a Santiago el 13/09/2026 en su
+   móvil: «aparece cargando, pero no carga».
+
+   `arrancoBien` lo pone `index.html`: es como se calla el vigía
+   del arranque cuando ya hay algo pintado. */
+arrancar()
+  .then(() => window.arrancoBien?.())
+  .catch(fallo => {
+    console.error("No se ha podido arrancar:", fallo);
+
+    window.arrancoBien?.();
+    app.className = "contenedor";
+    app.innerHTML = `
+      <div class="portada"><img src="assets/logo.png" alt="AmigoMío" class="logo"></div>
+      <div class="tarjeta">
+        <h2>No hemos podido abrir</h2>
+        <p>Nos hemos quedado sin conexión con el servidor. Casi siempre
+           es cosa de un momento.</p>
+        <button class="boton" id="otra-vez">Probar otra vez</button>
+        <p class="flojo">Si insiste,
+           <a href="reiniciar.html">reinicia la aplicación</a>.
+           No pierdes nada: tus perros y tus reservas están a salvo.</p>
+      </div>`;
+    app.querySelector("#otra-vez")
+      .addEventListener("click", () => location.reload());
+  });
 
 /* ============================================================
    Cuando hay una versión nueva.
