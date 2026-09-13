@@ -1193,3 +1193,26 @@ button.perro-mini:hover { border-color: var(--azul-medio, #6199C8); }
 }
 .avisos-movil .boton { margin-top: .6rem; width: auto; }
 .avisos-movil .aviso { margin: .6rem 0; }
+
+/* ============================================================
+   Los ajustes, bajo llave.
+
+   Aquí dentro no hay precios: hay interruptores que apagan cosas
+   de toda la residencia. Se ven bloqueados hasta que se pulsa
+   «Editar», y cada consecuencia se lee antes de tocar nada.
+   ============================================================ */
+.ajustes input:disabled {
+  background: #F4F6F8; color: var(--texto-flojo); cursor: not-allowed;
+}
+.ajustes.editando { border-left: 4px solid var(--amarillo, #E8C547); }
+.consecuencia {
+  margin: .2rem 0 1rem; padding: .5rem .7rem;
+  font-size: .82rem; line-height: 1.45;
+  background: #FDF6E3; border-radius: 8px; color: #7A5D00;
+}
+/* La confirmación se pone arriba del todo y se lleva la vista:
+   un cartel que hay que buscar no se lee. */
+.tarjeta.confirmar {
+  border: 2px solid var(--amarillo, #E8C547); margin-bottom: 1rem;
+}
+.tarjeta.confirmar .botonera { display: flex; gap: .5rem; flex-wrap: wrap; }

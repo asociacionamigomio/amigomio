@@ -277,37 +277,163 @@ export async function render(contenedor) {
       }));
   }
 
+  /* QUÉ PASA SI SE TOCA CADA UNO.
+   *
+   * Aquí dentro no hay precios: hay interruptores que apagan
+   * cosas de toda la residencia y que no se nota que están mal
+   * hasta días después. Por eso cada uno dice qué provoca, y por
+   * eso hay que escribir el valor nuevo a mano para confirmarlo:
+   * escribirlo obliga a leerlo, y pulsar «sí» se hace con el
+   * dedo antes que con la cabeza.
+   *
+   * Los que no están aquí se cambian con una sola confirmación:
+   * son molestos de arreglar, no peligrosos. */
+  const CONSECUENCIAS = {
+    reservas_abiertas:
+      "Con «no» SE CIERRAN LAS RESERVAS de toda la residencia: nadie podrá " +
+      "reservar por la aplicación, y no se avisa a nadie de que ha pasado.",
+    tope_perros_simultaneos:
+      "Es el máximo de perros dentro a la vez. Si lo bajas de lo que ya hay " +
+      "reservado, dejas de vender noches que sí podrías vender. Si lo dejas " +
+      "vacío, no se aplica ningún tope.",
+    cron_secret:
+      "Es la contraseña que dispara los correos. Si la cambias aquí y no la " +
+      "cambias IGUAL en Supabase, DEJAN DE SALIR TODOS LOS CORREOS — y no se " +
+      "nota hasta que alguien echa de menos un aviso que nunca llegó.",
+    iban:
+      "Es la cuenta donde los clientes hacen la transferencia. Un dígito mal " +
+      "y el dinero se va a otra parte.",
+    larga_desde_noches:
+      "A partir de estas noches se cobra la tarifa de temporada larga (12 € " +
+      "la noche en vez de 15 o 18). Un número pequeño por error deja media " +
+      "residencia a precio de temporada.",
+    dias_cancelacion_gratis:
+      "Con esta antelación se devuelve el dinero entero. Subirlo te obliga a " +
+      "devolver cancelaciones que antes no devolvías.",
+    descuento_larga_pct:
+      "El porcentaje que se descuenta en estancias largas que NO llegan a " +
+      "temporada larga.",
+    url_avisos:
+      "A dónde se llama para entregar los correos. Si esto queda mal, no sale " +
+      "ninguno.",
+    anon_key:
+      "La llave pública de Supabase. Si queda mal, dejan de salir los correos.",
+  };
+
   async function verAjustes() {
     const lista = await ajustes();
-    panel().innerHTML = `
-      <div class="tarjeta">
-        ${lista.map(a => `
-          <label for="a-${a.clave}">${esc(etiqueta(a.clave))}</label>
-          <input id="a-${a.clave}" value="${esc(a.valor)}" data-ajuste="${a.clave}"
-                 ${a.clave === "iban" ? 'placeholder="ESxx xxxx xxxx xxxx xxxx xxxx"' : ""}>
-          <p class="flojo">${esc(a.nota)}</p>`).join("")}
-      </div>
+    let editando = false;
 
-      <div class="tarjeta" style="margin-top:1rem">
-        <h3>El reloj de las 24 horas</h3>
-        <p class="flojo">Cada diez minutos el servidor suelta las reservas que no
-           han mandado el justificante a tiempo. Si te falla y ves alojamientos
-           ocupados por reservas que nadie pagó, púlsalo aquí.</p>
-        <button class="boton fantasma pequeno" id="pasar-reloj">Pasar el reloj ahora</button>
-      </div>`;
+    pintarAjustes();
 
-    panel().querySelector("#pasar-reloj").addEventListener("click", async e => {
-      e.target.disabled = true;
-      const r = await caducarReservas();
-      pintar(r.mensaje, r.ok ? "aviso" : "error");
-    });
+    function pintarAjustes() {
+      panel().innerHTML = `
+        <div class="tarjeta ajustes ${editando ? "editando" : ""}">
+          <div class="cabecera-seccion">
+            <div>
+              <h3>Ajustes</h3>
+              <p class="flojo">Esto no son precios: son interruptores que afectan a
+                 toda la residencia. Por eso están bloqueados.</p>
+            </div>
+            ${editando
+              ? `<button class="boton fantasma pequeno" id="bloquear">Terminar</button>`
+              : `<button class="boton pequeno" id="editar">Editar</button>`}
+          </div>
 
-    panel().querySelectorAll("[data-ajuste]").forEach(i =>
-      i.addEventListener("change", async () => {
-        const r = await guardarAjuste(i.dataset.ajuste, i.value.trim());
+          ${lista.map(a => `
+            <label for="a-${a.clave}">${esc(etiqueta(a.clave))}</label>
+            <input id="a-${a.clave}" value="${esc(a.valor)}" data-ajuste="${a.clave}"
+                   ${editando ? "" : "disabled"}
+                   ${a.clave === "iban" ? 'placeholder="ESxx xxxx xxxx xxxx xxxx xxxx"' : ""}>
+            <p class="flojo">${esc(a.nota)}</p>
+            ${CONSECUENCIAS[a.clave]
+              ? `<p class="consecuencia">⚠ ${esc(CONSECUENCIAS[a.clave])}</p>` : ""}`).join("")}
+        </div>
+
+        <div class="tarjeta" style="margin-top:1rem">
+          <h3>El reloj de las 24 horas</h3>
+          <p class="flojo">Cada diez minutos el servidor suelta las reservas que no
+             han mandado el justificante a tiempo. Si te falla y ves alojamientos
+             ocupados por reservas que nadie pagó, púlsalo aquí.</p>
+          <button class="boton fantasma pequeno" id="pasar-reloj">Pasar el reloj ahora</button>
+        </div>`;
+
+      panel().querySelector("#editar")?.addEventListener("click", () => {
+        editando = true;
+        pintarAjustes();
+      });
+      panel().querySelector("#bloquear")?.addEventListener("click", () => {
+        editando = false;
+        pintarAjustes();
+      });
+
+      panel().querySelector("#pasar-reloj").addEventListener("click", async e => {
+        e.target.disabled = true;
+        const r = await caducarReservas();
         pintar(r.mensaje, r.ok ? "aviso" : "error");
-      }));
+      });
+
+      panel().querySelectorAll("[data-ajuste]").forEach(i =>
+        i.addEventListener("change", () => confirmarCambio(i)));
+    }
+
+    /* La confirmación. Dice qué va a pasar y, en los peligrosos,
+       pide escribir el valor nuevo a mano.
+
+       Un «¿estás seguro?» se acepta sin leerlo. Uno que dice
+       «esto cierra las reservas de toda la residencia» y te hace
+       teclear «no», no. */
+    function confirmarCambio(campo) {
+      const clave = campo.dataset.ajuste;
+      const antes = lista.find(a => a.clave === clave)?.valor ?? "";
+      const ahora = campo.value.trim();
+
+      if (ahora === antes) return;
+
+      const peligroso = !!CONSECUENCIAS[clave];
+
+      panel().insertAdjacentHTML("afterbegin", `
+        <div class="tarjeta confirmar" id="confirmar">
+          <h3>Vas a cambiar «${esc(etiqueta(clave))}»</h3>
+          <p>De <strong>${esc(antes) || "(vacío)"}</strong>
+             a <strong>${esc(ahora) || "(vacío)"}</strong>.</p>
+
+          ${peligroso ? `
+            <p class="consecuencia">⚠ ${esc(CONSECUENCIAS[clave])}</p>
+            <label for="tecleado">Para confirmarlo, escribe aquí el valor nuevo:</label>
+            <input id="tecleado" placeholder="${esc(ahora) || "(déjalo vacío)"}">` : ""}
+
+          <div class="botonera" style="margin-top:.8rem">
+            <button class="boton" id="si">Sí, cambiarlo</button>
+            <button class="boton fantasma" id="no">Cancelar</button>
+          </div>
+        </div>`);
+
+      const caja = panel().querySelector("#confirmar");
+      caja.scrollIntoView({ block: "center", behavior: "smooth" });
+
+      caja.querySelector("#no").addEventListener("click", () => {
+        campo.value = antes;          // como estaba
+        caja.remove();
+      });
+
+      caja.querySelector("#si").addEventListener("click", async () => {
+        if (peligroso) {
+          const tecleado = caja.querySelector("#tecleado").value.trim();
+          if (tecleado !== ahora) {
+            caja.querySelector("#tecleado").classList.add("error-linea");
+            caja.insertAdjacentHTML("beforeend",
+              `<p class="error">Lo que has escrito no es lo mismo. Míralo otra vez.</p>`);
+            return;
+          }
+        }
+        const r = await guardarAjuste(clave, ahora);
+        caja.remove();
+        pintar(r.mensaje, r.ok ? "aviso" : "error");
+      });
+    }
   }
+
 }
 
 function etiqueta(clave) {
