@@ -232,6 +232,16 @@ function avisarDeQueFaltanDatos() {
    Sólo para administración: un cliente viendo un punto rojo
    porque hay justificantes que validar no entendería nada.
    ------------------------------------------------------------ */
+/* Se le pregunta al service worker qué versión es. Él es quien
+   lo sabe: el JavaScript de la página puede ser de otra. */
+function preguntarVersion() {
+  const hueco = document.getElementById("version-puesta");
+  if (!hueco) return;
+  const sw = navigator.serviceWorker?.controller;
+  if (!sw) { hueco.textContent = "sin instalar"; return; }
+  sw.postMessage({ pregunta: "version" });
+}
+
 async function ponerPuntos() {
   if (!ficha?.es_admin) return;
 
@@ -306,6 +316,11 @@ function pintarMarco(seccionId, sesion) {
       <button class="lateral-salir" id="salir">
         ${icono("salida")}<span>${t("Salir")}</span>
       </button>
+
+      <!-- La versión que está corriendo, en pequeño. No es un
+           adorno: es lo que convierte «no me funciona» en «tengo
+           la de antes», y eso ahorra horas. -->
+      <p class="lateral-version">v<span id="version-puesta">…</span></p>
     </aside>
 
     <main class="principal"><div class="contenedor" id="hueco"></div></main>`;
@@ -319,6 +334,7 @@ function pintarMarco(seccionId, sesion) {
      una consulta lenta dejaría la aplicación en blanco — que es
      exactamente el fallo que costó dos días el 13/09/2026. */
   ponerPuntos();
+  preguntarVersion();
 
   app.querySelector("#salir").addEventListener("click", async () => { await salir(); arrancar(); });
 
@@ -557,7 +573,59 @@ if ("serviceWorker" in navigator) {
     });
   }).catch(() => { /* sin service worker se vive igual */ });
 
+  /* ============================================================
+     QUE SE ACTUALICE SOLA.
+
+     Antes esto enseñaba una barra con un botón de «Actualizar».
+     Una barra que hay que pulsar es una barra que no se pulsa: el
+     13/09/2026 Santiago me contó TRES VECES fallos que ya estaban
+     arreglados y publicados, porque su móvil seguía con la versión
+     de antes.
+
+     `controllerchange` salta cuando un service worker nuevo toma
+     el mando. A partir de ahí, el JavaScript que hay en memoria es
+     viejo y el que se serviría es nuevo: hay que recargar.
+
+     Con dos frenos:
+
+     - SI ESTÁ ESCRIBIENDO ALGO, NO. Perderle media ficha de un
+       perro es peor que el problema que arregla. Se queda la barra
+       de siempre y decide él.
+     - Y UN CERROJO, porque una recarga que vuelve a disparar la
+       recarga deja el móvil dando vueltas para siempre.
+     ============================================================ */
+  let yaRecargando = false;
+
+  const estaEscribiendo = () =>
+    [...document.querySelectorAll("input, textarea, select")].some(c => {
+      if (c.type === "file" || c.type === "checkbox" || c.type === "radio") return false;
+      return String(c.value ?? "").trim() !== "";
+    });
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (yaRecargando) return;
+
+    if (estaEscribiendo()) {
+      avisarDeVersionNueva();     // que decida él
+      return;
+    }
+    yaRecargando = true;
+    location.reload();
+  });
+
+  /* Y la versión que CORRE de verdad, para poder contarla.
+     Se le pregunta al service worker: dos sitios donde escribirla
+     son dos sitios donde puede quedarse vieja. */
   navigator.serviceWorker.addEventListener("message", e => {
+    if (e.data?.respuesta && e.data.version) {
+      const hueco = document.getElementById("version-puesta");
+      if (hueco) hueco.textContent = e.data.version;
+      return;
+    }
+    return alAvisarDeVersion(e);
+  });
+
+  function alAvisarDeVersion(e) {
     if (!e.data?.version || e.data.primera) return;
     /* Y aun así: `controller` nulo significa que a esta página
        todavía no la sirve ningún service worker, o sea que es su
@@ -565,7 +633,7 @@ if ("serviceWorker" in navigator) {
        este aviso no puede volver a salir cuando no toca. */
     if (!navigator.serviceWorker.controller) return;
     avisarDeVersionNueva();
-  });
+  }
 }
 
 function avisarDeVersionNueva() {

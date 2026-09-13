@@ -25,7 +25,7 @@
    días antes y le enseñaba perros de otros clientes. Una
    aplicación que se actualiza en el escritorio y no en el móvil
    miente en el móvil. */
-const VERSION = "2026-09-13-af";
+const VERSION = "2026-09-13-ag";
 const CACHE = `amigomio-${VERSION}`;
 
 /* TODO lo que hace falta para abrir. No una parte.
@@ -141,6 +141,17 @@ self.addEventListener("activate", e => {
    abre con lo de ayer es infinitamente mejor que una que no
    abre. La copia buena se guarda igual, para la próxima vez. */
 const MARGEN = 3000;
+
+/* «¿Qué versión eres?»
+   
+   Lo pregunta la página para enseñarla en el menú. Sin esto, «no
+   me funciona» y «tienes lo de antes» son indistinguibles, y se
+   buscan durante horas fallos que ya están arreglados. Pasó tres
+   veces el 13/09/2026. */
+self.addEventListener("message", e => {
+  if (e.data?.pregunta !== "version") return;
+  e.source?.postMessage({ version: VERSION, respuesta: true });
+});
 
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);

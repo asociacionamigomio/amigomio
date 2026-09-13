@@ -1370,3 +1370,16 @@ button.perro-mini:hover { border-color: var(--azul-medio, #6199C8); }
   font-size: .7rem; font-weight: 700; line-height: 1.25rem;
   text-align: center; flex: 0 0 auto;
 }
+
+/* La versión, en pequeñito al pie del menú.
+   No es un adorno: es lo que convierte «no me funciona» en «tengo
+   la de antes», y eso ahorra horas de buscar fallos arreglados. */
+.lateral-version {
+  margin: .4rem 0 0;
+  font-size: .68rem;
+  color: var(--flojo, #6B7C88);
+  opacity: .7;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+@media print { .lateral-version { display: none !important; } }
