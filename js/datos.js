@@ -88,6 +88,56 @@ export async function misPerros() {
   return data || [];
 }
 
+/**
+ * TODOS los perros, para administración.
+ *
+ * `misPerros()` enseña los del que ha entrado y punto — también
+ * a administración, porque «Mis perros» son los suyos y
+ * mezclarlos ensucia hasta los avisos de vacunas del inicio.
+ * Esta es la otra puerta: la de buscar el perro de un cliente.
+ *
+ * Quien no sea administración no ve nada aquí: lo impide RLS,
+ * no esta función.
+ */
+export async function todosLosPerros(busca = "") {
+  let q = supabase.from("perro")
+    .select("*, cliente(nombre, apellidos, telefono)")
+    .order("nombre");
+
+  const b = busca.trim();
+  if (b) {
+    /* Por nombre del perro o por chip. Del dueño se filtra
+       después: PostgREST no sabe buscar dentro de una tabla
+       enlazada y pedírselo daría un error raro. */
+    q = q.or(`nombre.ilike.%${b}%,chip.ilike.%${b}%`);
+  }
+
+  const { data, error } = await q;
+  if (error) return [];
+  return data || [];
+}
+
+/** Los mismos, buscando también por el nombre del dueño. */
+export async function perrosBuscando(busca = "") {
+  const b = busca.trim().toLowerCase();
+  if (!b) return todosLosPerros();
+
+  const [porPerro, todos] = await Promise.all([
+    todosLosPerros(b),
+    todosLosPerros(),
+  ]);
+
+  const porDueno = todos.filter(p =>
+    `${p.cliente?.nombre ?? ""} ${p.cliente?.apellidos ?? ""} ${p.cliente?.telefono ?? ""}`
+      .toLowerCase().includes(b));
+
+  /* Sin repetir: un perro puede casar por su nombre Y por el de
+     su dueño. */
+  const vistos = new Set();
+  return [...porPerro, ...porDueno].filter(p =>
+    vistos.has(p.id) ? false : vistos.add(p.id));
+}
+
 export async function unPerro(id) {
   const { data, error } = await supabase.from("perro").select("*").eq("id", id).single();
   if (error) return null;

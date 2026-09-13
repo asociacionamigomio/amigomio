@@ -13,7 +13,20 @@
       viene de Supabase NO se guarda: enseñar una disponibilidad
       vieja sería peor que no enseñar nada.
    ============================================================ */
-const CACHE = "amigomio-v1";
+/* La VERSIÓN. Cámbiala cuando haya que forzar que todo el mundo
+   se traiga lo nuevo.
+
+   Con esto el caché entero cambia de nombre, el viejo se tira en
+   `activate`, y la página se entera de que hay versión nueva y
+   se lo dice al usuario.
+
+   Hizo falta el 13/09/2026: en el móvil de Santiago, con la
+   aplicación instalada, seguía corriendo el JavaScript de dos
+   días antes y le enseñaba perros de otros clientes. Una
+   aplicación que se actualiza en el escritorio y no en el móvil
+   miente en el móvil. */
+const VERSION = "2026-09-13-a";
+const CACHE = `amigomio-${VERSION}`;
 
 const LO_BASICO = [
   "./", "./index.html", "./css/estilo.css",
@@ -35,6 +48,11 @@ self.addEventListener("activate", e => {
     caches.keys()
       .then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
+      /* Y se lo decimos a las pestañas que ya estaban abiertas:
+         ellas deciden qué hacer, que pueden estar a media
+         ficha. */
+      .then(() => self.clients.matchAll({ type: "window" }))
+      .then(cs => cs.forEach(c => c.postMessage({ version: VERSION })))
   );
 });
 

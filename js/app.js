@@ -6,7 +6,7 @@
    ============================================================ */
 import { sesionActual, salir, puedeReservar } from "./sesion.js";
 import { t, arrancarIdioma, idiomaActual, ponerIdioma, IDIOMAS } from "./idioma.js";
-import { miFicha, misPerros } from "./datos.js";
+import { miFicha, misPerros, misReservas } from "./datos.js";
 import { avisosDeTodos } from "./sanidad.js";
 import { render as renderEntrada } from "./vistas/entrada.js";
 import { render as renderPerros }  from "./vistas/perros.js";
@@ -17,6 +17,7 @@ import { render as renderTarifas } from "./vistas/admin-tarifas.js";
 import { render as renderLibro }    from "./vistas/admin-libro.js";
 import { render as renderCuentas }  from "./vistas/admin-cuentas.js";
 import { render as renderBloqueos } from "./vistas/admin-bloqueos.js";
+import { render as renderAdminPerros } from "./vistas/admin-perros.js";
 import { render as renderCuadro } from "./vistas/admin-cuadro.js";
 import { render as renderHoja } from "./vistas/admin-hoja.js";
 import { render as renderEstancia } from "./vistas/admin-estancia.js";
@@ -204,6 +205,36 @@ async function renderInicio(contenedor, { sesion }) {
   let avisos = [];
   try { avisos = avisosDeTodos(await misPerros()); } catch { /* ya se verá */ }
 
+  /* Las estancias que vienen. La pantalla PROMETÍA enseñarlas
+     —«Aquí irán tus estancias»— y no enseñaba ninguna, así que
+     el cliente se quedaba mirando y pensando que su reserva se
+     había perdido. Una promesa escrita que no se cumple es peor
+     que no prometer nada.
+
+     Sólo las que están por venir: el inicio es «qué tengo por
+     delante», no el historial. Eso está en «Mis reservas». */
+  let proximas = [];
+  try {
+    const hoy = new Date().toISOString().slice(0, 10);
+    proximas = (await misReservas())
+      .filter(r => r.salida.slice(0, 10) >= hoy
+                && !["cancelada", "caducada"].includes(r.estado))
+      .sort((a, b) => a.entrada.localeCompare(b.entrada))
+      .slice(0, 3);
+  } catch { /* ya se verá */ }
+
+  const dia = iso => new Date(iso).toLocaleDateString("es-ES",
+    { weekday: "long", day: "numeric", month: "long" });
+  const hora = iso => new Date(iso).toLocaleTimeString("es-ES",
+    { hour: "2-digit", minute: "2-digit" });
+
+  const COMO_VA = {
+    pendiente:  { texto: "Falta el justificante", clase: "amarilla" },
+    revisando:  { texto: "Estamos mirándolo",     clase: "amarilla" },
+    confirmada: { texto: "Confirmada",            clase: "azul" },
+    en_curso:   { texto: "Está aquí ahora",       clase: "azul" },
+  };
+
   const enCristianoDias = d =>
     d < 0  ? "ya venció"
     : d === 0 ? "vence hoy"
@@ -213,9 +244,38 @@ async function renderInicio(contenedor, { sesion }) {
   contenedor.innerHTML = `
     <div class="tarjeta">
       <h2>¡Hola, ${esc(nombre)}!</h2>
-      <p>Aquí irán tus estancias. De momento, lo primero es presentarnos a tu perro.</p>
       ${ficha?.es_admin ? `<p class="flojo">Entras como administración.</p>` : ""}
     </div>
+
+    ${proximas.length ? `
+      <div class="tarjeta">
+        <h3>${proximas.length === 1 ? "Tu próxima estancia" : "Tus próximas estancias"}</h3>
+        <div class="proximas">
+          ${proximas.map(r => {
+            const perros = (r.reserva_perro || []).map(x => x.perro?.nombre).filter(Boolean);
+            const estado = COMO_VA[r.estado] || { texto: r.estado, clase: "" };
+            const faltan = Math.ceil((new Date(r.entrada) - Date.now()) / 86400000);
+            return `
+              <button class="proxima" data-ir="reservas">
+                <div>
+                  <strong>${esc(perros.join(" y ")) || "Tu reserva"}</strong>
+                  <p>${dia(r.entrada)} a las ${hora(r.entrada)}
+                     → ${dia(r.salida)} a las ${hora(r.salida)}</p>
+                  <p class="flojo">${esc(r.alojamiento?.nombre || "")}</p>
+                </div>
+                <div class="proxima-estado">
+                  <span class="etiqueta ${estado.clase}">${esc(estado.texto)}</span>
+                  ${faltan > 0 ? `<span class="flojo">${faltan === 1
+                    ? "es mañana" : `en ${faltan} días`}</span>` : ""}
+                </div>
+              </button>`;
+          }).join("")}
+        </div>
+      </div>` : `
+      <div class="tarjeta">
+        <p>No tienes ninguna estancia por delante.</p>
+        <button class="boton" data-ir="reservar">Reservar unos días</button>
+      </div>`}
 
     ${avisos.length ? `
       <div class="tarjeta avisos-sanidad">
@@ -248,7 +308,63 @@ async function renderInicio(contenedor, { sesion }) {
 
 arrancar();
 
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+/* ============================================================
+   Cuando hay una versión nueva.
+
+   El 13/09/2026 el móvil de Santiago, con la aplicación
+   instalada, seguía corriendo el JavaScript de dos días antes y
+   le enseñaba perros de otros clientes. Una aplicación
+   instalada puede pasarse semanas sin cerrarse del todo, y los
+   módulos que ya están en memoria no se recargan solos.
+
+   Así que: se comprueba al abrir y cada media hora, y cuando
+   hay algo nuevo se AVISA. No se recarga sola a propósito —
+   podría estar a media ficha de un perro, y perderle lo escrito
+   enfada más que el fallo que arregla.
+   ============================================================ */
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").then(registro => {
+    /* Al abrir, y cada media hora mientras siga abierta. */
+    registro.update();
+    setInterval(() => registro.update(), 30 * 60 * 1000);
+
+    registro.addEventListener("updatefound", () => {
+      const nuevo = registro.installing;
+      nuevo?.addEventListener("statechange", () => {
+        /* `controller` distingue «se acaba de instalar por
+           primera vez» de «había una y ahora hay otra». En el
+           primer caso no hay nada que avisar. */
+        if (nuevo.state === "installed" && navigator.serviceWorker.controller)
+          avisarDeVersionNueva();
+      });
+    });
+  }).catch(() => { /* sin service worker se vive igual */ });
+
+  navigator.serviceWorker.addEventListener("message", e => {
+    if (e.data?.version) avisarDeVersionNueva();
+  });
+}
+
+function avisarDeVersionNueva() {
+  if (document.getElementById("hay-version-nueva")) return;
+
+  const barra = document.createElement("div");
+  barra.id = "hay-version-nueva";
+  barra.className = "barra-version";
+  barra.innerHTML = `
+    <span>Hay una versión nueva de la aplicación.</span>
+    <button class="boton pequeno">Actualizar</button>`;
+
+  barra.querySelector("button").addEventListener("click", async () => {
+    /* Se tira el caché antes de recargar: si no, la recarga
+       podría volver a servir lo viejo y no habríamos hecho
+       nada. */
+    try { for (const c of await caches.keys()) await caches.delete(c); } catch { /* da igual */ }
+    location.reload();
+  });
+
+  document.body.appendChild(barra);
+}
 
 /* ------------------------------------------------------------
    Instalar en el móvil.
