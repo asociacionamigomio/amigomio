@@ -67,6 +67,52 @@ export function render(contenedor, { reserva, pago, quien }) {
   });
 }
 
+/* ============================================================
+   Qué tiene que traer el día de la entrada.
+
+   Santiago, 13/09/2026: «cuenta lo de su camita, juguetes, su
+   comida...».
+
+   Va en las DOS versiones de la pantalla, no sólo en la de
+   «confirmada»: quien paga por transferencia ve esta pantalla una
+   sola vez en su vida, justo al reservar. Si esto estuviera sólo
+   en la otra, no lo leería nunca.
+
+   Y lo del pienso SE EXPLICA, no se ordena. «Trae su comida» se
+   salta; «cambiárselo de golpe le puede sentar mal» se hace caso.
+   Una diarrea en una residencia es una semana mala para el perro
+   y una llamada incómoda para todos.
+   ============================================================ */
+function queTraer() {
+  return `
+    <div class="que-traer">
+      <p class="rotulo">Qué traer el día de la entrada</p>
+      <ul class="cosas">
+        <li><strong>Su comida de siempre.</strong> Cálculala con un par de días
+            de más, por si acaso, y dinos cuánto le toca y cuántas veces al día.
+            Cambiarle el pienso de golpe le puede sentar mal a la barriga, y eso
+            en una residencia le amarga la estancia.</li>
+
+        <li><strong>Su camita o una manta de casa.</strong> Sin lavar, mejor: lo
+            que le tranquiliza es que huela a lo suyo. La primera noche fuera se
+            lleva mucho mejor con su olor al lado.</li>
+
+        <li><strong>Dos o tres juguetes de los suyos.</strong> Los que ya tiene
+            machacados, no uno nuevo. Y si tiene uno que es EL juguete, ése.</li>
+
+        <li><strong>Su cartilla</strong>, con la rabia y las desparasitaciones al
+            día. Si nos la has subido a la ficha del perro, con eso vale.</li>
+
+        <li><strong>Su medicación</strong>, si toma algo, en su caja y con las
+            dosis apuntadas. Nunca suelta en una bolsita.</li>
+      </ul>
+
+      <p class="flojo">Y su collar y su correa puestos. Lo que no haga falta
+         —camas grandes, comederos, juguetes nuevos— no lo traigas: aquí hay de
+         todo y una mudanza pone más nervioso al perro que al dueño.</p>
+    </div>`;
+}
+
 function paso(n, titulo, cuerpo) {
   return `
     <li class="paso">
@@ -124,6 +170,8 @@ function pintarPendiente(r, pago, quien) {
              falta. No te quedas sin saber nada.</p>`)}
       </ol>
 
+      ${queTraer()}
+
       <p class="flojo">¿Te has equivocado en algo, o te ha surgido una duda?
          Háblanos y lo arreglamos, no pasa nada.</p>
       ${botonWhatsApp("Escríbenos por WhatsApp",
@@ -142,20 +190,16 @@ function pintarConfirmada(r) {
         ${r.total ? `Son <strong>${euros(r.total)}</strong>.` : ""}
       </div>
 
-      <p class="rotulo">Para el día de la entrada</p>
-      <ol class="pasos">
-        ${paso(1, "Trae la cartilla", `
-          <p>Con la rabia y las desparasitaciones al día. Si nos las has
-             subido a la ficha del perro, con eso vale.</p>`)}
-        ${paso(2, "Ven a la hora que reservaste", `
-          <p>Si se te va a hacer tarde o vas a llegar antes, dínoslo y lo
-             cuadramos. Fuera de horario hay recargo, y avisando casi
-             siempre se evita.</p>`)}
-        ${paso(3, "Y cuéntanos lo que haga falta", `
-          <p>Manías, medicación, si viene raro estos días. Cuanto más
-             sepamos, mejor lo pasa.</p>
-          <button class="boton" data-ir="reservas">Ver mis reservas</button>`)}
-      </ol>
+      ${queTraer()}
+
+      <p class="flojo">Ven a la hora que reservaste. Si se te va a hacer tarde o
+         vas a llegar antes, dínoslo y lo cuadramos: fuera de horario hay
+         recargo, y avisando casi siempre se evita.</p>
+
+      <p class="flojo">Y cuéntanos lo que haga falta —manías, si viene raro estos
+         días, con quién se lleva mal—. Cuanto más sepamos, mejor lo pasa.</p>
+
+      <button class="boton" data-ir="reservas">Ver mis reservas</button>
 
       ${botonWhatsApp("Escríbenos por WhatsApp",
         "Hola, acabo de hacer una reserva y quería contaros una cosa: ")}

@@ -1279,7 +1279,21 @@ button.perro-mini:hover { border-color: var(--azul-medio, #6199C8); }
   display: flex; align-items: center; justify-content: center;
   font-weight: 700; font-size: .95rem;
 }
-.paso-texto { flex: 1; }
+/* `min-width: 0` NO es opcional.
+   
+   Una caja con `flex: 1` no encoge por debajo del ancho de su
+   contenido mientras no se le diga esto — y entonces empuja el
+   marco hacia fuera y el texto se sale por la derecha. Es la causa
+   de nueve de cada diez desbordamientos en un móvil, y le pasó a
+   Santiago con estos pasos el 13/09/2026.
+   
+   `overflow-wrap` remata: un chip de quince cifras o un correo
+   largo no tienen por dónde partirse si no se les autoriza. */
+.paso-texto {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .paso-texto strong { display: block; margin-bottom: .3rem; }
 .paso-texto p { margin: .3rem 0; }
 .paso-texto .boton { width: auto; margin-top: .5rem; }
@@ -1293,3 +1307,20 @@ button.perro-mini:hover { border-color: var(--azul-medio, #6199C8); }
 .iban code {
   font-size: 1rem; letter-spacing: .04em; word-break: break-all; flex: 1 1 12rem;
 }
+
+/* Qué traer el día de la entrada. */
+.que-traer { margin: 1.2rem 0; }
+.cosas { list-style: none; padding: 0; margin: .5rem 0; }
+.cosas li {
+  padding: .6rem 0 .6rem .95rem;
+  border-left: 2px solid #E7DFD2;
+  margin-bottom: .5rem;
+  font-size: .94rem;
+  overflow-wrap: anywhere;
+}
+.cosas li strong { color: var(--texto); }
+
+/* Y que nada de esta pantalla pueda empujar el marco hacia fuera,
+   venga de donde venga el texto. */
+.reserva-hecha { overflow-wrap: anywhere; }
+.reserva-hecha .boton { max-width: 100%; }

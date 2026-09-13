@@ -46,14 +46,21 @@ test("dice con todas las letras que TODAVÍA NO está confirmada", () => {
 
 test("los pasos van numerados y son tres", () => {
   /* Uno, dos y tres. Una parrafada no se lee: se mira si hay
-     números y se cuentan. */
+     números y se cuentan.
+
+     Sólo en la versión de transferencia: cuando la reserva ya
+     está confirmada NO HAY PASOS QUE DAR, y numerar cosas que no
+     hay que hacer es inventarle trabajo a alguien. Ahí va lo que
+     traer y punto. */
   assert.match(vista, /paso-numero/, "cada paso lleva su número a la vista");
-  /* Uno, dos y tres, en las dos versiones: la de transferencia y
-     la de quien paga al llegar. */
-  for (const n of [1, 2, 3]) {
-    const veces = (vista.match(new RegExp("paso\\(" + n + ",", "g")) || []).length;
-    assert.ok(veces >= 2, `falta el paso ${n} en alguna de las dos versiones`);
-  }
+  const pendiente = vista.match(/function pintarPendiente[\s\S]*?\n\}/)[0];
+  for (const n of [1, 2, 3])
+    assert.ok(pendiente.includes(`paso(${n},`), `falta el paso ${n}`);
+
+  const confirmada = vista.match(/function pintarConfirmada[\s\S]*?\n\}/)[0];
+  assert.doesNotMatch(confirmada, /paso\(\d/,
+    "con la reserva confirmada no hay pasos que dar");
+  assert.match(confirmada, /no tienes que hacer nada más/i);
 });
 
 test("dice HASTA CUÁNDO se le guarda el sitio, con fecha y hora", () => {
@@ -113,4 +120,60 @@ test("el IBAN no se le enseña a cualquiera de internet", () => {
   assert.match(privada, /auth\.uid\(\) is null/, "sin sesión no se enseña");
   assert.match(sql, /grant execute on function datos_para_pagar\(\) to authenticated/);
   assert.match(sql, /revoke all on function datos_para_pagar\(\) from public/);
+});
+
+/* ============================================================
+   Qué tiene que traer.
+
+   Santiago, 13/09/2026: «los mensajes de para el día de la
+   entrada no se ve bien, se sale del marco, cuenta lo de su
+   camita, juguetes, su comida...».
+
+   Dos cosas distintas. El marco: los pasos se salían por la
+   derecha en el móvil — es la trampa de siempre de flexbox, una
+   caja con `flex: 1` no encoge por debajo de su contenido si no
+   se le dice `min-width: 0`.
+
+   Y el contenido, que importa más: un perro que llega con su
+   manta, sus juguetes y SU comida de siempre lo pasa muchísimo
+   mejor. Lo del pienso no es un detalle bonito: cambiarlo de
+   golpe da diarreas, y una diarrea en una residencia es una
+   semana mala para el perro y una llamada incómoda para todos.
+   ============================================================ */
+test("le decimos qué traer: su camita, sus juguetes y su comida", () => {
+  for (const cosa of [/camita|manta/i, /juguete/i, /comida|pienso/i])
+    assert.match(vista, cosa, `falta ${cosa}`);
+});
+
+test("y se lo decimos también a quien paga por transferencia", () => {
+  /* Ese cliente sólo ve esta pantalla una vez, justo al reservar.
+     Si lo de traer las cosas estuviera sólo en la versión de
+     «confirmada», no lo leería nunca. */
+  const pendiente = vista.match(/function pintarPendiente[\s\S]*?\n\}/)[0];
+  assert.match(pendiente, /queTraer|camita|manta/i);
+});
+
+test("lo del pienso se explica, no se ordena", () => {
+  /* «Trae su comida» se salta. «Cambiarle el pienso de golpe le
+     puede sentar mal» se hace caso. */
+  assert.match(vista, /sentar mal|diarrea|barriga|estómago/i);
+});
+
+test("los pasos no se salen del marco", () => {
+  /* Una caja con `flex: 1` NO encoge por debajo de su contenido
+     mientras no se le diga `min-width: 0`. Es la causa de nueve
+     de cada diez desbordamientos en el móvil. */
+  const css = leer("css/estilo.css");
+  const paso = css.match(/\.paso-texto\s*\{[^}]*\}/)[0];
+  assert.match(paso, /min-width:\s*0/,
+    "sin esto el texto largo empuja el marco hacia fuera");
+});
+
+test("y nada de la aplicación se sale a lo ancho", () => {
+  /* Se comprueba en la hoja entera: un `min-width` en píxeles
+     dentro de una caja flexible es la otra forma de conseguirlo. */
+  const css = leer("css/estilo.css");
+  const reserva = css.slice(css.indexOf("Ya has reservado"));
+  assert.doesNotMatch(reserva, /min-width:\s*\d{3,}px/,
+    "un ancho mínimo grande no cabe en un móvil");
 });
