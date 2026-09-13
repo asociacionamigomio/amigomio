@@ -555,10 +555,27 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 .lateral-op.activa { background: var(--azul); color: #fff; font-weight: 600; }
 .lateral-op svg, .lateral-salir svg { flex: none; }
 
+/* El rótulo de grupo tenía tres cosas que restan legibilidad, y
+   las tres a la vez: 0,68 rem, el gris flojo de los textos
+   secundarios y las letras separadas — encima en mayúsculas.
+   Santiago dijo que no se veía bien y tenía razón. */
 .lateral-grupo {
-  margin: 1.1rem 0 .3rem .7rem; font-size: .68rem; letter-spacing: .09em;
-  text-transform: uppercase; color: var(--texto-flojo); font-weight: 700;
+  margin: 1.1rem 0 .4rem; padding: .9rem .7rem 0;
+  border-top: 1px solid var(--borde);
+  font-size: .74rem; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--azul, #4E80A5); font-weight: 700;
 }
+
+/* Instalar, dentro del menú y con el mismo aire que lo demás. */
+.lateral-instalar {
+  display: flex; align-items: center; gap: .75rem; width: 100%;
+  margin-top: .4rem; padding: .62rem .7rem;
+  border: 1px dashed var(--azul, #4E80A5); border-radius: 11px;
+  background: none; font: inherit; font-size: .88rem; cursor: pointer;
+  color: var(--azul, #4E80A5); text-align: left;
+}
+.lateral-instalar:hover { background: #F3F8FB; }
+.lateral-instalar svg { flex: none; }
 .lateral-salir { margin-top: .6rem; border-top: 1px solid var(--borde); border-radius: 0 0 11px 11px; padding-top: .9rem; }
 
 .principal { flex: 1; min-width: 0; }
@@ -569,9 +586,13 @@ h4 { margin: 1.5rem 0 .3rem; color: var(--azul); font-size: .95rem; }
 @media (max-width: 700px) {
   .lateral { width: 66px; padding: 1rem .4rem; align-items: center; }
   .lateral-logo { width: 40px; margin-bottom: 1rem; }
-  .lateral-op span, .lateral-salir span, .lateral-grupo { display: none; }
+  .lateral-op span, .lateral-salir span, .lateral-instalar span { display: none; }
   .lateral-op, .lateral-salir { justify-content: center; padding: .7rem .4rem; }
-  .lateral-grupo { display: block; height: 1px; background: var(--borde); margin: .6rem .4rem; padding: 0; }
+  .lateral-grupo {
+    height: 1px; background: var(--borde); border: 0;
+    margin: .6rem .4rem; padding: 0; overflow: hidden; text-indent: -999px;
+  }
+  .lateral-instalar { justify-content: center; padding: .7rem .4rem; }
 }
 
 /* ============================================================

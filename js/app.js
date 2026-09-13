@@ -80,6 +80,7 @@ const ICONOS = {
   euro:       '<path d="M18 6.5A7 7 0 0 0 7.2 9M7.2 15A7 7 0 0 0 18 17.5M3.5 10.5h9M3.5 13.5h9"/>',
   grafico:    '<path d="M4 20V4M4 20h16"/><path d="M8 20v-6M12.5 20V8M17 20v-9"/>',
   candado:    '<rect x="4.5" y="10" width="15" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  movil:      '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 5.5h3"/><path d="M11 18.5h2"/>',
   libro:      '<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5Z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8 7.5h7M8 11h7"/>',
   rejilla:    '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8.5 9.5V20M14 9.5V20"/>',
   papel:      '<path d="M6 2.5h8l5 5V21a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 6 21V3a.5.5 0 0 1 .5-.5Z"/><path d="M13.5 2.8V8h5M9 12.5h6M9 16h6"/>',
@@ -203,6 +204,8 @@ function pintarMarco(seccionId, sesion) {
         ${mias.map(boton).join("")}
         ${suyas.length ? `<p class="lateral-grupo">Administración</p>${suyas.map(boton).join("")}` : ""}
       </nav>
+      <div id="hueco-instalar"></div>
+
       <div class="lateral-idioma" role="group" aria-label="Idioma">
         ${IDIOMAS.map(i => `
           <button class="${i.id === idiomaActual() ? "activa" : ""}"
@@ -221,6 +224,11 @@ function pintarMarco(seccionId, sesion) {
     b.addEventListener("click", () => pintarMarco(b.dataset.ir, sesion)));
 
   app.querySelector("#salir").addEventListener("click", async () => { await salir(); arrancar(); });
+
+  /* El marco se repinta entero al cambiar de sección, así que
+     el botón de instalar se va con él. Si sigue haciendo falta,
+     se vuelve a poner. */
+  if (pedirInstalar) mostrarBotonInstalar();
 
   /* Para que una vista pueda mandar a otra sin conocerla. */
   window.irA = id => pintarMarco(id, sesion);
@@ -433,12 +441,21 @@ window.addEventListener("appinstalled", () => {
   document.getElementById("instalar")?.remove();
 });
 
+/* El botón de instalar.
+
+   Va DENTRO del menú cuando hay menú. Flotando abajo a la
+   izquierda tapaba el final de la lista de administración, que
+   es la más larga — y un botón que flota encima de otro botón no
+   es un adorno mal puesto: es una opción a la que no se puede
+   llegar.
+
+   En la pantalla de entrada no hay menú, y ahí sí flota: no hay
+   nada debajo que tapar. */
 function mostrarBotonInstalar() {
   if (document.getElementById("instalar")) return;
+
   const b = document.createElement("button");
   b.id = "instalar";
-  b.className = "boton instalar";
-  b.textContent = "Instalar en el móvil";
   b.addEventListener("click", async () => {
     if (!pedirInstalar) return;
     pedirInstalar.prompt();
@@ -446,5 +463,15 @@ function mostrarBotonInstalar() {
     pedirInstalar = null;
     b.remove();
   });
-  document.body.appendChild(b);
+
+  const dentroDelMenu = document.getElementById("hueco-instalar");
+  if (dentroDelMenu) {
+    b.className = "lateral-instalar";
+    b.innerHTML = `${icono("movil")}<span>Instalar en el móvil</span>`;
+    dentroDelMenu.appendChild(b);
+  } else {
+    b.className = "boton instalar";
+    b.textContent = "Instalar en el móvil";
+    document.body.appendChild(b);
+  }
 }
