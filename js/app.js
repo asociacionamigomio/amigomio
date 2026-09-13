@@ -4,11 +4,12 @@
    Una sola página: según quién eres y dónde estás, se pinta una
    vista u otra dentro del mismo hueco.
    ============================================================ */
-import { sesionActual, salir, puedeReservar } from "./sesion.js";
+import { sesionActual, salir, puedeReservar, supabase } from "./sesion.js";
 import { t, arrancarIdioma, idiomaActual, ponerIdioma, IDIOMAS } from "./idioma.js";
 import { miFicha, misPerros, misReservas } from "./datos.js";
 import { avisosDeTodos } from "./sanidad.js";
 import { render as renderEntrada } from "./vistas/entrada.js";
+import { render as renderContrasenaNueva } from "./vistas/contrasena-nueva.js";
 import { render as renderPerros }  from "./vistas/perros.js";
 import { render as renderMiFicha } from "./vistas/mi-ficha.js";
 import { render as renderSolicitudes } from "./vistas/admin-solicitudes.js";
@@ -90,11 +91,43 @@ const icono = n => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
   stroke="currentColor" stroke-width="1.9" stroke-linecap="round"
   stroke-linejoin="round">${ICONOS[n] || ""}</svg>`;
 
+/* Cuando llega desde el enlace de «he olvidado la contraseña».
+
+   Supabase abre la sesión y avisa con PASSWORD_RECOVERY. Sin
+   escuchar ese aviso, el enlace lo dejaría dentro de la
+   aplicación sin ninguna pantalla donde cambiar nada, que es
+   exactamente lo que no se espera al pinchar «pon una
+   contraseña nueva».
+
+   Se engancha UNA vez, al cargar el fichero, y antes de
+   arrancar: el aviso puede llegar en cuanto se lee la sesión. */
+let cambiandoContrasena = false;
+
+supabase?.auth.onAuthStateChange((evento) => {
+  if (evento !== "PASSWORD_RECOVERY" || cambiandoContrasena) return;
+  cambiandoContrasena = true;
+
+  app.className = "contenedor";
+  renderContrasenaNueva(app, {
+    cuandoTermine: () => {
+      cambiandoContrasena = false;
+      /* Se limpia el enlace de la barra de direcciones: lleva el
+         testigo de recuperación y no pinta nada ahí una vez
+         usado. */
+      history.replaceState(null, "", location.pathname);
+      arrancar();
+    },
+  });
+});
+
 async function arrancar() {
   /* Lo primero: el idioma. De él depende hasta el `lang` del
      documento, que es lo que usan el corrector del teclado y
      los lectores de pantalla. */
   arrancarIdioma();
+
+  /* Si está a media recuperación, no se le pinta nada encima. */
+  if (cambiandoContrasena) return;
 
   if (!window.CONFIG?.configurado) {
     app.innerHTML = `

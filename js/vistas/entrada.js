@@ -5,13 +5,19 @@
    es confirmar el correo, y eso se explica aquí mismo para que
    nadie se quede esperando sin saber qué pasa.
    ============================================================ */
-import { entrar, darseDeAlta } from "../sesion.js";
+import { entrar, darseDeAlta, recuperarContrasena } from "../sesion.js";
 
 export function render(contenedor, { alEntrar }) {
-  let modo = "entrar";   // o "alta"
+  let modo = "entrar";   // "alta" · "olvidada"
 
   function pintar(aviso = "", clase = "aviso") {
     const esAlta = modo === "alta";
+    const esOlvidada = modo === "olvidada";
+
+    /* Quien ha olvidado la contraseña no tiene que ver un campo
+       de contraseña: sólo el correo. Pedirle la que no recuerda
+       es lo que más desespera de estas pantallas. */
+    if (esOlvidada) return pintarOlvidada(aviso, clase);
     contenedor.innerHTML = `
       <div class="portada">
         <img src="assets/logo.png" alt="AmigoMío" class="logo">
@@ -40,7 +46,18 @@ export function render(contenedor, { alEntrar }) {
           ${esAlta ? "¿Ya tienes cuenta?" : "¿Primera vez por aquí?"}
           <a href="#" id="cambiar">${esAlta ? "Entrar" : "Crear una cuenta"}</a>
         </p>
+
+        ${esAlta ? "" : `
+          <p class="cambiar">
+            <a href="#" id="olvidada">He olvidado la contraseña</a>
+          </p>`}
       </div>`;
+
+    contenedor.querySelector("#olvidada")?.addEventListener("click", e => {
+      e.preventDefault();
+      modo = "olvidada";
+      pintar();
+    });
 
     contenedor.querySelector("#cambiar").addEventListener("click", e => {
       e.preventDefault();
@@ -71,6 +88,53 @@ export function render(contenedor, { alEntrar }) {
     contenedor.querySelector("#clave").addEventListener("keydown", e => {
       if (e.key === "Enter") boton.click();
     });
+  }
+
+  /* Sólo el correo. Pedirle la contraseña a quien ha venido
+     porque no la recuerda es lo que más desespera de estas
+     pantallas. */
+  function pintarOlvidada(aviso, clase) {
+    contenedor.innerHTML = `
+      <div class="portada">
+        <img src="assets/logo.png" alt="AmigoMío" class="logo">
+      </div>
+
+      <div class="tarjeta">
+        <h2>He olvidado la contraseña</h2>
+        <p class="flojo">Dinos tu correo y te mandamos un enlace para poner una nueva.</p>
+
+        ${aviso ? `<div class="${clase}">${aviso}</div>` : ""}
+
+        <label for="correo">Tu correo</label>
+        <input id="correo" type="email" autocomplete="email" inputmode="email"
+               placeholder="tucorreo@ejemplo.com">
+
+        <button class="boton" id="enviar">Mándame el enlace</button>
+
+        <p class="cambiar"><a href="#" id="cambiar">Volver a entrar</a></p>
+      </div>`;
+
+    contenedor.querySelector("#cambiar").addEventListener("click", e => {
+      e.preventDefault();
+      modo = "entrar";
+      pintar();
+    });
+
+    const boton = contenedor.querySelector("#enviar");
+    const caja = contenedor.querySelector("#correo");
+
+    const pedir = async () => {
+      const correo = caja.value.trim();
+      if (!correo) return pintar("Nos falta tu correo.", "error");
+
+      boton.disabled = true;
+      boton.textContent = "Un momento…";
+      const r = await recuperarContrasena(correo);
+      pintar(r.mensaje, r.ok ? "aviso" : "error");
+    };
+
+    boton.addEventListener("click", pedir);
+    caja.addEventListener("keydown", e => { if (e.key === "Enter") pedir(); });
   }
 
   pintar();

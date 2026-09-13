@@ -86,9 +86,10 @@ test("cada pantalla importada está de verdad en el menú", () => {
     .map(m => m[1]);
   const secciones = crudo.match(/const SECCIONES = \[[\s\S]*?\n\];/)[0];
 
-  /* `renderEntrada` es la puerta: se pinta ANTES de que haya
-     menú, así que no está en SECCIONES y es correcto. */
-  const fueraDelMenu = ["renderEntrada"];
+  /* Dos se pintan ANTES de que haya menú, y es correcto:
+     `renderEntrada` es la puerta, y `renderContrasenaNueva` la
+     pantalla a la que se llega desde el enlace del correo. */
+  const fueraDelMenu = ["renderEntrada", "renderContrasenaNueva"];
 
   for (const r of importados.filter(x => !fueraDelMenu.includes(x)))
     assert.ok(secciones.includes(r),

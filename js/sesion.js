@@ -51,6 +51,38 @@ export async function entrar(correo, contrasena) {
   return { ok: true, mensaje: "" };
 }
 
+/**
+ * Pedir el enlace para cambiar la contraseña.
+ *
+ * El mensaje es EL MISMO esté el correo dado de alta o no. Si
+ * cambiara, cualquiera podría ir probando direcciones para
+ * averiguar quién es cliente de AmigoMío — y eso, además de
+ * feo, es un dato que no tenemos por qué dar.
+ *
+ * Por lo mismo, tampoco se devuelve el error de Supabase tal
+ * cual: sólo se distingue el «has probado muchas veces», que sí
+ * hace falta para que no se quede dándole al botón.
+ */
+export async function recuperarContrasena(correo) {
+  const { error } = await supabase.auth.resetPasswordForEmail(correo, {
+    redirectTo: location.origin + location.pathname,
+  });
+
+  if (error && /rate limit|too many requests/i.test(error.message))
+    return { ok: false, mensaje: "Has pedido el enlace muchas veces seguidas. Espera un minuto." };
+
+  return { ok: true, mensaje:
+    "Si ese correo está dado de alta, te hemos mandado un enlace para poner " +
+    "una contraseña nueva. Mira también la carpeta de spam." };
+}
+
+/** La contraseña nueva, ya con el enlace abierto. */
+export async function cambiarContrasena(nueva) {
+  const { error } = await supabase.auth.updateUser({ password: nueva });
+  if (error) return { ok: false, mensaje: enCristiano(error) };
+  return { ok: true, mensaje: "Contraseña cambiada. Ya puedes entrar con ella." };
+}
+
 export async function salir() {
   await supabase.auth.signOut();
 }
