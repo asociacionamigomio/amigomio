@@ -60,7 +60,14 @@ insert into tarifa (clave, importe, nota) values
   ('fuera_horario_semana', 50, 'Entrega o recogida fuera de horario, entre semana'),
   ('fuera_horario_finde',  75, 'Entrega o recogida fuera de horario, sábado o domingo'),
   ('fuera_horario_noche', 120, 'Entre las 21:00 y las 7:30, sea el día que sea'),
-  ('minimo_noches',         2, 'Reserva mínima')
+  ('minimo_noches',         2, 'Reserva mínima'),
+
+  -- TEMPORADA LARGA. Tarifa PLANA por noche: ni recargo de fin
+  -- de semana, ni de festivo, ni de Navidad. Quien deja al perro
+  -- un mes no paga los findes a 18.
+  ('larga_dia',            12, 'Temporada larga: por noche, primer perro'),
+  ('larga_perro_2',        10, 'Temporada larga: lo que suma el segundo perro, por noche'),
+  ('larga_perro_3',         8, 'Temporada larga: lo que suma el tercero, por noche')
 on conflict (clave) do nothing;
 
 -- ------------------------------------------------------------
@@ -133,7 +140,9 @@ insert into ajuste (clave, valor, nota) values
   ('descuento_larga_noches', '15',
    'A partir de tantas noches, descuento por estancia larga. VACÍO o 0 = no se aplica'),
   ('descuento_larga_pct', '10',
-   'Tanto por ciento que se descuenta en las estancias largas')
+   'Tanto por ciento que se descuenta en las estancias largas'),
+  ('larga_desde_noches', '',
+   'A partir de tantas noches se cobra la TARIFA DE TEMPORADA LARGA (plana: 12 el primer perro, +10 el segundo, +8 el tercero). VACÍO = no se aplica')
 on conflict (clave) do nothing;
 
 -- ============================================================
@@ -486,6 +495,12 @@ declare
   descontable numeric := 0;
   dto      record;
   rebaja   numeric;
+
+  -- Temporada larga: tarifa PLANA que sustituye a la de cada
+  -- día y al suplemento normal por perro. El escalón lo pone
+  -- Santiago en los ajustes; vacío, no se aplica nada.
+  desde_larga integer;
+  es_larga    boolean := false;
 begin
   noches := (la_salida::date - la_entrada::date);
 
@@ -506,13 +521,31 @@ begin
     raise exception 'No puede haber más perros con curas que perros.';
   end if;
 
-  -- Base: noche a noche, desde la entrada hasta la víspera de la salida
-  for d in select generate_series(la_entrada::date, la_salida::date - 1, '1 day')::date loop
-    base := base + precio_noche(d, el_tipo);
-  end loop;
-  lineas := lineas || jsonb_build_object(
-    'concepto', noches || ' noche' || case when noches = 1 then '' else 's' end,
-    'importe', base);
+  -- ¿Entra por temporada larga? Sólo en los alojamientos
+  -- normales: el especial ya tiene su propia tarifa plana.
+  select nullif(a.valor, '')::integer into desde_larga
+    from ajuste a where a.clave = 'larga_desde_noches';
+  es_larga := el_tipo = 'normal'
+          and desde_larga is not null and desde_larga > 0
+          and noches >= desde_larga;
+
+  if es_larga then
+    -- Plana: ni finde, ni festivo, ni Navidad.
+    select t.importe into importe from tarifa t where t.clave = 'larga_dia';
+    base := importe * noches;
+    lineas := lineas || jsonb_build_object(
+      'concepto', noches || ' noches · temporada larga',
+      'importe', base);
+  else
+    -- Base: noche a noche, desde la entrada hasta la víspera de la salida
+    for d in select generate_series(la_entrada::date, la_salida::date - 1, '1 day')::date loop
+      base := base + precio_noche(d, el_tipo);
+    end loop;
+    lineas := lineas || jsonb_build_object(
+      'concepto', noches || ' noche' || case when noches = 1 then '' else 's' end,
+      'importe', base);
+  end if;
+
   total := total + base;
   descontable := descontable + base;
 
@@ -521,13 +554,27 @@ begin
   -- distintas: es la misma repetida, y así cambiarla es cambiar
   -- un solo número.
   if los_perros >= 2 then
-    select t.importe into importe from tarifa t where t.clave = 'perro_adicional';
+    if es_larga then
+      -- En temporada larga cada perro suma lo suyo y no lo
+      -- mismo: 10 el segundo, 8 el tercero. No es la escala
+      -- normal repetida.
+      importe := 0;
+      select t.importe into importe from tarifa t where t.clave = 'larga_perro_2';
+      importe := importe * noches;
+      if los_perros = 3 then
+        importe := importe + (select t.importe from tarifa t where t.clave = 'larga_perro_3') * noches;
+      end if;
+    else
+      select t.importe into importe from tarifa t where t.clave = 'perro_adicional';
+      importe := importe * (los_perros - 1) * noches;
+    end if;
+
     lineas := lineas || jsonb_build_object(
       'concepto', case when los_perros = 2 then 'Segundo perro'
                        else 'Segundo y tercer perro' end,
-      'importe', importe * (los_perros - 1) * noches);
-    total := total + importe * (los_perros - 1) * noches;
-    descontable := descontable + importe * (los_perros - 1) * noches;
+      'importe', importe);
+    total := total + importe;
+    descontable := descontable + importe;
   end if;
 
   -- Curas o inyectables. La medicación oral no lleva cargo.
@@ -562,7 +609,17 @@ begin
   -- Se redondea a dos decimales: un 12,5 % de 191 son 23,875, y
   -- nadie cobra tres cuartos de céntimo.
   if descontable > 0 then
-    select * into dto from descuento_aplicable(el_cliente, la_entrada::date, noches);
+    /* Con tarifa de temporada larga se pide el descuento como si
+       la estancia fuera corta: el descuento «por estancia larga»
+       y la tarifa larga son la misma idea con dos nombres, y
+       aplicar los dos sería descontar dos veces sobre un precio
+       que ya es el rebajado.
+
+       Los otros descuentos —cliente fijo, promociones— siguen
+       entrando, porque son de otra naturaleza. */
+    select * into dto from descuento_aplicable(
+      el_cliente, la_entrada::date,
+      case when es_larga then 0 else noches end);
     if dto.pct is not null and dto.pct > 0 then
       rebaja := round(descontable * dto.pct / 100, 2);
       lineas := lineas || jsonb_build_object(
@@ -764,4 +821,62 @@ begin
   delete from promocion where nombre = 'PRUEBA mitad';
 
   raise notice 'Descuentos: todas las comprobaciones pasan.';
+end $$;
+
+-- ============================================================
+-- PRUEBAS DE LA TEMPORADA LARGA.
+--
+-- Se enciende el escalón, se comprueba y se deja como estaba.
+-- ============================================================
+do $$
+declare
+  p     jsonb;
+  antes text;
+begin
+  select valor into antes from ajuste where clave = 'larga_desde_noches';
+  update ajuste set valor = '30' where clave = 'larga_desde_noches';
+
+  -- 30 noches justas: entra por temporada larga. Un perro, 12
+  -- la noche y plano: 360, caigan los findes donde caigan.
+  p := presupuesto('2026-08-01 11:00', '2026-08-31 11:00', 'normal', 1, 0);
+  assert (p->>'total')::numeric = 30 * 12,
+    'treinta noches de un perro son 360 planos, dio ' || (p->>'total');
+
+  -- Dos perros: 12 + 10 = 22 la noche.
+  p := presupuesto('2026-08-01 11:00', '2026-08-31 11:00', 'normal', 2, 0);
+  assert (p->>'total')::numeric = 30 * 22,
+    'dos perros treinta noches son 660, dio ' || (p->>'total');
+
+  -- Tres: 12 + 10 + 8 = 30 la noche.
+  p := presupuesto('2026-08-01 11:00', '2026-08-31 11:00', 'normal', 3, 0);
+  assert (p->>'total')::numeric = 30 * 30,
+    'tres perros treinta noches son 900, dio ' || (p->>'total');
+
+  -- Una noche menos NO entra: se cobra la tarifa normal.
+  p := presupuesto('2026-08-01 11:00', '2026-08-30 11:00', 'normal', 1, 0);
+  assert (p->>'total')::numeric > 29 * 12,
+    'veintinueve noches todavía van a tarifa normal, y salen más caras';
+
+  -- Y la línea lo dice, para que nadie crea que nos hemos
+  -- equivocado al compararlo con la tarifa de la web.
+  p := presupuesto('2026-08-01 11:00', '2026-08-31 11:00', 'normal', 1, 0);
+  assert exists (select 1 from jsonb_array_elements(p->'lineas') l
+                  where l->>'concepto' like '%temporada larga%'),
+    'el desglose tiene que decir que es tarifa de temporada larga';
+
+  -- No se descuenta dos veces: con la tarifa larga puesta, el
+  -- descuento por estancia larga no entra.
+  assert not exists (select 1 from jsonb_array_elements(p->'lineas') l
+                      where l->>'concepto' like 'Estancia larga%'),
+    'la tarifa larga y el descuento por estancia larga son lo mismo: no van juntos';
+
+  -- Apagado con el ajuste vacío, se cobra lo de siempre.
+  update ajuste set valor = '' where clave = 'larga_desde_noches';
+  p := presupuesto('2026-08-01 11:00', '2026-08-31 11:00', 'normal', 1, 0);
+  assert (p->>'total')::numeric <> 30 * 12,
+    'sin escalón puesto no puede aplicarse la tarifa larga';
+
+  update ajuste set valor = coalesce(antes, '') where clave = 'larga_desde_noches';
+
+  raise notice 'Temporada larga: todas las comprobaciones pasan.';
 end $$;
