@@ -399,6 +399,21 @@ async function renderInicio(contenedor, { sesion }) {
     b.addEventListener("click", () => pintarMarco(b.dataset.ir, sesion)));
 }
 
+/* Deja constancia del fallo en el propio móvil, para que
+   `revisar.html` pueda enseñarlo. Si `localStorage` no va —modo
+   privado— se pierde, y tampoco pasa nada: es un extra. */
+function apuntarElFallo(donde, fallo) {
+  try {
+    localStorage.setItem("amigomio-ultimo-fallo", JSON.stringify({
+      cuando: new Date().toISOString(),
+      donde,
+      mensaje: fallo?.message || String(fallo),
+      detalle: fallo?.code || fallo?.hint || fallo?.details || "",
+    }));
+  } catch { /* da igual */ }
+}
+window.apuntarElFallo = apuntarElFallo;
+
 /* Y se arranca.
 
    Recogiendo el error: `arrancar()` es una promesa, y una promesa
@@ -413,6 +428,12 @@ arrancar()
   .then(() => window.arrancoBien?.())
   .catch(fallo => {
     console.error("No se ha podido arrancar:", fallo);
+
+    /* Y se APUNTA, para poder leerlo después en revisar.html.
+       Pedirle a una persona que copie un texto de una pantalla de
+       error, en un móvil, es pedirle demasiado — y adivinar ya nos
+       costó dos días (13/09/2026). */
+    apuntarElFallo("al arrancar", fallo);
 
     window.arrancoBien?.();
     app.className = "contenedor";

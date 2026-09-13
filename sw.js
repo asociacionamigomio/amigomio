@@ -25,7 +25,7 @@
    días antes y le enseñaba perros de otros clientes. Una
    aplicación que se actualiza en el escritorio y no en el móvil
    miente en el móvil. */
-const VERSION = "2026-09-13-r";
+const VERSION = "2026-09-13-s";
 const CACHE = `amigomio-${VERSION}`;
 
 /* TODO lo que hace falta para abrir. No una parte.
@@ -149,6 +149,9 @@ self.addEventListener("fetch", e => {
      que la página que arregla el service worker la sirviera el
      service worker roto. */
   if (url.pathname.endsWith("/reiniciar.html")) return;
+
+  /* Y la de revisar, por lo mismo: es la que averigua qué falla. */
+  if (url.pathname.endsWith("/revisar.html")) return;
 
   /* Lo de fuera va derecho a la red, sin pasar por aquí. */
   if (url.origin !== location.origin) return;

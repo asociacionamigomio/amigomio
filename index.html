@@ -66,8 +66,17 @@
         document.getElementById("otra-vez")
           .addEventListener("click", function () { location.reload(); });
 
-        /* Al registro de la consola, para poder mirarlo luego. */
+        /* Al registro de la consola, y APUNTADO en el móvil para
+           que `revisar.html` pueda enseñarlo. */
         if (porQue) console.error("El arranque se atascó:", porQue);
+        try {
+          localStorage.setItem("amigomio-ultimo-fallo", JSON.stringify({
+            cuando: new Date().toISOString(),
+            donde: porQue ? "cargando un fichero" : "el arranque no acabó en 12 segundos",
+            mensaje: porQue || "no dio ningún error: se quedó esperando",
+            detalle: "",
+          }));
+        } catch (e) { /* modo privado */ }
       }
 
       /* Un módulo que no llega avisa por aquí, y avisa ENSEGUIDA:

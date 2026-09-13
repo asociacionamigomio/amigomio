@@ -13,12 +13,40 @@ import { rutaDocumento, encoger, queLePasa, LADO_FOTO } from "./documentos.js";
 /* ------------------------------------------------------------
    Mi ficha de cliente
    ------------------------------------------------------------ */
+/* Las columnas que seguro se pueden leer aunque la base se haya
+   quedado a medias. Es el recambio, no lo normal: lo normal es
+   `select("*")`. */
+const COLUMNAS_DE_SIEMPRE =
+  "id, nombre, apellidos, dni, domicilio, telefono, recoge_nombre, recoge_dni, " +
+  "paga_en_persona, es_admin, descuento_pct, descuento_nota, consiente_datos, creado";
+
 export async function miFicha() {
   const user = await usuarioActual();
   if (!user) return null;
 
-  const { data, error: alPreguntar } = await supabase.from("cliente")
+  let { data, error: alPreguntar } = await supabase.from("cliente")
     .select("*").eq("id", user.id).maybeSingle();
+
+  /* 42501 = «permiso denegado». Los permisos de `cliente` están
+     dados COLUMNA POR COLUMNA (db/perfiles.sql), así que en cuanto
+     se añade una columna nueva a la tabla y no se apunta en esa
+     lista, `select("*")` deja de valer y se cae la ficha ENTERA.
+
+     Pasó el 13/09/2026 con `quiere_push`, que llega con el SQL de
+     las notificaciones: desde el momento en que se aplicó, ningún
+     cliente podía traer su ficha. Sin ficha no hay nombre y no
+     salen las opciones de administración.
+
+     Se reintenta pidiendo las columnas de siempre. Lo que se
+     pierde es la casilla nueva; lo que se salva es la aplicación.
+     El arreglo de verdad está en la base, pero el navegador se
+     despliega antes que la base. Siempre. */
+  if (alPreguntar?.code === "42501") {
+    console.warn("[AmigoMío] faltan permisos de alguna columna de cliente; " +
+                 "se piden las de siempre. Hay que aplicar db/perfiles.sql.");
+    ({ data, error: alPreguntar } = await supabase.from("cliente")
+      .select(COLUMNAS_DE_SIEMPRE).eq("id", user.id).maybeSingle());
+  }
 
   /* UNA CONSULTA QUE FALLA NO ES UNA CONSULTA QUE NO ENCUENTRA NADA.
 

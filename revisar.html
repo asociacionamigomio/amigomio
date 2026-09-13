@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revisar AmigoMío</title>
+<!-- Como `reiniciar.html`, esta página NO usa ningún fichero de la
+     aplicación: es la que averigua por qué la aplicación no va, así
+     que no puede depender de ella. Todo va dentro.
+
+     Existe porque el 13/09/2026 estuvimos dos días a ciegas con un
+     «no carga, no abre». Pedirle a una persona que copie el texto
+     de una pantalla de error, en un móvil, es pedirle demasiado.
+     Que lo diga la máquina. -->
+<style>
+  body { margin:0; padding:1.5rem 1rem 3rem; background:#FBF7F0; color:#243B4A;
+         font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .caja { max-width:30rem; margin:0 auto; background:#fff; border-radius:16px;
+          padding:1.25rem; box-shadow:0 4px 20px rgba(0,0,0,.06); }
+  h1 { font-size:1.3rem; margin:0 0 .3rem; }
+  h2 { font-size:1rem; margin:1.4rem 0 .4rem; }
+  p { font-size:.95rem; }
+  .flojo { color:#6B7C88; font-size:.87rem; }
+  button { width:100%; padding:.9rem; margin-top:1rem; border:0; border-radius:12px;
+           background:#4E80A5; color:#fff; font:inherit; font-weight:600; cursor:pointer; }
+  button.otro { background:#E7EDF1; color:#243B4A; }
+  ul { list-style:none; padding:0; margin:0; }
+  li { padding:.5rem 0; border-bottom:1px solid #F0EAE0; font-size:.93rem;
+       display:flex; gap:.6rem; align-items:flex-start; }
+  li:last-child { border-bottom:0; }
+  .marca { flex:0 0 1.4rem; font-size:1.05rem; }
+  .bien { color:#4F7020; } .mal { color:#b4453a; } .ojo { color:#9a6b12; }
+  .detalle { display:block; color:#6B7C88; font-size:.82rem; word-break:break-word; }
+  .fallo { background:#FDF3F2; border:1px solid #F0C9C4; border-radius:12px;
+           padding:.8rem; margin-top:.6rem; }
+  pre { white-space:pre-wrap; word-break:break-word; font-size:.78rem;
+        background:#F4F1EB; padding:.8rem; border-radius:10px; margin:.6rem 0 0; }
+</style>
+</head>
+<body>
+<div class="caja">
+  <h1>Revisar AmigoMío</h1>
+  <p class="flojo">Mira qué funciona y qué no, y lo deja escrito para poder
+     mandarlo. No toca nada.</p>
+
+  <ul id="lista"><li><span class="marca">⏳</span>Revisando…</li></ul>
+
+  <div id="ultimo"></div>
+
+  <button id="copiar">Copiar el informe</button>
+  <button class="otro" id="volver">Volver a AmigoMío</button>
+  <p class="flojo" id="nota"></p>
+</div>
+
+<script>
+(function () {
+  var lista = document.getElementById("lista");
+  var informe = [];
+  var filas = [];
+
+  function apunta(marca, texto, detalle) {
+    filas.push({ marca: marca, texto: texto, detalle: detalle || "" });
+    informe.push((marca === "bien" ? "OK  " : marca === "mal" ? "MAL " : "OJO ")
+                 + texto + (detalle ? "  ->  " + detalle : ""));
+    pinta();
+  }
+
+  function pinta() {
+    lista.innerHTML = filas.map(function (f) {
+      var icono = f.marca === "bien" ? "✅" : f.marca === "mal" ? "❌" : "⚠️";
+      return '<li><span class="marca ' + f.marca + '">' + icono + '</span><span>'
+        + esc(f.texto)
+        + (f.detalle ? '<span class="detalle">' + esc(f.detalle) + '</span>' : "")
+        + '</span></li>';
+    }).join("");
+  }
+
+  function esc(t) {
+    return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  var base = location.href.replace(/revisar\.html.*$/, "");
+
+  async function revisar() {
+    filas = [];
+
+    /* ---- 1. Qué versión hay publicada y cuál tiene este móvil ---- */
+    var publicada = "";
+    try {
+      var r = await fetch(base + "sw.js?" + Date.now(), { cache: "no-store" });
+      var texto = await r.text();
+      publicada = (texto.match(/const VERSION = "([^"]+)"/) || [])[1] || "?";
+      apunta("bien", "La versión publicada es " + publicada);
+    } catch (e) {
+      apunta("mal", "No se ha podido preguntar qué versión hay publicada",
+             "Parece que este móvil no tiene internet ahora mismo. " + e.message);
+    }
+
+    var guardada = "";
+    try {
+      var claves = await caches.keys();
+      guardada = (claves.find(function (k) { return k.indexOf("amigomio-") === 0; }) || "")
+                   .replace("amigomio-", "");
+      if (!guardada) apunta("ojo", "Este móvil no tiene ninguna copia guardada",
+                            "Se la traerá al abrir la aplicación.");
+      else if (publicada && guardada !== publicada)
+        apunta("mal", "Este móvil tiene la versión VIEJA: " + guardada,
+               "Hay que reiniciar para que se traiga la " + publicada + ".");
+      else apunta("bien", "Este móvil tiene la versión al día");
+    } catch (e) {
+      apunta("ojo", "No se ha podido mirar la copia guardada", e.message);
+    }
+
+    /* ---- 2. Los ficheros de la aplicación ---- */
+    try {
+      var swTexto = await (await fetch(base + "sw.js?" + Date.now(), { cache: "no-store" })).text();
+      var trozo = swTexto.match(/const LO_BASICO = \[([\s\S]*?)\];/)[1];
+      var ficheros = (trozo.match(/"\.\/[^"]*"/g) || [])
+        .map(function (s) { return s.slice(3, -1); })
+        .filter(function (s) { return s.slice(-3) === ".js"; });
+
+      var rotos = [];
+      for (var i = 0; i < ficheros.length; i++) {
+        var f = ficheros[i];
+        try {
+          var res = await fetch(base + f, { cache: "no-store" });
+          var cuerpo = (await res.text()).slice(0, 40).toLowerCase();
+          if (!res.ok) rotos.push(f + " (no llega: " + res.status + ")");
+          /* El fallo que nos costó la tarde: recibir la portada en
+             HTML donde se esperaba código. */
+          else if (cuerpo.indexOf("<!doctype") === 0 || cuerpo.indexOf("<html") === 0)
+            rotos.push(f + " (llega una página web en vez de código)");
+        } catch (e) { rotos.push(f + " (" + e.message + ")"); }
+      }
+
+      if (rotos.length) apunta("mal", rotos.length + " ficheros de la aplicación fallan",
+                               rotos.join(" · "));
+      else apunta("bien", "Los " + ficheros.length + " ficheros de la aplicación llegan bien");
+    } catch (e) {
+      apunta("ojo", "No se han podido revisar los ficheros", e.message);
+    }
+
+    /* ---- 3. El servidor ---- */
+    try {
+      var cfg = await (await fetch(base + "js/config.js?" + Date.now(), { cache: "no-store" })).text();
+      var url = (cfg.match(/SUPABASE_URL:\s*"([^"]+)"/) || [])[1];
+      var clave = (cfg.match(/SUPABASE_ANON:\s*"([^"]+)"/) || [])[1];
+      var t0 = Date.now();
+      var res2 = await fetch(url + "/rest/v1/", { headers: { apikey: clave } });
+      apunta(res2.ok ? "bien" : "mal",
+             "El servidor contesta (" + res2.status + ")",
+             (Date.now() - t0) + " milésimas");
+    } catch (e) {
+      apunta("mal", "El servidor NO contesta", e.message);
+    }
+
+    /* ---- 4. La sesión ---- */
+    try {
+      var tiene = Object.keys(localStorage).some(function (k) {
+        return k.indexOf("sb-") === 0 && k.indexOf("auth") > -1;
+      });
+      apunta(tiene ? "bien" : "ojo",
+             tiene ? "Hay una sesión abierta en este móvil"
+                   : "No hay sesión abierta: la aplicación pedirá el correo");
+    } catch (e) {
+      apunta("ojo", "No se ha podido mirar la sesión", e.message);
+    }
+
+    /* ---- 5. El último fallo apuntado ---- */
+    var ultimo = null;
+    try { ultimo = JSON.parse(localStorage.getItem("amigomio-ultimo-fallo") || "null"); }
+    catch (e) { /* nada */ }
+
+    var caja = document.getElementById("ultimo");
+    if (ultimo) {
+      informe.push("");
+      informe.push("ULTIMO FALLO: " + ultimo.donde);
+      informe.push("  " + ultimo.mensaje + (ultimo.detalle ? " [" + ultimo.detalle + "]" : ""));
+      informe.push("  " + ultimo.cuando);
+      caja.innerHTML =
+        '<h2>Lo último que falló</h2><div class="fallo"><strong>' + esc(ultimo.donde)
+        + '</strong><br>' + esc(ultimo.mensaje)
+        + (ultimo.detalle ? '<br><span class="detalle">' + esc(ultimo.detalle) + '</span>' : "")
+        + '<span class="detalle">' + esc(ultimo.cuando) + '</span></div>';
+    } else {
+      caja.innerHTML = '<h2>Lo último que falló</h2><p class="flojo">Nada apuntado. '
+        + 'Si la aplicación acaba de fallar, abre AmigoMío, espera a que falle, '
+        + 'y vuelve aquí.</p>';
+    }
+
+    informe.unshift("AmigoMío — revisión del " + new Date().toLocaleString("es-ES"));
+    informe.unshift("");
+    document.getElementById("nota").textContent =
+      "Navegador: " + navigator.userAgent.slice(0, 90);
+    informe.push("");
+    informe.push("Navegador: " + navigator.userAgent);
+  }
+
+  document.getElementById("copiar").addEventListener("click", async function () {
+    var texto = informe.join("\n");
+    try {
+      await navigator.clipboard.writeText(texto);
+      this.textContent = "Copiado ✓";
+    } catch (e) {
+      /* Sin permiso para copiar: se enseña para poder seleccionarlo
+         a mano, que es peor pero funciona siempre. */
+      var pre = document.createElement("pre");
+      pre.textContent = texto;
+      this.parentNode.insertBefore(pre, this);
+      this.textContent = "Ahí lo tienes, para copiarlo a mano";
+    }
+  });
+
+  document.getElementById("volver").addEventListener("click", function () {
+    location.href = base;
+  });
+
+  revisar();
+})();
+</script>
+</body>
+</html>
