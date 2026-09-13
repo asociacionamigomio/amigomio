@@ -159,3 +159,37 @@ test("la llave pública se dice que es pública", () => {
      colado un secreto en el repositorio. */
   assert.match(sql, /llave PÚBLICA|No es un secreto/);
 });
+
+test("todo el correo sale de la misma dirección", () => {
+  /* Supabase manda los suyos —confirmar el correo, recuperar la
+     contraseña— desde `noreply@amigomio.org`, y eso se
+     configura en su panel, no aquí. Si los nuestros salieran de
+     otra dirección, al cliente le llegarían correos de AmigoMío
+     desde dos sitios distintos: parece descuido, y a los
+     filtros de spam les parece peor. */
+  assert.match(fn, /noreply@amigomio\.org/);
+  assert.doesNotMatch(fn, /hola@amigomio\.org/);
+});
+
+test("y se dice que no se conteste ahí", () => {
+  /* Una dirección que se llama «no contestes» tiene que decir a
+     dónde sí, o el cliente se queda sin saber cómo responder. */
+  assert.match(fn, /WhatsApp|673 229 399/);
+});
+
+test("todos los correos dicen por dónde se nos habla", () => {
+  /* Salen de `noreply@`, que es un buzón donde nadie lee. Un
+     correo del que no se puede contestar y que no dice a dónde
+     sí, deja al cliente con la respuesta en la boca. */
+  /* Recortar cada cuerpo con una expresión regular es frágil —
+     son cadenas partidas en veinte trozos con `||`—. Se cuenta:
+     cada correo empieza por «Hola:» y cada uno tiene que
+     nombrar el WhatsApp al menos una vez. */
+  const correos = (sql.match(/'Hola:'/g) || []).length;
+  const conTelefono = (sql.match(/673 229 399/g) || []).length;
+
+  assert.ok(correos >= 4, `sólo encuentra ${correos} correos; ¿ha cambiado el formato?`);
+  assert.ok(conTelefono >= correos,
+    `hay ${correos} correos y sólo ${conTelefono} nombran el WhatsApp: ` +
+    "alguno deja al cliente sin saber a dónde contestar");
+});

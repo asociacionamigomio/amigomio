@@ -216,6 +216,7 @@ begin
          || chr(10) || chr(10) ||
          'No es nada urgente ni te impide reservar: es para que no te pille el día '
          || 'de la entrada.' || chr(10) || chr(10) ||
+         'Si tienes dudas, escríbenos por WhatsApp al 673 229 399.' || chr(10) || chr(10) ||
          'Un saludo,' || chr(10) || 'AmigoMío')
     then puestos := puestos + 1; end if;
   end loop;

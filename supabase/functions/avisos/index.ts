@@ -38,7 +38,15 @@ const POR_PASADA = 40;
    creciendo sola. */
 const MAX_INTENTOS = 3;
 
-const REMITENTE = "AmigoMío <hola@amigomio.org>";
+/* La MISMA dirección desde la que Supabase manda los suyos —
+   confirmar el correo, recuperar la contraseña—, que se
+   configura en su panel. Si saliéramos de otra, al cliente le
+   llegarían correos de AmigoMío desde dos sitios distintos:
+   parece descuido, y a los filtros de spam les parece peor.
+
+   Es un buzón al que no se contesta, así que TODOS los correos
+   dicen por dónde sí se nos habla: el WhatsApp. */
+const REMITENTE = "AmigoMío <noreply@amigomio.org>";
 
 Deno.serve(async (peticion) => {
   /* La puerta. Sin esto, cualquiera con la URL puede dispararla
