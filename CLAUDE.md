@@ -149,6 +149,24 @@ Lee `2026-09-12-amigomio-reservas-design.md` (el diseño), `2026-09-12-plan-fase
   Con `auth.uid()` nulo, un visitante sin identificar pasaría las comprobaciones de «¿es tuyo?».
   Hay que distinguir al servidor (`current_user in ('postgres','supabase_admin')`) de internet.
 
+## Los avisos: correo y móvil
+
+Un aviso es un aviso: se decide UNA vez en Postgres (`db/avisos.sql`) y sale por los dos
+caminos. La Edge Function `avisos` entrega el correo y, con la misma cola, el aviso al móvil.
+
+**El permiso de las notificaciones se pide una sola vez en la vida.** Si el usuario dice que no,
+el navegador no vuelve a preguntar y desde la página no hay forma de insistir. Por eso NO se pide
+al entrar: se pide cuando el cliente toca el botón en su ficha.
+
+**En iPhone sólo funcionan con la aplicación instalada** en la pantalla de inicio. En Safari
+normal Apple no las permite, y eso se dice en la pantalla en vez de dejar que lo descubran.
+
+**Las suscripciones caducan solas.** Un 404 o un 410 al mandar no es un error que reintentar: es
+que ese móvil ya no está, y la suscripción se borra.
+
+Secretos en **Edge Functions → Secrets**: `RESEND_API_KEY`, `CRON_SECRET` y `VAPID_PRIVADA`.
+La clave pública de VAPID va en `js/config.js` y **no es un secreto**: el navegador la necesita.
+
 ## Los correos
 
 Los avisos **no se mandan desde el navegador**: se encolan en la tabla `aviso` y los entrega la

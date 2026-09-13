@@ -25,7 +25,7 @@
    días antes y le enseñaba perros de otros clientes. Una
    aplicación que se actualiza en el escritorio y no en el móvil
    miente en el móvil. */
-const VERSION = "2026-09-13-j";
+const VERSION = "2026-09-13-k";
 const CACHE = `amigomio-${VERSION}`;
 
 const LO_BASICO = [
@@ -88,4 +88,55 @@ self.addEventListener("fetch", e => {
       })
       .catch(() => caches.match(e.request).then(r => r || caches.match("./index.html")))
   );
+});
+
+/* ============================================================
+   Los avisos en el móvil.
+
+   El servidor manda un empujón y esto lo enseña. Va aquí y no
+   en la página porque llega también con la aplicación cerrada:
+   es lo que los hace útiles.
+   ============================================================ */
+self.addEventListener("push", e => {
+  let datos = { titulo: "AmigoMío", cuerpo: "", ir: "/" };
+  try {
+    if (e.data) datos = { ...datos, ...e.data.json() };
+  } catch {
+    /* Sin datos legibles se enseña algo igual: una notificación
+       vacía es mejor que ninguna, porque el navegador exige
+       enseñar ALGO si se ha dado permiso. */
+    datos.cuerpo = e.data?.text?.() || "Tienes un aviso.";
+  }
+
+  e.waitUntil(self.registration.showNotification(datos.titulo, {
+    body: datos.cuerpo,
+    icon: "./assets/icono-192.png",
+    badge: "./assets/icono-192.png",
+    /* Con la misma etiqueta, un aviso nuevo SUSTITUYE al viejo
+       en vez de amontonarse. Tres avisos de la misma reserva en
+       la pantalla de bloqueo es lo que hace que se apaguen. */
+    tag: datos.tag || "amigomio",
+    data: { ir: datos.ir || "/" },
+  }));
+});
+
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+
+  /* Abrir la aplicación por el principio obliga a buscar de qué
+     hablaba el aviso. Se abre donde toca, y si ya hay una
+     ventana abierta se usa esa. */
+  const destino = new URL(e.notification.data?.ir || "./", self.location.origin
+    + self.location.pathname.replace(/sw\.js$/, "")).href;
+
+  e.waitUntil((async () => {
+    const abiertas = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const c of abiertas) {
+      if (c.url.startsWith(self.location.origin) && "focus" in c) {
+        c.navigate?.(destino);
+        return c.focus();
+      }
+    }
+    return self.clients.openWindow(destino);
+  })());
 });

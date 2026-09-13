@@ -28,6 +28,7 @@
                        el cron de Postgres en la cabecera
    ============================================================ */
 import { createClient } from "npm:@supabase/supabase-js@2";
+import webpush from "npm:web-push@3.6.7";
 
 /* De cuántos en cuántos. Con más, una caída a mitad deja muchos
    en «enviando» y hay que rescatarlos a mano. */
@@ -47,6 +48,12 @@ const MAX_INTENTOS = 3;
    Es un buzón al que no se contesta, así que TODOS los correos
    dicen por dónde sí se nos habla: el WhatsApp. */
 const REMITENTE = "AmigoMío <noreply@amigomio.org>";
+
+/* La clave PÚBLICA de los avisos al móvil. Es la misma que va
+   en js/config.js: no es un secreto, el navegador la necesita.
+   La privada vive en los secretos como VAPID_PRIVADA. */
+const VAPID_PUBLICA =
+  "BMh3Z2a_iqiEnb5r5ZA5-x1-7lofpv55fa9Z-zBjdwzV5OlqUcUob_nshkAfGfAmRCRhg-mRhv4m0xkzIe7Db8U";
 
 Deno.serve(async (peticion) => {
   /* La puerta. Sin esto, cualquiera con la URL puede dispararla
@@ -78,7 +85,7 @@ Deno.serve(async (peticion) => {
      Dos pasadas a la vez no se pisan: la segunda ya no los ve. */
   const { data: cola, error } = await db
     .from("aviso")
-    .select("id, correo, asunto, cuerpo, intentos")
+    .select("id, cliente_id, correo, asunto, cuerpo, motivo, intentos")
     .eq("estado", "pendiente")
     .order("creado")
     .limit(POR_PASADA);
@@ -132,8 +139,93 @@ Deno.serve(async (peticion) => {
     }
   }
 
-  return Response.json({ mandados, fallados });
+  /* Y al móvil. Se manda DESPUÉS del correo y sin poder tumbar
+     nada: un aviso que ya salió por correo no se vuelve a
+     encolar porque el móvil falle. */
+  const alMovil = await mandarAlMovil(db, cola);
+
+  return Response.json({ mandados, fallados, ...alMovil });
 });
+
+/* ============================================================
+   Los avisos al móvil.
+
+   Misma cola que los correos: un aviso es un aviso, y lo que se
+   decide en Postgres vale para los dos caminos. Aquí sólo se
+   entrega.
+
+   Las suscripciones CADUCAN SOLAS: el navegador las tira cuando
+   le parece. Un 404 o un 410 no es un error que haya que
+   reintentar — es que ese móvil ya no está, y hay que borrarla.
+   Guardar suscripciones muertas es pagar por mandar a nadie.
+   ============================================================ */
+async function mandarAlMovil(db: any, cola: any[]) {
+  const privada = Deno.env.get("VAPID_PRIVADA");
+  if (!privada) return { push: 0, pushSaltado: "falta VAPID_PRIVADA" };
+
+  webpush.setVapidDetails("mailto:info@amigomio.org", VAPID_PUBLICA, privada);
+
+  /* A quién: los clientes de estos avisos que quieran push. */
+  const clientes = [...new Set(cola.map((a) => a.cliente_id).filter(Boolean))];
+  if (!clientes.length) return { push: 0 };
+
+  const { data: suscripciones } = await db
+    .from("suscripcion_push")
+    .select("id, cliente_id, endpoint, p256dh, auth")
+    .in("cliente_id", clientes);
+
+  if (!suscripciones?.length) return { push: 0 };
+
+  const { data: quieren } = await db
+    .from("cliente").select("id, quiere_push").in("id", clientes);
+  const apagado = new Set((quieren ?? [])
+    .filter((c: any) => c.quiere_push === false).map((c: any) => c.id));
+
+  let push = 0;
+  const muertas: string[] = [];
+
+  for (const aviso of cola) {
+    if (apagado.has(aviso.cliente_id)) continue;
+
+    for (const s of suscripciones.filter((x: any) => x.cliente_id === aviso.cliente_id)) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+          JSON.stringify({
+            titulo: aviso.asunto,
+            /* Sólo el principio: en la pantalla de bloqueo no
+               cabe más, y lo largo se lee en la aplicación. */
+            cuerpo: primeraFrase(aviso.cuerpo),
+            tag: aviso.motivo,
+            ir: destinoDe(aviso.motivo),
+          }),
+        );
+        push++;
+      } catch (e: any) {
+        if (e?.statusCode === 404 || e?.statusCode === 410) muertas.push(s.id);
+      }
+    }
+  }
+
+  if (muertas.length) await db.from("suscripcion_push").delete().in("id", muertas);
+
+  return { push, muertas: muertas.length };
+}
+
+/* La primera frase de verdad, saltándose el «Hola:». */
+function primeraFrase(cuerpo: string): string {
+  const util = cuerpo.split(/\n{2,}/).find((p) => p.trim() && !/^hola/i.test(p.trim()));
+  return (util ?? cuerpo).trim().slice(0, 160);
+}
+
+/* A dónde lleva cada aviso al tocarlo. Abrir por el principio
+   obliga a buscar de qué hablaba. */
+function destinoDe(motivo: string): string {
+  if (motivo === "sanidad") return "./#perros";
+  if (motivo === "pago" || motivo === "recordatorio" || motivo === "confirmacion")
+    return "./#reservas";
+  return "./";
+}
 
 /* El mismo texto, con párrafos. Sin plantillas ni imágenes: un
    correo de una residencia canina no es un folleto, y cuanto

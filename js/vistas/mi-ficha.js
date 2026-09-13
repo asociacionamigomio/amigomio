@@ -7,6 +7,8 @@
    ============================================================ */
 import { validarFichaCliente } from "../ficha.js";
 import { miFicha, guardarMiFicha, subirFoto, verFoto } from "../datos.js";
+import { hayPush, esIphoneSinInstalar, encenderPush, apagarPush,
+         pushEncendida } from "../push.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -93,10 +95,69 @@ export async function render(contenedor) {
               ni sus datos de salud. Puedes quitarlo cuando quieras.</span></span>
         </label>
 
+        <div class="avisos-movil">
+          <p class="rotulo">Avisarme en el móvil</p>
+          <p class="flojo">Lo mismo que te contamos por correo, pero en el momento:
+             si a tu perro le caduca algo, si falta el justificante de una reserva
+             o la víspera de la entrada.</p>
+          <div id="estado-push"><p class="flojo">Un momento…</p></div>
+        </div>
+
         <button class="boton" id="guardar">Guardar</button>
       </div>`;
 
     contenedor.querySelector("#guardar").addEventListener("click", guardar);
+
+    pintarPush();
+
+    /* Los avisos en el móvil.
+
+       El permiso SE PIDE UNA SOLA VEZ EN LA VIDA: si dice que
+       no, el navegador no vuelve a preguntar y desde aquí no hay
+       forma de insistir. Por eso no se pide al entrar, cuando no
+       sabe de qué va, sino cuando toca este botón. */
+    async function pintarPush(aviso = "", clase = "aviso") {
+      const hueco = contenedor.querySelector("#estado-push");
+      if (!hueco) return;
+
+      if (!hayPush()) {
+        hueco.innerHTML = `<p class="flojo">Este navegador no sabe mandar avisos
+          al móvil. Seguirás recibiendo los correos.</p>`;
+        return;
+      }
+
+      if (esIphoneSinInstalar()) {
+        hueco.innerHTML = `<div class="aviso">
+          <strong>En iPhone hay que instalar la aplicación primero.</strong>
+          Toca el botón de Compartir y luego «Añadir a pantalla de inicio».
+          Ábrela desde ahí y aquí te saldrá el botón.
+          <br><span class="flojo">Es cosa de Apple, no nuestra: en Safari normal
+          no deja.</span></div>`;
+        return;
+      }
+
+      const encendida = await pushEncendida();
+
+      hueco.innerHTML = `
+        ${aviso ? `<div class="${clase}">${esc(aviso)}</div>` : ""}
+        ${encendida
+          ? `<p class="flojo">Encendidos en este móvil. ✓</p>
+             <button class="boton fantasma pequeno" id="push-no">Quitar los avisos</button>`
+          : `<button class="boton pequeno" id="push-si">Avisarme en este móvil</button>
+             <p class="flojo">Se enciende en cada móvil por separado.</p>`}`;
+
+      hueco.querySelector("#push-si")?.addEventListener("click", async e => {
+        e.target.disabled = true;
+        const r = await encenderPush();
+        await pintarPush(r.mensaje, r.ok ? "aviso" : "error");
+      });
+
+      hueco.querySelector("#push-no")?.addEventListener("click", async e => {
+        e.target.disabled = true;
+        const r = await apagarPush();
+        await pintarPush(r.mensaje, "aviso");
+      });
+    }
 
     /* La foto se sube y se guarda al momento, sin esperar al
        botón: subirla y que luego se pierda porque se salió de la

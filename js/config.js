@@ -14,6 +14,12 @@
 window.CONFIG = {
   SUPABASE_URL:  "https://sovzbrrpcbmnevrdwaej.supabase.co",
   SUPABASE_ANON: "sb_publishable_1eNdsYkpqefEIwJU7aakrw_UwzFu9kP",
+
+  /* La clave PÚBLICA de los avisos en el móvil. No es un
+     secreto: el navegador la necesita para suscribirse y va en
+     todas las páginas. La privada, que sí lo es, vive en los
+     secretos de Edge Functions como VAPID_PRIVADA. */
+  VAPID_PUBLICA: "BMh3Z2a_iqiEnb5r5ZA5-x1-7lofpv55fa9Z-zBjdwzV5OlqUcUob_nshkAfGfAmRCRhg-mRhv4m0xkzIe7Db8U",
 };
 
 CONFIG.configurado = CONFIG.SUPABASE_URL !== "PENDIENTE" &&

@@ -1,6 +1,7 @@
 schema.sql
 licencia.sql
 perfiles.sql
+push.sql
 storage.sql
 documentos.sql
 tarifas.sql
