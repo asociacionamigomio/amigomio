@@ -53,7 +53,7 @@ const REMITENTE = "AmigoMío <noreply@amigomio.org>";
    en js/config.js: no es un secreto, el navegador la necesita.
    La privada vive en los secretos como VAPID_PRIVADA. */
 const VAPID_PUBLICA =
-  "BMh3Z2a_iqiEnb5r5ZA5-x1-7lofpv55fa9Z-zBjdwzV5OlqUcUob_nshkAfGfAmRCRhg-mRhv4m0xkzIe7Db8U";
+  "BDRcWtxH6sMK6mR3WL2Ind1UzVvzIpV60wFk6UL4db_EZ4SA8-nqRObMmEuEVLLh3P17mZiZOtkAIm0RJT5pzkc";
 
 Deno.serve(async (peticion) => {
   /* La puerta. Sin esto, cualquiera con la URL puede dispararla

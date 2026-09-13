@@ -19,7 +19,7 @@ window.CONFIG = {
      secreto: el navegador la necesita para suscribirse y va en
      todas las páginas. La privada, que sí lo es, vive en los
      secretos de Edge Functions como VAPID_PRIVADA. */
-  VAPID_PUBLICA: "BMh3Z2a_iqiEnb5r5ZA5-x1-7lofpv55fa9Z-zBjdwzV5OlqUcUob_nshkAfGfAmRCRhg-mRhv4m0xkzIe7Db8U",
+  VAPID_PUBLICA: "BDRcWtxH6sMK6mR3WL2Ind1UzVvzIpV60wFk6UL4db_EZ4SA8-nqRObMmEuEVLLh3P17mZiZOtkAIm0RJT5pzkc",
 };
 
 CONFIG.configurado = CONFIG.SUPABASE_URL !== "PENDIENTE" &&
