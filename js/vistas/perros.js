@@ -7,7 +7,8 @@
 import { PASOS, validarPaso } from "../formularios.js";
 import { misPerros, guardarPerro, unPerro, borrarPerro, pedirCambio, misSolicitudes,
          documentosDe, subirDocumento, borrarDocumento, verDocumento,
-         subirFoto, verFoto } from "../datos.js";
+         subirFoto, verFoto, miFicha } from "../datos.js";
+import { enlaceWhatsAppA } from "../contacto.js";
 import { tiposPara, tipoDocumento } from "../documentos.js";
 import { camposSanidad, PRODUCTOS_EXTERNOS, diasDeAvisoDe,
          avisosDelPerro, caducidadDe, enCristiano } from "../sanidad.js";
@@ -80,6 +81,10 @@ async function ficha(contenedor, id, { volverA = null } = {}) {
   if (!d) { contenedor.innerHTML = `<div class="error">No encontramos ese perro.</div>`; return; }
 
   let papeles = await documentosDe(id);
+  /* Quién está mirando: el bloque de escribirle al dueño es sólo
+     para administración. Un cliente no tiene por qué ver el
+     teléfono de nadie en esta pantalla. */
+  const quienMira = await miFicha().catch(() => null);
   const avisos = avisosDelPerro(d);
   const campos = camposSanidad(d);
   const hoy = new Date().toISOString().slice(0, 10);
@@ -174,6 +179,8 @@ async function ficha(contenedor, id, { volverA = null } = {}) {
           d.ppp_seguro_hasta ? ` · seguro hasta el ${enCristiano(d.ppp_seguro_hasta)}` : ""}</p>` : ""}
       </div>` : ""}
 
+    ${quienMira?.es_admin ? bloqueWhatsApp(d) : ""}
+
     <div id="papeles-perro"></div>`;
 
   /* La foto, que se sube y se guarda al momento. */
@@ -201,7 +208,86 @@ async function ficha(contenedor, id, { volverA = null } = {}) {
     () => volverA ? window.irA?.(volverA) : render(contenedor));
   contenedor.querySelector("#editar").addEventListener("click", () => formulario(contenedor, id));
 
+  engancharWhatsApp(d);
   pintarPapeles();
+
+  /* Escribirle al dueño desde aquí.
+
+     OJO CON LO DE LAS FOTOS, que no es un capricho de cómo está
+     hecho: UN ENLACE DE WHATSAPP NO PUEDE LLEVAR FICHEROS. El
+     `wa.me/...` sólo admite texto y no hay forma de rodearlo.
+
+     Lo que sí funciona es el botón de compartir del propio
+     móvil: se le pasa la foto al sistema, el sistema ofrece
+     WhatsApp entre las opciones y va con la foto puesta. Es un
+     toque más, y es el único camino que existe. */
+  function bloqueWhatsApp(d) {
+    const dueno = `${d.cliente?.nombre ?? ""} ${d.cliente?.apellidos ?? ""}`.trim();
+    const url = enlaceWhatsAppA(d.cliente?.telefono,
+      `Hola${dueno ? " " + d.cliente.nombre : ""}, te escribo de AmigoMío por ${d.nombre}. `);
+
+    if (!url) return `
+      <div class="tarjeta" style="margin-top:1rem">
+        <p class="rotulo">Hablar con el dueño</p>
+        <p class="flojo">No tenemos su teléfono en la ficha, así que no podemos
+           escribirle desde aquí. Se lo puedes pedir y apuntarlo en
+           <strong>Clientes</strong>.</p>
+      </div>`;
+
+    return `
+      <div class="tarjeta whatsapp-dueno" style="margin-top:1rem">
+        <p class="rotulo">Hablar con ${esc(dueno) || "el dueño"}</p>
+
+        <div class="botonera">
+          <a class="boton whatsapp" target="_blank" rel="noopener" href="${url}">
+            Escribirle por WhatsApp
+          </a>
+          <label class="boton fantasma subir">
+            Mandarle una foto o un vídeo
+            <input type="file" accept="image/*,video/*" id="compartir" hidden multiple>
+          </label>
+        </div>
+
+        <p class="flojo" id="aviso-compartir">Las fotos van por el botón de compartir
+           del móvil: se elige WhatsApp ahí y se manda con la foto puesta.
+           <strong>Desde el ordenador no suele funcionar</strong>, es cosa del navegador.</p>
+      </div>`;
+  }
+
+  function engancharWhatsApp(d) {
+    const entrada = contenedor.querySelector("#compartir");
+    if (!entrada) return;
+
+    entrada.addEventListener("change", async () => {
+      const ficheros = [...(entrada.files || [])];
+      if (!ficheros.length) return;
+
+      const aviso = contenedor.querySelector("#aviso-compartir");
+
+      /* Se pregunta ANTES de intentarlo: si el navegador no sabe
+         compartir ficheros, pulsar y que no pase nada es lo peor
+         que puede ocurrir. */
+      if (!navigator.canShare?.({ files: ficheros })) {
+        aviso.innerHTML = `<strong>Este navegador no sabe compartir ficheros.</strong>
+          Ábrelo en el móvil y vuelve a intentarlo; desde el ordenador casi nunca
+          se puede.`;
+        aviso.classList.add("error-linea");
+        return;
+      }
+
+      try {
+        await navigator.share({
+          files: ficheros,
+          title: d.nombre,
+          text: `${d.nombre}, desde AmigoMío`,
+        });
+      } catch {
+        /* Cancelar el compartir tira un error. No es un fallo:
+           es que ha cambiado de idea. */
+      }
+      entrada.value = "";
+    });
+  }
 
   /* La cartilla fotografiada. Es lo último de la ficha porque es
      VOLUNTARIO: quien no quiera, ni se entera. */

@@ -76,3 +76,34 @@ test("Zapatilla también da el WhatsApp, no solo el teléfono", () => {
   assert.match(z, /wa\.me\/34673229399/);
   assert.doesNotMatch(z, /llama al 673/i, "que hable, no que llame");
 });
+
+/* ---------- Escribirle a otra persona ---------- */
+import { enlaceWhatsAppA } from "../js/contacto.js";
+
+test("a un móvil español sin prefijo se le pone el 34", () => {
+  /* En la ficha la gente escribe el teléfono como le sale. Sin
+     el prefijo, WhatsApp no encuentra a nadie y el botón parece
+     roto. */
+  assert.match(enlaceWhatsAppA("673229399"), /wa\.me\/34673229399/);
+  assert.match(enlaceWhatsAppA("673 22 93 99"), /wa\.me\/34673229399/);
+  assert.match(enlaceWhatsAppA("+34 673 229 399"), /wa\.me\/34673229399/);
+});
+
+test("un número de fuera se deja como está", () => {
+  /* Con prefijo ya puesto no se toca: ponerle otro 34 delante
+     lo rompería. */
+  assert.match(enlaceWhatsAppA("+351 912 345 678"), /wa\.me\/351912345678/);
+});
+
+test("sin número no hay enlace", () => {
+  /* Devolver un enlace a ninguna parte es peor que no devolver
+     nada: quien llama decide qué enseñar. */
+  assert.equal(enlaceWhatsAppA(""), null);
+  assert.equal(enlaceWhatsAppA(null), null);
+  assert.equal(enlaceWhatsAppA("12345"), null);
+});
+
+test("el mensaje se puede dejar escrito", () => {
+  const url = enlaceWhatsAppA("673229399", "Hola, te escribo por Luna");
+  assert.ok(url.includes(encodeURIComponent("Hola, te escribo por Luna")));
+});

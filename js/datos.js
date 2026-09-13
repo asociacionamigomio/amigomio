@@ -143,9 +143,20 @@ export async function perrosBuscando(busca = "") {
 }
 
 export async function unPerro(id) {
-  const { data, error } = await supabase.from("perro").select("*").eq("id", id).single();
-  if (error) return null;
-  return data;
+  /* Con el dueño colgando. A un cliente RLS le devuelve sólo su
+     propia ficha de cliente, así que esto no le enseña nada que
+     no pudiera ver ya; a administración le trae el teléfono,
+     que es lo que hace falta para escribirle desde aquí.
+
+     Si la consulta con el dueño falla —una base que todavía no
+     tiene algo, o un permiso— se pide el perro a secas: no
+     poder ver el teléfono no puede impedir abrir la ficha. */
+  const { data, error } = await supabase.from("perro")
+    .select("*, cliente(nombre, apellidos, telefono)").eq("id", id).single();
+  if (!error) return data;
+
+  const solo = await supabase.from("perro").select("*").eq("id", id).single();
+  return solo.error ? null : solo.data;
 }
 
 export async function guardarPerro(datos, { borrador = false } = {}) {
