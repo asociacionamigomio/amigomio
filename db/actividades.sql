@@ -118,10 +118,20 @@ grant execute on function mostrar_interes(text, uuid, text) to authenticated;
 -- ============================================================
 -- PRUEBAS. Aplicar este fichero ES ejecutarlas.
 -- ============================================================
+/* ESTAS PRUEBAS CORREN CONTRA LA BASE REAL, con clientes reales
+   que ya han usado la aplicación. Así que no pueden dar por
+   hecho que el primer cliente no tenga ya lo que la prueba va a
+   crear: la primera versión reventaba la instalación entera en
+   cuanto Santiago pidió el deporte desde la app.
+
+   Se escriben, entonces, para convivir con el uso real: se mira
+   cómo está la cosa y se comprueba lo mismo con lo que haya. */
 do $$
 declare
   el_cliente uuid;
-  cuantos    integer;
+  el_tipo    text;
+  ya_hay     boolean;
+  salto      boolean := false;
 begin
   select id into el_cliente from cliente limit 1;
   if el_cliente is null then
@@ -129,24 +139,48 @@ begin
     return;
   end if;
 
+  -- Un tipo con el que trabajar: el que no tenga ya uno vivo.
+  select case
+    when not exists (select 1 from interes where cliente_id = el_cliente
+                      and tipo = 'deporte' and estado in ('nueva','hablada'))
+      then 'deporte'
+    when not exists (select 1 from interes where cliente_id = el_cliente
+                      and tipo = 'educacion' and estado in ('nueva','hablada'))
+      then 'educacion'
+    else null
+  end into el_tipo;
+
+  if el_tipo is null then
+    /* Los dos ocupados: entonces el propio choque ES la prueba.
+       Intentar duplicar uno tiene que fallar. */
+    begin
+      insert into interes (cliente_id, tipo, mensaje)
+           values (el_cliente, 'deporte', 'PRUEBA');
+      raise exception 'no debería dejar dos vivas del mismo tipo';
+    exception when unique_violation then salto := true;
+    end;
+    assert salto, 'la unicidad no está funcionando';
+    raise notice 'Educación y deporte: comprobado contra los que ya había.';
+    return;
+  end if;
+
   -- Dos veces lo mismo deja UNA sola viva.
-  insert into interes (cliente_id, tipo, mensaje)
-       values (el_cliente, 'deporte', 'PRUEBA');
+  insert into interes (cliente_id, tipo, mensaje) values (el_cliente, el_tipo, 'PRUEBA');
   begin
     insert into interes (cliente_id, tipo, mensaje)
-         values (el_cliente, 'deporte', 'PRUEBA otra vez');
+         values (el_cliente, el_tipo, 'PRUEBA otra vez');
     raise exception 'no debería dejar dos vivas del mismo tipo';
-  exception when unique_violation then null;
+  exception when unique_violation then salto := true;
   end;
+  assert salto, 'la unicidad no está funcionando';
 
   -- Y cerrada la primera, se puede volver a pedir.
-  update interes set estado = 'apuntado' where cliente_id = el_cliente and mensaje = 'PRUEBA';
+  update interes set estado = 'apuntado'
+   where cliente_id = el_cliente and mensaje = 'PRUEBA';
   insert into interes (cliente_id, tipo, mensaje)
-       values (el_cliente, 'deporte', 'PRUEBA segunda vuelta');
+       values (el_cliente, el_tipo, 'PRUEBA segunda vuelta');
 
-  select count(*) into cuantos from interes where mensaje like 'PRUEBA%';
-  assert cuantos = 2, 'tenían que quedar dos, una cerrada y otra viva; hay ' || cuantos;
-
+  -- Y se deja todo como estaba: esto es la base de verdad.
   delete from interes where mensaje like 'PRUEBA%';
 
   raise notice 'Educación y deporte: todas las comprobaciones pasan.';

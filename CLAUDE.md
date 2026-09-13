@@ -94,6 +94,15 @@ Lee `2026-09-12-amigomio-reservas-design.md` (el diseño), `2026-09-12-plan-fase
 
 ## Mañas que ya han costado una tarde
 
+- **LAS PRUEBAS DENTRO DEL SQL CORREN CONTRA LA BASE REAL**, con clientes reales que ya han usado
+  la aplicación. No pueden dar por hecho el estado de los datos. Ha reventado dos veces la
+  instalación entera por esto: una prueba que exigía que nadie tuviera el perfil visible saltó en
+  cuanto Santiago encendió el suyo, y otra que creaba un «interés de deporte» saltó en cuanto lo
+  pidió desde la app. **Las dos veces el dato estaba bien y la prueba mal.** Se escriben para
+  convivir con el uso real: mirar cómo está la cosa y comprobar lo mismo con lo que haya —o, mejor
+  aún, comprobar la ESTRUCTURA (el `default` de una columna, las columnas de una vista) en vez de
+  los datos.
+
 - **«MIS» COSAS SON LAS MÍAS: filtrar por el usuario NO es redundante con RLS.** Administración
   ve todo —hace falta para atender un teléfono y para una inspección—, así que cualquier consulta
   que no diga «las mías» le devuelve **las de todos**, y las pantallas de cliente se llenan de
