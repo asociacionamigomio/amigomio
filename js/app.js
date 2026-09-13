@@ -49,7 +49,7 @@ const SECCIONES = [
   { id: "reservar",    texto: "Reservar",     render: renderReservar,      icono: "calendario" },
   { id: "reservas",    texto: "Mis reservas", render: renderMisReservas,   icono: "lista" },
   { id: "perros",      texto: "Mis perros",   render: renderPerros,        icono: "corazon" },
-  { id: "actividades", texto: "Educación y deporte", render: renderActividades, icono: "corazon" },
+  { id: "actividades", texto: "Educación y deporte", render: renderActividades, icono: "silbato" },
   { id: "vecinos",     texto: "Los vecinos",  render: renderVecinos,       icono: "gente" },
   { id: "clicker",     texto: "Clicker",      render: renderClicker,       icono: "circulo" },
   { id: "ficha",       texto: "Mi ficha",     render: renderMiFicha,       icono: "persona" },
@@ -57,7 +57,7 @@ const SECCIONES = [
   { id: "hoja",        texto: "Hoja del día", render: renderHoja,          admin: true, icono: "papel" },
   { id: "estancia",    texto: "Estancia",     render: renderEstancia,      admin: true, icono: "lista", oculta: true },
   { id: "solicitudes", texto: "Solicitudes",  render: renderSolicitudes,   admin: true, icono: "sobre" },
-  { id: "intereses",   texto: "Educación y deporte", render: renderIntereses, admin: true, icono: "corazon" },
+  { id: "intereses",   texto: "Educación y deporte", render: renderIntereses, admin: true, icono: "silbato" },
   { id: "clientes",    texto: "Clientes",     render: renderAdminClientes, admin: true, icono: "gente" },
   { id: "perros-todos", texto: "Perros de clientes", render: renderAdminPerros, admin: true, icono: "corazon" },
   { id: "perro",       texto: "Ficha del perro", render: renderFichaPerro,  admin: true, icono: "corazon", oculta: true },
@@ -85,6 +85,11 @@ const ICONOS = {
   grafico:    '<path d="M4 20V4M4 20h16"/><path d="M8 20v-6M12.5 20V8M17 20v-9"/>',
   candado:    '<rect x="4.5" y="10" width="15" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
   movil:      '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 5.5h3"/><path d="M11 18.5h2"/>',
+  /* Un silbato: el símbolo de quien entrena, y vale para las dos
+     cosas —educación y deporte— sin decantarse por ninguna. El
+     corazón que había es el de «Mis perros» y no pintaba nada
+     aquí. */
+  silbato:    '<path d="M3.6 9.5h8a5.5 5.5 0 1 1 0 7h-8A1.6 1.6 0 0 1 2 14.9v-3.8a1.6 1.6 0 0 1 1.6-1.6Z"/><circle cx="16.6" cy="13" r="1.7"/><path d="M12.5 9.2V6.5h3.5"/>',
   libro:      '<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5Z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8 7.5h7M8 11h7"/>',
   rejilla:    '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8.5 9.5V20M14 9.5V20"/>',
   papel:      '<path d="M6 2.5h8l5 5V21a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 6 21V3a.5.5 0 0 1 .5-.5Z"/><path d="M13.5 2.8V8h5M9 12.5h6M9 16h6"/>',

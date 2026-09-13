@@ -83,3 +83,25 @@ test("el botón de instalar nunca flota encima de nada", () => {
   assert.doesNotMatch(css2, /\.boton\.instalar \{[^}]*position: fixed/,
     "ya no hay ningún botón de instalar flotando");
 });
+
+test("cada sección tiene un icono que existe", () => {
+  /* Un `icono:` con un nombre que no está en la tabla pinta un
+     hueco en blanco en el menú y no avisa de nada. */
+  const crudo = leer("js/app.js");
+  const tabla = crudo.match(/const ICONOS = \{[\s\S]*?\n\};/)[0];
+  const usados = [...crudo.matchAll(/icono: "(\w+)"/g)].map(m => m[1]);
+
+  for (const i of [...new Set(usados)])
+    assert.match(tabla, new RegExp(`\\b${i}:`), `el icono «${i}» no está dibujado`);
+});
+
+test("«Educación y deporte» no lleva el corazón de «Mis perros»", () => {
+  /* Santiago: «tiene más sentido un maestro o algo relacionado
+     con el deporte». Un silbato vale para las dos cosas sin
+     decantarse por ninguna. */
+  const crudo = leer("js/app.js");
+  const lineas = crudo.split("\n").filter(l => l.includes("Educación y deporte"));
+  assert.ok(lineas.length >= 2, "hay dos entradas: la del cliente y la de administración");
+  for (const l of lineas)
+    assert.doesNotMatch(l, /icono: "corazon"/);
+});

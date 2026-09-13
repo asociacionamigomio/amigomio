@@ -25,7 +25,7 @@
    días antes y le enseñaba perros de otros clientes. Una
    aplicación que se actualiza en el escritorio y no en el móvil
    miente en el móvil. */
-const VERSION = "2026-09-13-l";
+const VERSION = "2026-09-13-m";
 const CACHE = `amigomio-${VERSION}`;
 
 const LO_BASICO = [
