@@ -230,9 +230,27 @@ function destinoDe(motivo: string): string {
 /* El mismo texto, con párrafos. Sin plantillas ni imágenes: un
    correo de una residencia canina no es un folleto, y cuanto
    más sencillo, menos acaba en la bandeja de spam. */
+/* Las direcciones, en enlaces que se puedan tocar.
+ *
+ * Santiago, 13/09/2026: «debe haber un enlace para hablar por
+ * WhatsApp». En la parte de texto del correo casi todos los
+ * programas lo enlazan solos; en la parte HTML, que es la que se
+ * ve, NO — salía escrito y había que copiarlo a mano.
+ *
+ * Sólo http y https, y sólo después de escapar: el cuerpo lleva
+ * dentro nombres de perros y de personas que escriben ellos. */
+function enlazar(html: string): string {
+  return html.replace(/\bhttps?:\/\/[^\s<>"')]+/g, (url) => {
+    const limpia = url.replace(/[.,;:!?]+$/, "");   // el punto final no es de la dirección
+    return `<a href="${limpia}" style="color:#4E80A5">${limpia}</a>`
+         + url.slice(limpia.length);
+  });
+}
+
 function comoHtml(texto: string): string {
-  const escapado = texto
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const escapado = enlazar(texto
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;"));
 
   const parrafos = escapado
     .split(/\n{2,}/)

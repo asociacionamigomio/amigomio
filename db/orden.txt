@@ -11,6 +11,7 @@ actividades.sql
 peligrosidad.sql
 crear-reserva.sql
 avisos.sql
+avisos-reserva.sql
 reloj.sql
 administracion.sql
 libros.sql

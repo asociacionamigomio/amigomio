@@ -147,7 +147,7 @@ begin
          || to_char(f.expira, 'HH24:MI') || '.' || chr(10) || chr(10) ||
          'Si ya lo has pagado, súbenos el resguardo desde «Mis reservas» y listo. '
          || 'Y si necesitas el número de cuenta o te ha pasado algo, escríbenos por '
-         || 'WhatsApp al 673 229 399 y lo vemos.' || chr(10) || chr(10) ||
+         || 'WhatsApp: https://wa.me/34673229399 (673 229 399) y lo vemos.' || chr(10) || chr(10) ||
          'Un saludo,' || chr(10) || 'AmigoMío')
     then puestos := puestos + 1; end if;
   end loop;
@@ -170,7 +170,7 @@ begin
          || coalesce(f.perros, 'tu perro') || '.' || chr(10) || chr(10) ||
          'Acuérdate del pasaporte sanitario, que sin él no podemos hacer la entrada. '
          || 'Lo demás te lo contamos en el correo de la confirmación.' || chr(10) || chr(10) ||
-         'Si te surge cualquier cosa, escríbenos por WhatsApp al 673 229 399.'
+         'Si te surge cualquier cosa, escríbenos por WhatsApp: https://wa.me/34673229399 (673 229 399).'
          || chr(10) || chr(10) ||
          'Hasta mañana,' || chr(10) || 'AmigoMío')
     then puestos := puestos + 1; end if;
@@ -216,7 +216,7 @@ begin
          || chr(10) || chr(10) ||
          'No es nada urgente ni te impide reservar: es para que no te pille el día '
          || 'de la entrada.' || chr(10) || chr(10) ||
-         'Si tienes dudas, escríbenos por WhatsApp al 673 229 399.' || chr(10) || chr(10) ||
+         'Si tienes dudas, escríbenos por WhatsApp: https://wa.me/34673229399 (673 229 399).' || chr(10) || chr(10) ||
          'Un saludo,' || chr(10) || 'AmigoMío')
     then puestos := puestos + 1; end if;
   end loop;
@@ -285,7 +285,7 @@ begin
     'De lunes a viernes y domingos: de 10:00 a 12:30 y de 16:30 a 19:00.' || chr(10) ||
     'Sábados: de 10:00 a 12:30.' || chr(10) ||
     'Fuera de esas horas se puede, avisando antes, y lleva recargo. '
-    || 'Escríbenos por WhatsApp al 673 229 399 y lo vemos.' || chr(10) || chr(10) ||
+    || 'Escríbenos por WhatsApp: https://wa.me/34673229399 (673 229 399) y lo vemos.' || chr(10) || chr(10) ||
 
     '-- LO QUE PUEDES TRAER --' || chr(10) ||
     '- Alguna mantita o camita a la que tu perro esté habituado.' || chr(10) ||
