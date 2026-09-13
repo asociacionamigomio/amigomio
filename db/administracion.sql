@@ -173,8 +173,14 @@ do $$
 declare c jsonb; h jsonb;
 begin
   c := cuadrante('2026-08-10', '2026-08-17');
-  assert jsonb_array_length(c->'alojamientos') = 32,
-         'el cuadrante tiene que traer los 32 alojamientos, trajo ' ||
+  -- Contra lo que HAY, no contra un número escrito a mano.
+  --
+  -- Aquí ponía 32 y el 13/09/2026 pasaron a ser 43: la prueba
+  -- saltó y dejó el SQL entero sin poder aplicarse, con el dato
+  -- perfectamente bien y la prueba mal. Es la tercera vez que
+  -- pasa lo mismo por lo mismo.
+  assert jsonb_array_length(c->'alojamientos') = (select count(*) from alojamiento),
+         'el cuadrante tiene que traer TODOS los alojamientos, trajo ' ||
          jsonb_array_length(c->'alojamientos');
   assert (c->'ocupacion') ? '2026-08-10', 'y la ocupación día a día';
 
