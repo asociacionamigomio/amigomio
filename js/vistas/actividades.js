@@ -89,10 +89,8 @@ export async function render(contenedor) {
       ${bloque("deporte", "Deporte con tu perro",
         `<p>El grupo de trabajo entrena aquí. Se hace obediencia, rastro y
             defensa deportiva — lo que se ve en las pruebas de IGP.</p>
-         <p><strong>Antes de nada, vente a ver un entrenamiento.</strong> Es la
-            única forma de saber si es lo tuyo: se ve en media hora de campo lo
-            que no se explica en ninguna pantalla. No hay que llevar al perro ni
-            comprometerse a nada.</p>`,
+         <p><strong>Antes de nada, vente a ver un entrenamiento.</strong>
+            No hay que llevar al perro ni comprometerse a nada.</p>`,
         "Quiero ver un entrenamiento",
         "Si has hecho algo antes, qué raza tiene…")}
 
