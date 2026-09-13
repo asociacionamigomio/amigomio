@@ -382,7 +382,13 @@ if ("serviceWorker" in navigator) {
   }).catch(() => { /* sin service worker se vive igual */ });
 
   navigator.serviceWorker.addEventListener("message", e => {
-    if (e.data?.version) avisarDeVersionNueva();
+    if (!e.data?.version || e.data.primera) return;
+    /* Y aun así: `controller` nulo significa que a esta página
+       todavía no la sirve ningún service worker, o sea que es su
+       primera carga. Dos comprobaciones para lo mismo porque
+       este aviso no puede volver a salir cuando no toca. */
+    if (!navigator.serviceWorker.controller) return;
+    avisarDeVersionNueva();
   });
 }
 

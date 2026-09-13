@@ -25,7 +25,7 @@
    días antes y le enseñaba perros de otros clientes. Una
    aplicación que se actualiza en el escritorio y no en el móvil
    miente en el móvil. */
-const VERSION = "2026-09-13-e";
+const VERSION = "2026-09-13-f";
 const CACHE = `amigomio-${VERSION}`;
 
 const LO_BASICO = [
@@ -44,16 +44,30 @@ self.addEventListener("install", e => {
 });
 
 self.addEventListener("activate", e => {
-  e.waitUntil(
-    caches.keys()
-      .then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
-      /* Y se lo decimos a las pestañas que ya estaban abiertas:
-         ellas deciden qué hacer, que pueden estar a media
-         ficha. */
-      .then(() => self.clients.matchAll({ type: "window" }))
-      .then(cs => cs.forEach(c => c.postMessage({ version: VERSION })))
-  );
+  e.waitUntil((async () => {
+    const todas = await caches.keys();
+
+    /* ¿HABÍA algo antes? Sin ninguna caché vieja, esto es la
+       primera instalación, no una actualización.
+
+       Santiago entró por primera vez en un móvil y le salió «hay
+       una versión nueva». Tenía razón en que no tenía sentido:
+       la primera instalación TAMBIÉN es una activación, y se
+       avisaba igual. Decirle eso a alguien que acaba de entrar
+       es mentira, y de las que hacen dudar del resto. */
+    const viejas = todas.filter(k => k !== CACHE);
+    const primera = viejas.length === 0;
+
+    await Promise.all(viejas.map(k => caches.delete(k)));
+    await self.clients.claim();
+
+    if (primera) return;   // nada que avisar
+
+    /* Y se lo decimos a las pestañas que ya estaban abiertas:
+       ellas deciden qué hacer, que pueden estar a media ficha. */
+    const ventanas = await self.clients.matchAll({ type: "window" });
+    for (const v of ventanas) v.postMessage({ version: VERSION, primera: false });
+  })());
 });
 
 self.addEventListener("fetch", e => {

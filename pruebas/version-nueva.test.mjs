@@ -67,3 +67,31 @@ test("lo que viene de Supabase sigue sin cachearse", () => {
      existen. */
   assert.match(sw, /supabase\.co/);
 });
+
+test("la PRIMERA vez no se avisa de nada", () => {
+  /* Santiago, 13/09/2026: «he entrado por primera vez con un
+     móvil y me dice que hay una versión nueva, eso no tiene
+     sentido». Tenía razón.
+
+     El service worker avisaba a todas las ventanas al
+     activarse, y la primera instalación TAMBIÉN es una
+     activación. Así que a quien entraba por primera vez se le
+     decía que había una versión nueva de algo que acababa de
+     ver por primera vez.
+
+     Decirle eso a alguien es mentira, y de las que hacen dudar
+     de todo lo demás que diga la aplicación.
+
+     Se distingue mirando si había cachés ANTES de tirarlas: sin
+     ninguna, es la primera vez. */
+  assert.match(sw, /primera/);
+  assert.match(sw, /viejas\.length|habia|había/i);
+});
+
+test("y la página tampoco se fía sólo del mensaje", () => {
+  /* `controller` nulo significa que esta página no la está
+     sirviendo ningún service worker todavía: es la primera
+     carga. Dos comprobaciones para lo mismo, porque este aviso
+     no puede volver a salir cuando no toca. */
+  assert.match(app, /controller/);
+});
