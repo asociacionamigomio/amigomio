@@ -17,24 +17,42 @@ export async function miFicha() {
   const user = await usuarioActual();
   if (!user) return null;
 
-  let { data } = await supabase.from("cliente").select("*").eq("id", user.id).maybeSingle();
+  const { data, error: alPreguntar } = await supabase.from("cliente")
+    .select("*").eq("id", user.id).maybeSingle();
 
-  if (!data) {
-    /* Primera vez que entra: se crea su ficha sola. Si su correo
-       está en admin_autorizado, el trigger la marca de
-       administración sin que nadie toque nada.
+  /* UNA CONSULTA QUE FALLA NO ES UNA CONSULTA QUE NO ENCUENTRA NADA.
 
-       El error NO se traga: callarlo costó una tarde de buscar por
-       qué nadie era administrador. */
-    const { data: nueva, error } = await supabase.from("cliente")
-      .insert({ id: user.id }).select().single();
-    if (error) {
-      console.error("[AmigoMío] no se pudo crear la ficha de cliente:", error);
-      throw error;
-    }
-    data = nueva;
+     Aquí estaba el «no carga, no abre» de Santiago (13/09/2026).
+     Esto era `let { data } = await ...`, con el error a la basura.
+     Si la consulta fallaba —un segundo de mala cobertura—, `data`
+     venía vacío, el código concluía «es la primera vez que entra»
+     e intentaba CREARLE una ficha que ya tenía. Eso fallaba, y ahí
+     sí reventaba: se llevaba por delante el arranque entero.
+
+     Por eso le pasaba a él y no a un visitante sin entrar: un
+     visitante no llega nunca hasta esta línea. Y confundir las dos
+     cosas no sólo rompe la pantalla — escribe en la base de datos. */
+  if (alPreguntar) {
+    console.error("[AmigoMío] no se pudo preguntar por la ficha:", alPreguntar);
+    throw alPreguntar;
   }
-  return data;
+
+  if (data) return data;
+
+  /* Ahora sí: la base ha contestado, y ha contestado que no tiene
+     ficha. Primera vez que entra, se le crea sola. Si su correo
+     está en admin_autorizado, el trigger la marca de
+     administración sin que nadie toque nada.
+
+     El error NO se traga: callarlo costó una tarde de buscar por
+     qué nadie era administrador. */
+  const { data: nueva, error } = await supabase.from("cliente")
+    .insert({ id: user.id }).select().single();
+  if (error) {
+    console.error("[AmigoMío] no se pudo crear la ficha de cliente:", error);
+    throw error;
+  }
+  return nueva;
 }
 
 export async function guardarMiFicha(datos) {

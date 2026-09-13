@@ -200,3 +200,38 @@ test("cuando algo falla, la pantalla dice QUÉ falla", () => {
   assert.match(f, /fallo\?\.message|fallo\.message|String\(fallo/,
     "hay que enseñar el mensaje del error, no sólo que hubo uno");
 });
+
+test("no confundir «no tiene ficha» con «no he podido preguntarlo»", () => {
+  /* EL FALLO. `miFicha()` pedía la ficha tirando el error:
+
+       let { data } = await supabase.from("cliente").select(...)
+       if (!data) { ...crearla... }
+
+     Si la consulta falla —un segundo de mala cobertura—, `data`
+     viene vacío y el código concluye «es la primera vez que
+     entra». Intenta CREAR una ficha que ya existe, eso falla, y
+     ahí sí revienta: se lleva por delante el arranque entero.
+
+     Le pasaba a Santiago y no a un visitante sin entrar, porque
+     un visitante no llega nunca hasta aquí. Dos días de «no
+     carga, no abre».
+
+     Una consulta que falla y una consulta que no encuentra nada
+     NO son lo mismo, y confundirlas escribe en la base de
+     datos. */
+  const f = sinComentarios(datos).match(/export async function miFicha[\s\S]*?\n\}/)[0];
+
+  assert.match(f, /error/,
+    "la consulta de la ficha tiene que mirar si falló");
+  assert.doesNotMatch(f, /let \{ data \} = await/,
+    "así se tira el error y se confunde «falló» con «no hay»");
+
+  /* Y el orden importa: primero se descarta que la consulta
+     fallara, y SÓLO DESPUÉS se decide crear nada. */
+  const crea = f.search(/\.insert\(/);
+  const antesDeCrear = f.slice(0, crea);
+  assert.match(antesDeCrear, /select\([\s\S]*?error/,
+    "la consulta tiene que devolver también su error");
+  assert.match(antesDeCrear, /throw/,
+    "hay que cortar por lo sano ANTES de decidir crear nada");
+});
