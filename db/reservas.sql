@@ -62,6 +62,29 @@ alter table reserva add constraint reserva_estado_check
 create index if not exists reserva_por_fechas on reserva (entrada, salida);
 create index if not exists reserva_del_cliente on reserva (cliente_id);
 
+-- ------------------------------------------------------------
+-- FUERA CUALQUIER DISPARADOR APLAZADO SOBRE `reserva`, Y AQUÍ.
+--
+-- Un disparador `deferrable initially deferred` deja eventos
+-- PENDIENTES en cuanto alguien inserta una fila, y con eventos
+-- pendientes Postgres no deja tocar la tabla:
+--
+--   55006: cannot ALTER TABLE "reserva" because it has pending
+--          trigger events
+--
+-- El 13/09/2026 hubo uno (`reserva_avisa_al_entrar`) y dejó el
+-- SQL entero sin poder aplicarse. Y quitarlo en el fichero donde
+-- se creó NO VALE: para cuando se llega allí, las pruebas de
+-- éste, de bloqueos.sql y de crear-reserva.sql ya han insertado
+-- reservas y los eventos ya están pendientes.
+--
+-- Por eso se quita aquí, pegado a la creación de la tabla y antes
+-- de que nada inserte nada. Es una red de seguridad, no un
+-- descuido: si mañana alguien vuelve a poner uno aplazado, la
+-- siguiente aplicación lo quita sola en vez de morirse.
+-- ------------------------------------------------------------
+drop trigger if exists reserva_avisa_al_entrar on reserva;
+
 -- Qué perros van en cada reserva, con lo que cambia de un viaje
 -- a otro: el peso y el celo (diseño §5.4).
 create table if not exists reserva_perro (
