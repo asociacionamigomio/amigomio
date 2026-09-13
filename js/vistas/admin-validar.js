@@ -20,7 +20,7 @@
    ============================================================ */
 import { cosasPorValidar, validarJustificante, rechazarJustificante,
          verJustificante, resolverSolicitud, atenderInteres,
-         cancelarReserva } from "../datos.js";
+         cancelarReserva, darCancelacionPorVista } from "../datos.js";
 
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -56,14 +56,14 @@ export async function render(contenedor) {
     return;
   }
 
-  const { justificantes, esperando, cambios, interesados } = cosas;
+  const { justificantes, esperando, cambios, interesados, canceladas } = cosas;
 
   /* `null` es «no se ha podido preguntar». NO es «no hay nada»:
      confundirlos aquí deja a administración tranquila mientras un
      cliente espera, y eso cuesta dinero. */
-  const falló = [justificantes, esperando, cambios, interesados].some(x => x === null);
-  const cuantas = [justificantes, esperando, cambios, interesados]
-    .reduce((n, x) => n + (x?.length || 0), 0);
+  const todo = [justificantes, esperando, cambios, interesados, canceladas];
+  const falló = todo.some(x => x === null);
+  const cuantas = todo.reduce((n, x) => n + (x?.length || 0), 0);
 
   if (!falló && cuantas === 0) {
     contenedor.innerHTML = `
@@ -94,7 +94,11 @@ export async function render(contenedor) {
              "Aprobar cambia el dato del perro de verdad.")}
 
     ${bloque("Educación y deporte", interesados, tarjetaInteres,
-             "Han pedido información o venir a ver un entrenamiento.")}`;
+             "Han pedido información o venir a ver un entrenamiento.")}
+
+    ${bloque("Se han cancelado", canceladas, tarjetaCancelada,
+             "Aquí no hay nada que validar: es para que te enteres de que esas " +
+             "noches han quedado libres y se pueden volver a vender.")}`;
 
   enganchar(contenedor);
 }
@@ -160,6 +164,22 @@ function tarjetaCambio(s) {
       <div class="botonera">
         <button class="boton fantasma" data-solicitud="${s.id}:rechazar">Rechazar</button>
         <button class="boton" data-solicitud="${s.id}:aprobar">Aprobar</button>
+      </div>
+    </div>`;
+}
+
+function tarjetaCancelada(r) {
+  return `
+    <div class="tarjeta por-validar">
+      <p class="flojo">${quien(r.cliente)}
+         ${r.cliente?.telefono ? `· ${esc(r.cliente.telefono)}` : ""}</p>
+      <h3>${perrosDe(r)}</h3>
+      <p>Era del ${dia(r.entrada)} al ${dia(r.salida)}
+         ${r.alojamiento?.nombre ? `· ${esc(r.alojamiento.nombre)}` : ""}
+         ${r.total ? `· ${r.total} €` : ""}</p>
+      <p><strong>Ese alojamiento ha quedado libre</strong> esas noches.</p>
+      <div class="botonera">
+        <button class="boton fantasma" data-visto="${r.id}">Visto</button>
       </div>
     </div>`;
 }
@@ -248,6 +268,8 @@ function enganchar(contenedor) {
   /* «hablada», que es uno de los estados que admite la tabla
      (nueva / hablada / apuntado / descartada). Inventarse otro lo
      rechaza el check de Postgres. */
+  alPulsar("[data-visto]", b => darCancelacionPorVista(b.dataset.visto));
+
   alPulsar("[data-interes]", b => atenderInteres(b.dataset.interes, "hablada"));
 
   /* Ver el resguardo NO repinta: abre el fichero. */

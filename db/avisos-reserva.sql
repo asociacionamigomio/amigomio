@@ -222,6 +222,50 @@ create trigger reserva_avisa_al_cancelar
   when (old.estado is distinct from new.estado and new.estado = 'cancelada')
   execute function aviso_de_reserva_cancelada();
 
+-- ------------------------------------------------------------
+-- 3. Que una cancelación se VEA en el panel.
+--
+-- Santiago, 13/09/2026: «he hecho una cancelación y no me avisa,
+-- creo que esa notificación debe salir en el menú de
+-- validaciones».
+--
+-- El correo no le llegó por decisión nuestra: la cancelación la
+-- hizo él, que es administración, y no se avisa a alguien de lo
+-- que acaba de hacer. Pero ver que un box ha quedado libre es
+-- otra cosa, y eso sí tiene que estar en el panel.
+--
+-- Por defecto `true` —«ya vista»— para que las cancelaciones que
+-- ya existían no aparezcan todas de golpe como si fueran de hoy.
+-- Sólo las nuevas se marcan sin ver.
+-- ------------------------------------------------------------
+alter table reserva
+  add column if not exists cancelacion_vista boolean not null default true;
+
+create or replace function marcar_cancelacion_sin_ver()
+returns trigger language plpgsql
+set search_path = public as $$
+begin
+  -- Si cancela administración, ya lo ha visto: estaba mirándolo.
+  -- Que te aparezca como pendiente lo que acabas de hacer tú es
+  -- la forma más rápida de que se deje de mirar la lista.
+  new.cancelacion_vista := es_admin();
+  return new;
+exception when others then
+  -- La misma regla que los otros dos: llevar la cuenta de lo
+  -- pendiente NO puede impedir cancelar una reserva. Si esto
+  -- falla, la cancelación sigue adelante y a lo sumo no sale en
+  -- la lista.
+  raise warning 'No se pudo marcar la cancelacion de %: %', new.id, sqlerrm;
+  return new;
+end $$;
+
+drop trigger if exists reserva_cancelacion_sin_ver on reserva;
+create trigger reserva_cancelacion_sin_ver
+  before update of estado on reserva
+  for each row
+  when (old.estado is distinct from new.estado and new.estado = 'cancelada')
+  execute function marcar_cancelacion_sin_ver();
+
 -- ============================================================
 -- PRUEBAS. Aplicar este fichero ES ejecutarlas.
 --
@@ -256,6 +300,14 @@ begin
   -- vale poner el numero suelto, hay que poder tocarlo.
   assert pie_de_contacto() like '%https://wa.me/34673229399%',
     'el pie tiene que llevar el ENLACE, no solo el numero';
+
+  select count(*) into n from pg_trigger where tgname = 'reserva_cancelacion_sin_ver';
+  assert n = 1, 'falta el disparador que marca la cancelacion sin ver';
+
+  select count(*) into n from information_schema.columns
+   where table_schema='public' and table_name='reserva'
+     and column_name='cancelacion_vista';
+  assert n = 1, 'falta la columna cancelacion_vista';
 
   raise notice 'Avisos de reserva: disparadores puestos y a prueba de fallos.';
 end $$;

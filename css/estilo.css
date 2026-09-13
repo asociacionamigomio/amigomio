@@ -1358,3 +1358,15 @@ button.perro-mini:hover { border-color: var(--azul-medio, #6199C8); }
   font-size: .72rem; font-weight: 600; line-height: 1.2;
   color: var(--flojo, #6B7C88); text-transform: none; letter-spacing: 0;
 }
+
+/* El punto rojo del menú: hay algo esperando.
+   Pequeño y con el número dentro — «hay algo» mueve menos que
+   «hay siete». */
+.punto-pendiente {
+  margin-left: auto;
+  min-width: 1.25rem; height: 1.25rem; padding: 0 .3rem;
+  border-radius: 999px;
+  background: var(--rojo, #C32927); color: #fff;
+  font-size: .7rem; font-weight: 700; line-height: 1.25rem;
+  text-align: center; flex: 0 0 auto;
+}

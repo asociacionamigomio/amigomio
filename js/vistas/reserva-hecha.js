@@ -90,8 +90,7 @@ function queTraer() {
       <ul class="cosas">
         <li><strong>Su comida de siempre.</strong> Cálculala con un par de días
             de más, por si acaso, y dinos cuánto le toca y cuántas veces al día.
-            Cambiarle el pienso de golpe le puede sentar mal a la barriga, y eso
-            en una residencia le amarga la estancia.</li>
+            Cambiarle el pienso de golpe le puede sentar mal a la barriga.</li>
 
         <li><strong>Su camita o una manta de casa.</strong> Sin lavar, mejor: lo
             que le tranquiliza es que huela a lo suyo. La primera noche fuera se
@@ -107,9 +106,15 @@ function queTraer() {
             dosis apuntadas. Nunca suelta en una bolsita.</li>
       </ul>
 
-      <p class="flojo">Y su collar y su correa puestos. Lo que no haga falta
-         —camas grandes, comederos, juguetes nuevos— no lo traigas: aquí hay de
-         todo y una mudanza pone más nervioso al perro que al dueño.</p>
+      <p class="rotulo">Lo que no debes traer</p>
+      <ul class="cosas">
+        <li>Comederos y bebederos: aquí tiene los suyos.</li>
+        <li>Camas grandes o transportines: no caben y no hacen falta.</li>
+        <li>Juguetes nuevos o sin estrenar, y nada que pueda romper y tragarse.</li>
+        <li>Objetos de valor. Aquí se juega y se corre, y lo que se pierde se pierde.</li>
+      </ul>
+      <p class="flojo">Con su collar y su correa puestos basta. Cuanto menos
+         traiga, mejor: una mudanza pone más nervioso al perro que al dueño.</p>
     </div>`;
 }
 

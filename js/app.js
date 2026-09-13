@@ -6,7 +6,7 @@
    ============================================================ */
 import { sesionActual, salir, puedeReservar, supabase } from "./sesion.js";
 import { t, arrancarIdioma, idiomaActual, ponerIdioma, IDIOMAS } from "./idioma.js";
-import { miFicha, misPerros, misReservas } from "./datos.js";
+import { miFicha, misPerros, misReservas, pendientes } from "./datos.js";
 import { avisosDeTodos } from "./sanidad.js";
 import { render as renderEntrada } from "./vistas/entrada.js";
 import { render as renderContrasenaNueva } from "./vistas/contrasena-nueva.js";
@@ -212,6 +212,47 @@ function avisarDeQueFaltanDatos() {
     .addEventListener("click", () => location.reload());
 }
 
+/* ------------------------------------------------------------
+   El punto rojo del menú.
+
+   Santiago, 13/09/2026: «puedes hacer que aparezca un punto rojo
+   en los iconos del menú cuando tenga algo pendiente que
+   resolver».
+
+   Es la diferencia entre una aplicación que hay que acordarse de
+   mirar y una que te dice cuándo mirarla. Sin él, «Por validar»
+   sólo funciona si entras por tu cuenta — y el día que no entres,
+   un cliente lleva tres días esperando su confirmación.
+
+   Sólo para administración: un cliente viendo un punto rojo
+   porque hay justificantes que validar no entendería nada.
+   ------------------------------------------------------------ */
+async function ponerPuntos() {
+  if (!ficha?.es_admin) return;
+
+  try {
+    const cuentas = await pendientes();
+
+    for (const [seccion, cuantas] of Object.entries(cuentas)) {
+      if (!cuantas) continue;
+      const boton = app.querySelector(`[data-ir="${seccion}"]`);
+      if (!boton || boton.querySelector(".punto-pendiente")) continue;
+
+      const punto = document.createElement("span");
+      punto.className = "punto-pendiente";
+      /* El número dentro: «hay algo» mueve menos que «hay siete».
+         Y de 10 en adelante, «+9»: lo que importa es que son
+         muchos, no cuántos exactamente. */
+      punto.textContent = cuantas > 9 ? "+9" : String(cuantas);
+      punto.title = `${cuantas} ${cuantas === 1 ? "cosa pendiente" : "cosas pendientes"}`;
+      boton.appendChild(punto);
+    }
+  } catch (e) {
+    /* Un fallo contando no puede dejar sin menú a nadie. */
+    console.error("[AmigoMío] no se pudo contar lo pendiente:", e);
+  }
+}
+
 function pintarSinConfirmar(sesion) {
   app.className = "contenedor";
   app.innerHTML = `
@@ -266,6 +307,13 @@ function pintarMarco(seccionId, sesion) {
 
   app.querySelectorAll("[data-ir]").forEach(b =>
     b.addEventListener("click", () => pintarMarco(b.dataset.ir, sesion)));
+
+  /* El punto rojo, DESPUÉS de pintar y sin esperarlo.
+
+     Si el menú aguardara a contar lo pendiente para dibujarse,
+     una consulta lenta dejaría la aplicación en blanco — que es
+     exactamente el fallo que costó dos días el 13/09/2026. */
+  ponerPuntos();
 
   app.querySelector("#salir").addEventListener("click", async () => { await salir(); arrancar(); });
 

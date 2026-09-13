@@ -955,7 +955,7 @@ export async function cosasPorValidar() {
   const conDueno = "*, cliente(nombre, apellidos, telefono), " +
                    "reserva_perro(perro(nombre)), alojamiento(nombre)";
 
-  const [justificantes, esperando, cambios, interesados] = await Promise.allSettled([
+  const [justificantes, esperando, cambios, interesados, canceladas] = await Promise.allSettled([
     /* 1. Justificante subido, esperando tu visto bueno. LO QUE MÁS
           CORRE: hay alguien que ya ha pagado. */
     supabase.from("reserva").select(conDueno)
@@ -975,6 +975,13 @@ export async function cosasPorValidar() {
     supabase.from("interes")
       .select("*, cliente(nombre, apellidos, telefono), perro(nombre, raza)")
       .eq("estado", "nueva").order("creada", { ascending: false }),
+
+    /* 5. Canceladas y todavía sin mirar. No hay nada que validar,
+          pero sí que ENTERARSE: ese alojamiento ha quedado libre
+          esas noches y se puede volver a vender. */
+    supabase.from("reserva").select(conDueno)
+      .eq("estado", "cancelada").eq("cancelacion_vista", false)
+      .order("entrada"),
   ]);
 
   const saca = r => (r.status === "fulfilled" && !r.value.error)
@@ -985,7 +992,53 @@ export async function cosasPorValidar() {
     esperando:     saca(esperando),
     cambios:       saca(cambios),
     interesados:   saca(interesados),
+    /* Si la base todavía no tiene la columna, esta consulta falla y
+       `saca` devuelve null: se enseña lo demás y se dice que faltó
+       algo. EL NAVEGADOR SE DESPLIEGA ANTES QUE LA BASE. */
+    canceladas:    saca(canceladas),
   };
+}
+
+/** Dar una cancelación por vista: deja de salir en la lista. */
+export async function darCancelacionPorVista(reservaId) {
+  const { error } = await supabase.from("reserva")
+    .update({ cancelacion_vista: true }).eq("id", reservaId);
+  return { ok: !error, mensaje: error ? "No hemos podido marcarla." : "" };
+}
+
+/**
+ * Cuántas cosas esperan, por sección del menú. Para el punto rojo.
+ *
+ * Devuelve sólo NÚMEROS, no las filas: esto se llama cada vez que
+ * se repinta el menú y traerse las fichas enteras para contarlas
+ * sería pagar por algo que no se enseña.
+ *
+ * Si algo falla se devuelve cero y a otra cosa: quedarse sin punto
+ * es una molestia; quedarse sin menú, no.
+ */
+export async function pendientes() {
+  const cuenta = async consulta => {
+    try {
+      const { count, error } = await consulta;
+      return error ? 0 : (count || 0);
+    } catch { return 0; }
+  };
+
+  const [a, b, c, d, e] = await Promise.all([
+    cuenta(supabase.from("reserva").select("id", { count: "exact", head: true })
+      .eq("estado", "revisando")),
+    cuenta(supabase.from("reserva").select("id", { count: "exact", head: true })
+      .eq("estado", "pendiente")),
+    cuenta(supabase.from("solicitud_cambio").select("id", { count: "exact", head: true })
+      .eq("estado", "pendiente")),
+    cuenta(supabase.from("interes").select("id", { count: "exact", head: true })
+      .eq("estado", "nueva")),
+    cuenta(supabase.from("reserva").select("id", { count: "exact", head: true })
+      .eq("estado", "cancelada").eq("cancelacion_vista", false)),
+  ]);
+
+  /* Por sección del menú, que es donde se pinta el punto. */
+  return { validar: a + b + c + d + e };
 }
 
 export async function atenderInteres(id, estado, nota = "") {

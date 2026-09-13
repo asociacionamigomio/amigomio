@@ -60,8 +60,10 @@ test("un aviso que falla NO puede tumbar la reserva", () => {
   /* Sin esto, un fallo mandando un correo desharía la reserva
      entera y el cliente vería un error sin entender nada. El
      dinero primero, el correo después. */
+  /* TODOS los disparadores de este fichero, no un número fijo:
+     el día que se añada otro, la prueba lo pide también. */
   const disparadores = sql.match(/returns trigger[\s\S]*?\bend \$\$;/g);
-  assert.equal(disparadores.length, 2, "hay dos disparadores");
+  assert.ok(disparadores.length >= 2, "habrá disparadores");
   for (const d of disparadores)
     assert.match(d, /exception when others/,
       "un disparador que revienta deshace la operación entera");
